@@ -2,3 +2,4 @@ node_modules/
 @girs/
 tests/
 widget/
+playground/

@@ -1,11 +1,11 @@
 import { createState, createMemo } from "ags";
-import type { MyClipEntry } from "./MyClip";
-import { loadClipvaultEntries } from "./MyClipVault";
+import type { ClipEntry } from "./types";
+import { loadClipvaultEntries } from "./vault";
 
 export const [searchTerm, setSearchTerm] = createState("");
 export const [showOnlyStarred, setShowOnlyStarred] = createState(false);
 export const [clipboardItems, setClipboardItems] =
-  createState<MyClipEntry[]>([]);
+  createState<ClipEntry[]>([]);
 
 export const filteredItems = createMemo(() => {
   const term = searchTerm().toLowerCase();

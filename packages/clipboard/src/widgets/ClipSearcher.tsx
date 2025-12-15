@@ -1,9 +1,9 @@
 import { Gdk, Gtk } from "ags/gtk4";
-import { MyClipEntry } from "./MyClip";
-import { setSearchTerm, searchTerm, showOnlyStarred, setShowOnlyStarred } from "./store";
+import { ClipEntry } from "../types";
+import { setSearchTerm, searchTerm, showOnlyStarred, setShowOnlyStarred } from "../store";
 import { Accessor } from "ags";
 
-export default function MyClipSearcher(props: { clipboardItems: Accessor<MyClipEntry[]>; }) {
+export default function ClipSearcher(props: { clipboardItems: Accessor<ClipEntry[]>; }) {
   return (
     <box
       orientation={Gtk.Orientation.HORIZONTAL}
@@ -32,8 +32,8 @@ export default function MyClipSearcher(props: { clipboardItems: Accessor<MyClipE
             }
 
             if (keyval === Gdk.KEY_Down) {
-              const picker = self.get_parent()?.get_parent(); // Box in MyClipPicker
-              const list = picker?.get_last_child(); // Should be MyClipList (FlowBox)
+              const picker = self.get_parent()?.get_parent(); // Box in ClipPicker
+              const list = picker?.get_last_child(); // Should be ClipList (FlowBox)
               if (list instanceof Gtk.FlowBox) {
                 list.child_focus(Gtk.DirectionType.TAB_FORWARD);
                 return true;

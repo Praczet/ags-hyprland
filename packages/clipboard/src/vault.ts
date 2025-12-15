@@ -1,16 +1,7 @@
-// MyClipVault.ts
-//
-// Backend adapter for `clipvault` used by the AGS clipboard manager.
-// - loadClipvaultEntries() → MyClipEntry[]
-// - restoreClipToClipboard(id)
-// - deleteClip(id)
-//
-// Uses execAsync from "ags/process"
-
 import GLib from "gi://GLib";
 import { execAsync } from "ags/process";
-import { MyClipEntry, MyClipTypes } from "./MyClip";
-import { getImageSize, isColor, toHex } from "./utils";
+import { ClipEntry, ClipTypes } from "./types";
+import { getImageSize, isColor, toHex } from "../../../shared/utils/colors";
 import { refreshClipboard } from "./store";
 import app from "ags/gtk4/app";
 
@@ -38,7 +29,7 @@ function extractColorFromText(txt: string): string | null {
 }
 
 function detectType(preview: string): {
-  type: MyClipTypes;
+  type: ClipTypes;
   color?: string;
   value?: string;
   imgExt?: string;
@@ -46,14 +37,14 @@ function detectType(preview: string): {
   const imgMatch = preview.match(imgRe);
   if (imgMatch) {
     return {
-      type: MyClipTypes.Image,
+      type: ClipTypes.Image,
       imgExt: imgMatch[1].toLowerCase(),
     };
   }
 
   const color = extractColorFromText(preview);
   if (color) {
-    return { type: MyClipTypes.Color, color, value: preview };
+    return { type: ClipTypes.Color, color, value: preview };
   }
 
   const isCode =
@@ -62,9 +53,9 @@ function detectType(preview: string): {
     /\b(class|function|const|let|var|<\?php)\b/.test(preview) ||
     preview.startsWith("#!/usr/bin/env");
 
-  if (isCode) return { type: MyClipTypes.Code };
+  if (isCode) return { type: ClipTypes.Code };
 
-  return { type: MyClipTypes.Text };
+  return { type: ClipTypes.Text };
 }
 
 async function getImageFileForId(id: string, ext: string): Promise<string | null> {
@@ -87,7 +78,7 @@ async function getImageFileForId(id: string, ext: string): Promise<string | null
   return null;
 }
 
-export async function loadClipvaultEntries(): Promise<MyClipEntry[]> {
+export async function loadClipvaultEntries(): Promise<ClipEntry[]> {
   let list = "";
   try {
     list = await execAsync(["sh", "-c", `clipvault list | head -n ${itemsLimit}`]);
@@ -97,7 +88,7 @@ export async function loadClipvaultEntries(): Promise<MyClipEntry[]> {
   }
 
   const pinnedIds = new Set(readPinnedIds());
-  const recentEntries: MyClipEntry[] = [];
+  const recentEntries: ClipEntry[] = [];
 
   for (const raw of list.split("\n")) {
     if (!raw.trim()) continue;
@@ -114,12 +105,12 @@ export async function loadClipvaultEntries(): Promise<MyClipEntry[]> {
     const stared = pinnedIds.has(id);
 
     // image
-    if (detection.type === MyClipTypes.Image && detection.imgExt) {
+    if (detection.type === ClipTypes.Image && detection.imgExt) {
       const imgPath = await getImageFileForId(id, detection.imgExt);
       const iWH = getImageSize(imgPath || "");
       recentEntries.push({
         id,
-        myClipType: MyClipTypes.Image,
+        myClipType: ClipTypes.Image,
         value: imgPath
           ? [imgPath, preview, `${iWH ? `${iWH.width}x${iWH.height}` : "opps, N/A"}`]
           : [preview],
@@ -129,10 +120,10 @@ export async function loadClipvaultEntries(): Promise<MyClipEntry[]> {
     }
 
     // color
-    if (detection.type === MyClipTypes.Color && detection.color && detection.value) {
+    if (detection.type === ClipTypes.Color && detection.color && detection.value) {
       recentEntries.push({
         id,
-        myClipType: MyClipTypes.Color,
+        myClipType: ClipTypes.Color,
         value: [detection.color, detection.value],
         stared,
       });
@@ -140,10 +131,10 @@ export async function loadClipvaultEntries(): Promise<MyClipEntry[]> {
     }
 
     // code
-    if (detection.type === MyClipTypes.Code) {
+    if (detection.type === ClipTypes.Code) {
       recentEntries.push({
         id,
-        myClipType: MyClipTypes.Code,
+        myClipType: ClipTypes.Code,
         value: [txt],
         stared,
       });
@@ -153,14 +144,14 @@ export async function loadClipvaultEntries(): Promise<MyClipEntry[]> {
     // default text
     recentEntries.push({
       id,
-      myClipType: MyClipTypes.Text,
+      myClipType: ClipTypes.Text,
       value: [preview],
       stared,
     });
   }
 
   // Now load *all* pinned IDs and ensure they’re present & first
-  const pinnedList: MyClipEntry[] = [];
+  const pinnedList: ClipEntry[] = [];
   for (const id of pinnedIds) {
     // try to find in recent entries first
     const existing = recentEntries.find(e => e.id === id);
@@ -182,35 +173,35 @@ export async function loadClipvaultEntries(): Promise<MyClipEntry[]> {
       const maxlen = 120;
       const preview = txt.length > maxlen ? txt.slice(0, maxlen) + "…" : txt;
 
-      if (detection.type === MyClipTypes.Image && detection.imgExt) {
+      if (detection.type === ClipTypes.Image && detection.imgExt) {
         const imgPath = await getImageFileForId(id, detection.imgExt);
         const iWH = getImageSize(imgPath || "");
         pinnedList.push({
           id,
-          myClipType: MyClipTypes.Image,
+          myClipType: ClipTypes.Image,
           value: imgPath
             ? [imgPath, preview, `${iWH ? `${iWH.width}x${iWH.height}` : "opps, N/A"}`]
             : [preview],
           stared: true,
         });
-      } else if (detection.type === MyClipTypes.Color && detection.color) {
+      } else if (detection.type === ClipTypes.Color && detection.color) {
         pinnedList.push({
           id,
-          myClipType: MyClipTypes.Color,
+          myClipType: ClipTypes.Color,
           value: [detection.color],
           stared: true,
         });
-      } else if (detection.type === MyClipTypes.Code) {
+      } else if (detection.type === ClipTypes.Code) {
         pinnedList.push({
           id,
-          myClipType: MyClipTypes.Code,
+          myClipType: ClipTypes.Code,
           value: [txt],
           stared: true,
         });
       } else {
         pinnedList.push({
           id,
-          myClipType: MyClipTypes.Text,
+          myClipType: ClipTypes.Text,
           value: [preview],
           stared: true,
         });
@@ -312,7 +303,6 @@ export function togglePinned(id: string): boolean {
 }
 
 function hideClipboardWindow() {
-  // look up the window we registered in MyClipManager
   const win = app.windows.find(w => w.name === "adart-clipboard")
 
   if (win && "hide" in win) {

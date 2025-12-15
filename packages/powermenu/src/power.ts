@@ -1,4 +1,4 @@
-import { execAsync } from "ags/utils"
+import { execAsync } from "ags/process";
 
 export const power = {
   shutdown: () => execAsync("systemctl poweroff"),

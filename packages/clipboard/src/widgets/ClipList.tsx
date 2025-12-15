@@ -1,5 +1,5 @@
 /**
- * MyClipList.tsx
+ * ClipList.tsx
  * 
  * Renders a scrollable list of clipboard items using Gtk.FlowBox.
  * Handles keyboard shortcuts for starring, deleting, and searching clips.
@@ -73,7 +73,7 @@ export default function ClipList(props: { clipboardItems: Accessor<ClipEntry[]>;
             // If a printable character (rough approximation), capture it
             const char = Gdk.keyval_to_unicode(keyval);
             if (char && char > 31 && !(state & Gdk.ModifierType.CONTROL_MASK)) {
-              const picker = self.get_parent()?.get_parent()?.get_parent(); // Box in MyClipPicker
+              const picker = self.get_parent()?.get_parent()?.get_parent(); // Box in ClipPicker
               const searcher = picker?.get_first_child(); // Box (Searcher)
               const entry = searcher?.get_first_child(); // Entry
 
@@ -92,7 +92,7 @@ export default function ClipList(props: { clipboardItems: Accessor<ClipEntry[]>;
         <For each={props.clipboardItems}>
           {(entry) => (
             <Gtk.FlowBoxChild focusable={true}>
-              <MyClip entry={entry} />
+              <ClipCard entry={entry} />
             </Gtk.FlowBoxChild>
           )}
         </For>
