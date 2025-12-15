@@ -12,5 +12,12 @@
     // "allowJs": true,
     "jsx": "react-jsx",
     "jsxImportSource": "ags/gtk4"
-  }
+  },
+  "exclude": [
+    "**/node_modules",
+    "**/dist",
+    "**/.git",
+    "**/.cache",
+    "**/build"
+  ]
 }

@@ -24,8 +24,6 @@ app.start({
       ; (globalThis as any).toggleClipboard = () =>
         clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())
       ; (globalThis as any).togglePowerMenu = () => powerWin.visible ? powerWin.hide() : powerWin.present()
-    togglePowerMenu();
-
 
     // app.get_monitors().map(Bar)
   },

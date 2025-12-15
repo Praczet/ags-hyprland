@@ -5,6 +5,7 @@ import { power } from "./power"
 type ConfirmState = {
   title: string
   message: string
+  iconName?: string
   run: () => void
   showMainAfterCancel: boolean
 }
@@ -14,10 +15,14 @@ export function PowerMenuWindows(monitor = 0) {
   let confirmWin: Gtk.Window | null = null
   let confirmBtn: Gtk.Button | null = null
   let firstBtn: Gtk.Button | null = null
+  let titleLbl: Gtk.Label | null = null
+  let msgLbl: Gtk.Label | null = null
+  let icon: Gtk.Image | null = null
 
   let state: ConfirmState = {
     title: "",
     message: "",
+    iconName: "",
     run: () => { },
     showMainAfterCancel: true,
   }
@@ -32,6 +37,9 @@ export function PowerMenuWindows(monitor = 0) {
 
   function showConfirm(next: ConfirmState) {
     state = next
+    titleLbl?.set_label(state.title)
+    msgLbl?.set_label(state.message)
+    icon?.set_from_icon_name(state.iconName || "dialog-warning-symbolic")
     hideMain()
     confirmWin?.show()
     // focus "Confirm" so Enter feels natural
@@ -61,12 +69,13 @@ export function PowerMenuWindows(monitor = 0) {
           action()
         }}
       >
-        {label}
+        <image icon-name="system-lock-screen-symbolic" pixelSize={32} />
+        <label label={label} />
       </button>
     )
   }
 
-  function ConfirmButton(label: string, title: string, message: string, action: () => void) {
+  function ConfirmButton(label: string, title: string, message: string, action: () => void, iconName: string) {
     return (
       <button
         class="power-btn"
@@ -76,10 +85,12 @@ export function PowerMenuWindows(monitor = 0) {
             message,
             run: action,
             showMainAfterCancel: true,
+            iconName,
           })
         }
       >
-        {label}
+        <image iconName={iconName} pixelSize={32} />
+        <label label={label} />
       </button>
     )
   }
@@ -89,6 +100,7 @@ export function PowerMenuWindows(monitor = 0) {
   const main = (
     <window
       name="powermenu"
+      class="powermenu-window"
       namespace="adart-powermenu"
       monitor={monitor}
       visible={false}
@@ -98,58 +110,60 @@ export function PowerMenuWindows(monitor = 0) {
         Astal.WindowAnchor.RIGHT
       }
       $={(w: Gtk.Window) => {
-          mainWin = w
-          // 1) ESC closes
-          const key = new Gtk.EventControllerKey()
-          key.connect("key-pressed", (_c, keyval) => {
-            if (keyval === Gdk.KEY_Escape) {
-              w.hide()
-              return true
-            }
-            return false
-          })
-          w.add_controller(key)
+        mainWin = w
+        // 1) ESC closes
+        const key = new Gtk.EventControllerKey()
+        key.connect("key-pressed", (_c, keyval) => {
+          if (keyval === Gdk.KEY_Escape) {
+            w.hide()
+            return true
+          }
+          return false
+        })
+        w.add_controller(key)
 
-          // 2) Clicking outside (i.e., on the window background) closes
-          // This works best if the window covers the screen area for that anchor.
-          const click = new Gtk.GestureClick()
-          click.connect("pressed", (_g, _nPress, x, y) => {
-            const picked = w.pick(x, y, Gtk.PickFlags.DEFAULT)
+        // 2) Clicking outside (i.e., on the window background) closes
+        // This works best if the window covers the screen area for that anchor.
+        const click = new Gtk.GestureClick()
+        click.connect("pressed", (_g, _nPress, x, y) => {
+          const picked = w.pick(x, y, Gtk.PickFlags.DEFAULT)
 
-            // If click didn't hit a child widget (or you hit the window itself),
-            // treat it as "outside" and close.
-            if (!picked || picked === w) {
-              w.hide()
-            }
-          })
-          w.add_controller(click)
+          // If click didn't hit a child widget (or you hit the window itself),
+          // treat it as "outside" and close.
+          if (!picked || picked === w) {
+            w.hide()
+          }
+        })
+        w.add_controller(click)
 
-          w.connect("notify::is-active", () => {
-              // delay a tiny bit to avoid races right after present()
-              GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-                if (w.visible && !w.is_active) w.hide()
-                return GLib.SOURCE_REMOVE
-              })
-            })
-          // // Optional: also close when focus leaves (very “popup” feeling)
-          // const focus = new Gtk.EventControllerFocus()
-          // focus.connect("leave", () => {
-          //   if (w.visible) w.hide()
-          // })
-          // w.add_controller(focus)
-        }}
-        onShow={() => firstBtn?.grab_focus()}
+        // w.connect("notify::is-active", () => {
+        //   // delay a tiny bit to avoid races right after present()
+        //   GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
+        //     if (w.visible && !w.is_active) w.hide()
+        //     return GLib.SOURCE_REMOVE
+        //   })
+        // })
+      }}
+      onShow={() => firstBtn?.grab_focus()}
     >
       <box class="power-menu"
         orientation={Gtk.Orientation.VERTICAL}
         spacing={8}
-        halign={Gtk.Align.CENTER} 
+        halign={Gtk.Align.CENTER}
         valign={Gtk.Align.CENTER}>
-        { SafeButton("Lock", power.lock)}
-        { ConfirmButton("Logout",    "Logout?",    "You will be signed out.",         power.logout   )}
-        { ConfirmButton("Suspend",   "Suspend?",   "Your session will be suspended.", power.suspend  )}
-        { ConfirmButton("Reboot",    "Reboot?",    "The system will restart.",        power.reboot   )}
-        { ConfirmButton("Power Off", "Power off?", "The system will shut down.",      power.shutdown )}
+        {SafeButton("Lock", power.lock)}
+        {
+          ConfirmButton(
+            "Logout",
+            "Logout?",
+            "You will be signed out.",
+            power.logout,
+            "system-log-out-symbolic"
+          )
+        }
+        {ConfirmButton("Suspend", "Suspend?", "Your session will be suspended.", power.suspend, "media-playback-pause-symbolic")}
+        {ConfirmButton("Reboot", "Reboot?", "The system will restart.", power.reboot, "system-reboot-symbolic")}
+        {ConfirmButton("Power Off", "Power off?", "The system will shut down.", power.shutdown, "system-shutdown-symbolic")}
       </box>
     </window>
   ) as unknown as Gtk.Window
@@ -158,9 +172,17 @@ export function PowerMenuWindows(monitor = 0) {
     <window
       name="powermenu-confirm"
       namespace="adart-powermenu"
+      class="powermenu-confirm-window"
       monitor={monitor}
       visible={false}
+      exclusivity={Astal.Exclusivity.IGNORE}
+      layer={Astal.Layer.OVERLAY}
       keymode={Astal.Keymode.ON_DEMAND}
+      anchor={
+        Astal.WindowAnchor.TOP |
+        Astal.WindowAnchor.RIGHT |
+        Astal.WindowAnchor.BOTTOM
+      }
       $={(w: Gtk.Window) => {
         confirmWin = w
 
@@ -178,20 +200,56 @@ export function PowerMenuWindows(monitor = 0) {
           return false
         })
         w.add_controller(key)
+        const click = new Gtk.GestureClick()
+        click.connect("pressed", () => confirmWin?.hide())
+        w.add_controller(click)
       }}
     >
       <box class="power-confirm"
         orientation={Gtk.Orientation.VERTICAL}
-        spacing={10}
+        spacing={20}
         halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER}>
-        <label class="power-confirm-title" label={state.title} />
-        <label class="power-confirm-msg" label={state.message} wrap={true} maxWidthChars={34} />
-        <box class="power-confirm-actions" spacing={8} halign={Gtk.Align.CENTER}>
-          <button class="power-btn" onClicked={cancelConfirm}>Cancel</button>
+        <box
+          orientation={Gtk.Orientation.HORIZONTAL}
+          spacing={10}
+          halign={Gtk.Align.FILL}
+          hexpand={true}
+        >
+          <image
+            class="power-confirm-icon"
+            pixelSize={64}
+            $={(l: Gtk.Image) => (icon = l)}
+            halign={Gtk.Align.START}
+          />
+          <label
+            class="power-confirm-title"
+            $={(l: Gtk.Label) => (titleLbl = l)}
+            halign={Gtk.Align.FILL}
+            hexpand={true}
+            label={state.title} />
+        </box>
+        <label
+          class="power-confirm-msg"
+          $={(l: Gtk.Label) => (msgLbl = l)}
+          label={state.message}
+          wrap={true}
+          maxWidthChars={34} />
+        <box
+          class="power-confirm-actions"
+          spacing={8}
+          halign={Gtk.Align.FILL}>
+          <button
+            class="power-btn"
+            onClicked={cancelConfirm}
+            halign={Gtk.Align.FILL}
+            hexpand={true}
+          >Cancel</button>
           <button
             class="power-btn power-btn-confirm"
             $={(b: Gtk.Button) => (confirmBtn = b)}
             onClicked={confirmYes}
+            halign={Gtk.Align.FILL}
+            hexpand={true}
           >
             Confirm
           </button>

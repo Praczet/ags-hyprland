@@ -1,4 +1,4 @@
-window {
+.powermenu-window {
   /* semi-transparent so Hyprland blur shows through */
   background-color: color-mix(
     in srgb,
@@ -7,24 +7,39 @@ window {
   );
   padding: 12px 20px;
   color: @on_surface;
-  /* subtle shadow so it floats above background */
+}
+.powermenu-confirm-window {
+  background-color: color-mix(in srgb, @background 70%, transparent 30%);
+  padding: 100px;
 }
 
+.power-confirm,
 .power-menu {
   padding: 20px;
   border-radius: 16px;
-  background: rgba(20, 20, 20, 0.9);
+  background: @surface;
   min-width: 220px;
+}
+.power-confirm-title {
+  font-size: 2rem;
 }
 
 .power-btn {
   padding: 10px;
   border-radius: 10px;
-  background: transparent;
-  color: #e5e5e5;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: @primary;
+  color: @on_primary;
+  border: 1px solid @primary_fixed;
+}
+.power-btn image {
+  color: red;
+  opacity: 0.8;
+}
+.power-confirm-hint {
+  font-size: 0.9rem;
+  opacity: 0.5;
 }
 
 .power-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: @primary_fixed;
 }
