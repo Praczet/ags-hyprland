@@ -15,6 +15,10 @@ let focusIndex = 0
 const thumbCache = new Map<string, string>()
 let exposeVisible = false
 
+const MAGIC_WORKSPACE_ID = -98
+const FLOAT_SCRATCH_NAME = "expose-float"
+const FLOAT_SCRATCH_TARGET = `special:${FLOAT_SCRATCH_NAME}`
+
 function clamp(n: number, a: number, b: number) {
   return Math.max(a, Math.min(b, n))
 }
@@ -43,12 +47,21 @@ async function listClients(): Promise<ExposeClient[]> {
       pid: (c.pid ?? -1) as number,
       at: [c.at?.[0] ?? 0, c.at?.[1] ?? 0],
       size: [c.size?.[0] ?? 0, c.size?.[1] ?? 0],
+      floating: Boolean(c.floating),
       thumb: undefined,
     }))
 }
 
 async function focusWindow(address: string) {
   await execAsync(["hyprctl", "dispatch", "focuswindow", `address:${address}`])
+}
+
+async function moveWindowToWorkspace(address: string, workspace: string) {
+  await execAsync(["hyprctl", "dispatch", "movetoworkspacesilent", workspace, `address:${address}`])
+}
+
+async function toggleSpecialWorkspace(name: string) {
+  await execAsync(["hyprctl", "dispatch", "togglespecialworkspace", name])
 }
 
 export default function ExposeWindow(monitor: number = 0) {
@@ -93,10 +106,98 @@ export default function ExposeWindow(monitor: number = 0) {
     return (JSON.parse(out)?.id ?? -1) as number
   }
 
+  type FloaterSnapshot = {
+    address: string
+    workspaceId: number
+  }
 
-  async function renderClients(captureThumbs = true) {
+  type WorkspacePrepContext = {
+    clients: ExposeClient[]
+    magicWasActive: boolean
+    floaters: FloaterSnapshot[]
+  }
+
+  async function prepareWorkspace(): Promise<WorkspacePrepContext> {
+    let activeId = await activeWorkspaceId()
+    let magicWasActive = false
+    if (activeId === MAGIC_WORKSPACE_ID) {
+      try {
+        await toggleSpecialWorkspace("magic")
+        magicWasActive = true
+        await sleep(120)
+      } catch (error) {
+        console.error("toggle magic workspace error", error)
+      }
+      activeId = await activeWorkspaceId()
+    }
+
+    const snapshot = await listClients()
+    const floaters = snapshot.filter(c => c.workspaceId === activeId && c.floating)
+
+    for (const floater of floaters) {
+      try {
+        await moveWindowToWorkspace(floater.address, FLOAT_SCRATCH_TARGET)
+      } catch (error) {
+        console.error("move floater to scratch", error)
+      }
+    }
+
+    return {
+      clients: snapshot,
+      magicWasActive,
+      floaters: floaters.map(f => ({ address: f.address, workspaceId: f.workspaceId })),
+    }
+  }
+
+  async function restoreWorkspace(ctx: WorkspacePrepContext | null) {
+    if (!ctx) return
+    for (const floater of ctx.floaters) {
+      try {
+        await moveWindowToWorkspace(floater.address, `${floater.workspaceId}`)
+      } catch (error) {
+        console.error("restore floater", { address: floater.address, error })
+      }
+    }
+    if (ctx.magicWasActive) {
+      try {
+        await toggleSpecialWorkspace("magic")
+      } catch (error) {
+        console.error("restore magic workspace", error)
+      }
+    }
+  }
+
+  async function withScratchWorkspace<T>(fn: () => Promise<T>) {
+    await toggleSpecialWorkspace(FLOAT_SCRATCH_NAME)
+    await sleep(80)
+    try {
+      return await fn()
+    } finally {
+      await toggleSpecialWorkspace(FLOAT_SCRATCH_NAME)
+      await sleep(40)
+    }
+  }
+
+  async function captureClientThumbs(targets: ExposeClient[], thumbSetters: Map<string, (p: string) => void>) {
+    const captureJobs = targets.map(c =>
+      captureThumb(c.address)
+        .then(p => {
+          if (p) {
+            thumbCache.set(c.address, p)
+            thumbSetters.get(c.address)?.(p)
+          }
+        })
+        .catch(() => { }),
+    )
+    if (captureJobs.length) {
+      await Promise.allSettled(captureJobs)
+    }
+  }
+
+
+  async function renderClients(captureThumbs = true, presetClients?: ExposeClient[]) {
     const activeId = await activeWorkspaceId()
-    clients = await listClients()
+    clients = presetClients ?? await listClients()
 
     // stable order always
     clients.sort((a, b) => {
@@ -235,19 +336,15 @@ export default function ExposeWindow(monitor: number = 0) {
     }
 
     if (captureThumbs) {
-      const captureJobs = active.map(c =>
-        captureThumb(c.address)
-          .then(p => {
-            if (p) {
-              thumbCache.set(c.address, p)
-              thumbSetters.get(c.address)?.(p)
-            }
-          })
-          .catch(() => { }),
-      )
+      const floatingActive = active.filter(c => c.floating)
+      const tiledActive = active.filter(c => !c.floating)
 
-      if (captureJobs.length) {
-        await Promise.allSettled(captureJobs)
+      await captureClientThumbs(tiledActive, thumbSetters)
+
+      if (floatingActive.length) {
+        await withScratchWorkspace(async () => {
+          await captureClientThumbs(floatingActive, thumbSetters)
+        })
       }
     }
   }
@@ -306,7 +403,12 @@ export default function ExposeWindow(monitor: number = 0) {
 
   async function show() {
     win.visible = false
-    await renderClients(true)
+    const prep = await prepareWorkspace()
+    try {
+      await renderClients(true, prep.clients)
+    } finally {
+      await restoreWorkspace(prep)
+    }
     await sleep(80)
     win.visible = true
     win.grab_focus()

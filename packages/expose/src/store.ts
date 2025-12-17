@@ -6,6 +6,7 @@ export type ExposeClient = {
   pid: number
   at: [number, number]
   size: [number, number]
+  floating: boolean
   thumb?: string
 }
 
