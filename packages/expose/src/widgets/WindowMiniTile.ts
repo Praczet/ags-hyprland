@@ -7,7 +7,7 @@ export function WindowMiniTileGtk(
   client: ExposeClient,
   opts: { showIcon: boolean; iconSize: number },
   onActivate: (addr: string) => void,
-): Gtk.Widget {
+): Gtk.Button {
   const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
 
   const icon = new Gtk.Image({ pixel_size: opts.iconSize })
@@ -15,8 +15,6 @@ export function WindowMiniTileGtk(
   if (gicon) icon.set_from_gicon(gicon)
   icon.add_css_class("ws-tile-icon")
   row.append(icon)
-  if (opts.showIcon) {
-  }
 
   const label = new Gtk.Label({
     label: client.title || client.class || "(untitled)",

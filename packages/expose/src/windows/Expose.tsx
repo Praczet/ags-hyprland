@@ -59,7 +59,6 @@ export default function ExposeWindow(monitor: number = 0) {
     valign: Gtk.Align.START,
     cssClasses: ["expose-flow"],
     halign: Gtk.Align.FILL,
-    homogeneous: false,
     row_spacing: 30,
     column_spacing: 30,
     min_children_per_line: 3,
@@ -68,14 +67,16 @@ export default function ExposeWindow(monitor: number = 0) {
     marginTop: 60,
     marginStart: 60,
     marginEnd: 60,
-
   })
+
+  flow.set_homogeneous(true)
 
   const scroller = new Gtk.ScrolledWindow({
     vexpand: true,
     hexpand: true,
     child: flow,
   })
+  scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
 
   function clearFlow() {
     let child = flow.get_first_child()
@@ -90,37 +91,48 @@ export default function ExposeWindow(monitor: number = 0) {
     return (JSON.parse(out)?.id ?? -1) as number
   }
 
+
   async function renderClients() {
     const activeId = await activeWorkspaceId()
     clients = await listClients()
-    focusButtons = [];
-    focusIndex = 0;
 
-    const active = clients.filter(c => c.workspaceId === activeId)
-    const others = clients.filter(c => c.workspaceId !== activeId)
+    // stable order always
+    clients.sort((a, b) => {
+      if (a.workspaceId !== b.workspaceId) return a.workspaceId - b.workspaceId
+      if (a.at[1] !== b.at[1]) return a.at[1] - b.at[1]
+      if (a.at[0] !== b.at[0]) return a.at[0] - b.at[0]
+      return (a.title || "").localeCompare(b.title || "")
+    })
+
+    focusButtons = []
+    focusIndex = 0
 
     const display = Gdk.Display.get_default()
     const mon = display?.get_monitors()?.get_item(monitor) as any
     const geo = mon?.get_geometry?.()
     const monitorW = geo?.width ?? 2560
 
-
-
     const cols = computeColumnsByMinWidth(monitorW)
     flow.set_min_children_per_line(cols)
     flow.set_max_children_per_line(cols)
 
-
-    // capture thumbs once
-    await Promise.all(active.map(async c => {
-      const p = await captureThumb(c.address)
-      if (p) c.thumb = p
-    }))
-
     clearFlow()
 
-    const makeCard =
-      ecfg.currentPreviewMode === "overlay" ? WindowCardOverlayedGtk : WindowCardGtk
+    const onActivate = async (addr: string) => {
+      await focusWindow(addr)
+      hide()
+    }
+
+    // helper: remove the “extra” tab-stop (FlowBoxChild wrapper)
+    const deFocusWrapper = (w: Gtk.Widget) => {
+      const wrap = w.get_parent() as Gtk.Widget | null
+      wrap?.set_focusable(false)
+    }
+
+    // Focus should start on first window of active workspace (even in workspaces mode)
+    let firstActiveButton: Gtk.Button | null = null
+
+    // -------- displayType: workspaces (everything is workspace cards) --------
     if (ecfg.displayType === "workspaces") {
       const byWs = new Map<number, ExposeClient[]>()
       for (const c of clients) {
@@ -128,64 +140,102 @@ export default function ExposeWindow(monitor: number = 0) {
         byWs.get(c.workspaceId)!.push(c)
       }
 
+      // keep order: workspace id ascending, inside: class+title
       for (const arr of byWs.values()) {
         arr.sort((a, b) => (a.class + a.title).localeCompare(b.class + b.title))
       }
 
       const wsIds = [...byWs.keys()].sort((a, b) => a - b)
-      // ALL workspaces as cards; active one gets icons + highlight
+
       for (const wsId of wsIds) {
-        const btn = WorkspaceCardGtk(
+        const ws = WorkspaceCardGtk(
           wsId,
           byWs.get(wsId)!,
           { isActive: wsId === activeId, iconSize: ecfg.iconSize },
-          async (addr) => {
-            await focusWindow(addr)
-            hide()
-          },
-        );
-        focusButtons.push(btn as Gtk.Button);
-        flow.append(btn)
+          onActivate,
+        )
+
+        flow.append(ws.widget)
+        deFocusWrapper(ws.widget)
+
+        // Tab through real window buttons (mini tiles)
+        focusButtons.push(...ws.focusables)
+
+        if (wsId === activeId && !firstActiveButton && ws.focusables.length) {
+          firstActiveButton = ws.focusables[0]
+        }
+      }
+
+      // focus the first tile of the active workspace
+      if (firstActiveButton) {
+        focusIndex = Math.max(0, focusButtons.indexOf(firstActiveButton))
+        firstActiveButton.grab_focus()
       }
       return
+    }
 
-    } else {
+    // -------- displayType: default (active big cards + other workspace cards) --------
+    const active = clients.filter(c => c.workspaceId === activeId)
+    const others = clients.filter(c => c.workspaceId !== activeId)
 
-      const byWs = new Map<number, ExposeClient[]>()
-      for (const c of others) {
-        if (!byWs.has(c.workspaceId)) byWs.set(c.workspaceId, [])
-        byWs.get(c.workspaceId)!.push(c)
-      }
+    // Build workspace groups for others
+    const byWs = new Map<number, ExposeClient[]>()
+    for (const c of others) {
+      if (!byWs.has(c.workspaceId)) byWs.set(c.workspaceId, [])
+      byWs.get(c.workspaceId)!.push(c)
+    }
+    for (const arr of byWs.values()) {
+      arr.sort((a, b) => (a.class + a.title).localeCompare(b.class + b.title))
+    }
+    const wsIds = [...byWs.keys()].sort((a, b) => a - b)
 
-      for (const arr of byWs.values()) {
-        arr.sort((a, b) => (a.class + a.title).localeCompare(b.class + b.title))
-      }
+    // Active workspace: big cards (append first, capture thumbs after)
+    const makeCard =
+      ecfg.currentPreviewMode === "overlay" ? WindowCardOverlayedGtk : WindowCardGtk
 
-      const wsIds = [...byWs.keys()].sort((a, b) => a - b)
-      for (const c of active) {
-        const btn = makeCard(c, async (addr) => {
-          await focusWindow(addr)
-          hide()
-        });
-        focusButtons.push(btn as Gtk.Button);
-        flow.append(btn)
-      }
-      // Other workspaces as “workspace cards”
-      for (const wsId of wsIds) {
-        const wsWins = byWs.get(wsId)!
-        const btn = WorkspaceCardGtk(
-          wsId,
-          wsWins,
-          { isActive: wsId === activeId, iconSize: ecfg.iconSize },
-          async (addr) => {
-            await focusWindow(addr) // will jump to that workspace + focus
-            hide()
-          });
-        focusButtons.push(btn as Gtk.Button);
-        flow.append(btn)
-      }
+    const thumbSetters = new Map<string, (p: string) => void>()
+
+    for (const c of active) {
+      const card = makeCard(c, onActivate) as any
+      const btn: Gtk.Button = card.widget ?? card // support older makeCard returning Gtk.Widget
+
+      flow.append(btn)
+
+      deFocusWrapper(btn)
+      focusButtons.push(btn)
+
+      if (!firstActiveButton) firstActiveButton = btn
+
+      if (card.setThumb) thumbSetters.set(c.address, card.setThumb)
+    }
+
+    // Other workspaces: workspace cards (mini tiles)
+    for (const wsId of wsIds) {
+      const ws = WorkspaceCardGtk(
+        wsId,
+        byWs.get(wsId)!,
+        { isActive: false, iconSize: ecfg.iconSize },
+        onActivate,
+      )
+      flow.append(ws.widget)
+      deFocusWrapper(ws.widget)
+      focusButtons.push(...ws.focusables)
+    }
+
+    // focus first active big card
+    if (firstActiveButton) {
+      focusIndex = Math.max(0, focusButtons.indexOf(firstActiveButton))
+      firstActiveButton.grab_focus()
+    }
+
+    // capture thumbs AFTER layout exists (no random ordering)
+    for (const c of active) {
+      captureThumb(c.address).then(p => {
+        if (p) thumbSetters.get(c.address)?.(p)
+      }).catch(() => { })
     }
   }
+
 
   function stopRefresh() {
     if (refreshTimer !== null) {
@@ -259,12 +309,13 @@ export default function ExposeWindow(monitor: number = 0) {
       class="expose"
       visible={false}
       layer={Astal.Layer.OVERLAY}
-      keymode={Astal.Keymode.EXCLUSIVE}
+      keymode={Astal.Keymode.ON_DEMAND}
       exclusivity={Astal.Exclusivity.IGNORE}
+      marginLeft={800}
       anchor={
         Astal.WindowAnchor.TOP |
         Astal.WindowAnchor.BOTTOM |
-        Astal.WindowAnchor.LEFT |
+        // Astal.WindowAnchor.LEFT |
         Astal.WindowAnchor.RIGHT
       }
       monitor={monitor}
@@ -312,3 +363,7 @@ export default function ExposeWindow(monitor: number = 0) {
   return win
 }
 
+/**
+ * - gtbox valign fill 
+ *
+ */

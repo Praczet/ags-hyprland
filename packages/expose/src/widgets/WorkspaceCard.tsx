@@ -2,13 +2,22 @@ import Gtk from "gi://Gtk?version=4.0"
 import type { ExposeClient } from "../store"
 import { WindowMiniTileGtk } from "./WindowMiniTile"
 
+import { loadExposeConfig } from "../config"
+const cfg = loadExposeConfig()
+
 export function WorkspaceCardGtk(
   workspaceId: number,
   windows: ExposeClient[],
   opts: { isActive: boolean; iconSize: number },
   onActivate: (addr: string) => void,
-): Gtk.Widget {
+): { widget: Gtk.Widget; focusables: Gtk.Button[] } {
+  const focusables: Gtk.Button[] = []
+
   const root = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 10 })
+  root.set_hexpand(true)
+  root.set_vexpand(true)
+  root.set_valign(Gtk.Align.FILL)
+  root.set_halign(Gtk.Align.FILL)
   root.add_css_class("ws-card")
   if (opts.isActive) root.add_css_class("ws-card-active")
 
@@ -47,20 +56,29 @@ export function WorkspaceCardGtk(
     max_children_per_line: 4,
   })
   tiles.add_css_class("ws-tiles")
+  tiles.set_valign(Gtk.Align.START)
 
   const MAX = 12
   for (const c of windows.slice(0, MAX)) {
-    tiles.append(
-      WindowMiniTileGtk(
-        c,
-        { showIcon: opts.isActive, iconSize: opts.iconSize },
-        onActivate,
-      ),
+    const b = WindowMiniTileGtk(
+      c,
+      { showIcon: opts.isActive, iconSize: opts.iconSize },
+      onActivate,
     )
+    focusables.push(b)
+    tiles.append(b)
   }
 
   root.append(header)
-  root.append(tiles)
+  const sc = new Gtk.ScrolledWindow()
+  // sc.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+  sc.set_vexpand(true)
+  sc.set_hexpand(true)
+  sc.set_valign(Gtk.Align.FILL)
+  sc.set_halign(Gtk.Align.FILL)
+  sc.set_child(tiles)
 
-  return root
+  root.append(sc)
+
+  return { widget: root, focusables }
 }
