@@ -11,14 +11,21 @@ import { PowerMenuWindows } from "../packages/powermenu/src"
 import { ExposeWindow, css as exposeCss } from "../packages/expose/src"
 import { OSDWindow, initOSD, css as osdCss } from "../packages/osd/src"
 import { osdHandleRequest } from "./osdHandleRequest"
+import { exposeHandleRequest } from "./exposeHandleRequest"
 
+
+async function handleRequest(argv: string[]) {
+  const result = await exposeHandleRequest(argv)
+  if (result !== undefined) return result
+  return osdHandleRequest(argv)
+}
 
 
 app.start({
   instanceName: "adart",
   css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss,
   requestHandler(argv, respond) {
-    osdHandleRequest(argv)
+    handleRequest(argv)
       .then(respond)
       .catch(err => respond(`error: ${err}`))
   },
@@ -41,11 +48,6 @@ app.start({
       ; (globalThis as any).toggleClipboard = () =>
         clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())
       ; (globalThis as any).togglePowerMenu = () => powerWin.visible ? powerWin.hide() : powerWin.present()
-      ; (globalThis as any).toggleExpose = () => {
-        const w = app.get_window("expose") as any
-        if (!w) return
-        w.visible ? (w.hideExpose?.() ?? w.hide()) : (w.showExpose?.())
-      }
 
     // app.get_monitors().map(Bar)
   },
