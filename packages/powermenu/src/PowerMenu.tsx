@@ -200,8 +200,14 @@ export function PowerMenuWindows(monitor = 0) {
           return false
         })
         w.add_controller(key)
+
         const click = new Gtk.GestureClick()
-        click.connect("pressed", () => confirmWin?.hide())
+        click.connect("pressed", (_g, _nPress, x, y) => {
+          const picked = w.pick(x, y, Gtk.PickFlags.DEFAULT)
+          if (!picked || picked === w) {
+            w.hide()
+          }
+        })
         w.add_controller(click)
       }}
     >

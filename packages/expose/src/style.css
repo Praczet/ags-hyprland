@@ -1,0 +1,138 @@
+.expose {
+  background: alpha(@background, 0.8);
+}
+.expose-root {
+  padding: 18px;
+}
+
+.expose-header {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+}
+
+.expose-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.expose-hint {
+  opacity: 0.8;
+}
+
+.expose-btn {
+  border-radius: 18px;
+  padding: 0;
+}
+
+.expose-card {
+  border-radius: 18px;
+  background: @surface;
+  padding: 10px;
+  border: 1px solid alpha(@outline, 0.4);
+}
+
+.expose-thumb {
+  border-radius: 14px;
+  background: @surface;
+  min-height: 200px;
+  margin-bottom: 10px;
+}
+.expose-btn:hover .expose-card {
+  border: 1px solid @primary;
+}
+
+.ws-frame {
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.ws-header {
+  padding: 6px 6px 2px 6px;
+  font-size: 2rem;
+}
+
+.ws-title {
+  font-weight: 700;
+}
+
+.ws-count {
+  opacity: 0.8;
+}
+
+.ws-list {
+  padding: 6px;
+}
+
+.wswin-row {
+  border-radius: 12px;
+  padding: 8px;
+}
+
+.wswin-row:hover {
+}
+
+.ws-more {
+  opacity: 0.7;
+  padding: 4px 6px;
+}
+.ws-tile {
+  border-radius: 12px;
+  padding: 10px;
+  color: @on_primary_container;
+  background: @primary_container;
+}
+
+.ws-tile:hover {
+  background: @primary_fixed_dim;
+  color: @on_primary_fixed_variant;
+}
+
+/* The thumbnail container */
+.expose-thumb {
+  border-radius: 18px;
+  min-height: 260px;
+}
+
+.expose-ov-thumb {
+  border: 1px solid alpha(@outline, 0.4);
+  border-radius: 18px;
+  padding: 12px;
+  font-size: 1.2rem;
+  background: @surface;
+}
+
+/* The overlay pill (stretches horizontally) */
+.expose-ov-pill {
+  margin: 0 12px; /* not full-bleed; fills X minus margins */
+  padding: 12px 16px;
+  background: alpha(@surface, 0.4);
+  padding: 20px;
+  border-radius: 18px;
+}
+
+.expose-ov-title {
+  font-weight: 700;
+  color: @on_surface_variant;
+}
+
+.expose-ov-class {
+  opacity: 0.85;
+  color: @on_surface_variant;
+}
+
+.expose-btn:hover .expose-ov-pill {
+  background: alpha(@surface, 0.8);
+}
+
+.ws-card {
+  background: @surface;
+  border-radius: 18px;
+  border: 1px solid alpha(@outline, 0.4);
+  padding: 18px;
+}
+
+.expose-ov-thumb:hover,
+.ws-card:hover,
+.ws-card-active {
+  border: 1px solid @primary;
+}
