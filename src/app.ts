@@ -1,7 +1,5 @@
 import app from "ags/gtk4/app"
 import style from "./style.css"
-// import Bar from "./widget/Bar"
-// package styles (keep per-package)
 import matugenCss from "../shared/styles/matugen.css"
 
 import clipCss from "../packages/clipboard/src/styles.css"
@@ -11,11 +9,22 @@ import pmCss from "../packages/powermenu/src/styles.css"
 import { PowerMenuWindows } from "../packages/powermenu/src"
 
 import { ExposeWindow, css as exposeCss } from "../packages/expose/src"
+import { OSDWindow, initOSD, css as osdCss } from "../packages/osd/src"
+import { osdHandleRequest } from "./osdHandleRequest"
+
+
 
 app.start({
   instanceName: "adart",
-  css: style + matugenCss + clipCss + pmCss + exposeCss,
+  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss,
+  requestHandler(argv, respond) {
+    osdHandleRequest(argv)
+      .then(respond)
+      .catch(err => respond(`error: ${err}`))
+  },
   main() {
+    initOSD()
+
     const clipWin = ClipboardWindow(0)
     app.add_window(clipWin)
 
@@ -25,6 +34,9 @@ app.start({
 
     const exposeWin = ExposeWindow(0)
     app.add_window(exposeWin)
+
+    const osdWin = OSDWindow(0)
+    app.add_window(osdWin)
 
       ; (globalThis as any).toggleClipboard = () =>
         clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())
