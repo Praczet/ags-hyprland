@@ -45,14 +45,16 @@ export function WindowCardOverlayedGtk(
   pic.set_valign(Gtk.Align.CENTER)
   pic.set_halign(Gtk.Align.CENTER)
   pic.set_content_fit(Gtk.ContentFit.SCALE_DOWN)
+  pic.add_css_class("rounded-corners")
 
   const rev = new Gtk.Revealer()
   rev.set_transition_type(Gtk.RevealerTransitionType.CROSSFADE)
-  rev.set_transition_duration(140)
+  rev.set_transition_duration(1400)
   rev.set_reveal_child(false)
   rev.set_hexpand(true)
   rev.set_vexpand(false)
   rev.height_request = tileHeight
+  rev.add_css_class("rounded-corners")
   rev.set_child(pic)
 
   const setThumb = (path: string) => {
@@ -69,6 +71,7 @@ export function WindowCardOverlayedGtk(
   overlay.set_valign(Gtk.Align.START)
   overlay.set_overflow(Gtk.Overflow.HIDDEN)
   overlay.add_css_class("expose-thumb")
+  overlay.add_css_class("rounded-corners")
   overlay.set_child(rev)
 
   const icon = new Gtk.Image({ pixel_size: cfg.iconSize })

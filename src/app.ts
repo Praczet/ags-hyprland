@@ -32,7 +32,7 @@ app.start({
       ; (globalThis as any).toggleExpose = () => {
         const w = app.get_window("expose") as any
         if (!w) return
-        w.visible ? (w.hideExpose?.() ?? w.hide()) : (w.showExpose?.() ?? w.present())
+        w.visible ? (w.hideExpose?.() ?? w.hide()) : (w.showExpose?.())
       }
 
     // app.get_monitors().map(Bar)

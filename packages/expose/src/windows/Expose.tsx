@@ -12,6 +12,8 @@ import { WindowCardOverlayedGtk } from "../widgets/WindowCardOverlayed"
 const ecfg = loadExposeConfig()
 let focusButtons: Gtk.Button[] = []
 let focusIndex = 0
+const thumbCache = new Map<string, string>()
+let exposeVisible = false
 
 function clamp(n: number, a: number, b: number) {
   return Math.max(a, Math.min(b, n))
@@ -92,7 +94,7 @@ export default function ExposeWindow(monitor: number = 0) {
   }
 
 
-  async function renderClients() {
+  async function renderClients(captureThumbs = true) {
     const activeId = await activeWorkspaceId()
     clients = await listClients()
 
@@ -206,7 +208,11 @@ export default function ExposeWindow(monitor: number = 0) {
 
       if (!firstActiveButton) firstActiveButton = btn
 
-      if (card.setThumb) thumbSetters.set(c.address, card.setThumb)
+      if (card.setThumb) {
+        thumbSetters.set(c.address, card.setThumb)
+        const cached = thumbCache.get(c.address)
+        if (cached) card.setThumb(cached)
+      }
     }
 
     // Other workspaces: workspace cards (mini tiles)
@@ -228,11 +234,21 @@ export default function ExposeWindow(monitor: number = 0) {
       firstActiveButton.grab_focus()
     }
 
-    // capture thumbs AFTER layout exists (no random ordering)
-    for (const c of active) {
-      captureThumb(c.address).then(p => {
-        if (p) thumbSetters.get(c.address)?.(p)
-      }).catch(() => { })
+    if (captureThumbs) {
+      const captureJobs = active.map(c =>
+        captureThumb(c.address)
+          .then(p => {
+            if (p) {
+              thumbCache.set(c.address, p)
+              thumbSetters.get(c.address)?.(p)
+            }
+          })
+          .catch(() => { }),
+      )
+
+      if (captureJobs.length) {
+        await Promise.allSettled(captureJobs)
+      }
     }
   }
 
@@ -245,11 +261,12 @@ export default function ExposeWindow(monitor: number = 0) {
   }
 
   async function refreshThumbs() {
-    if (refreshing) return
+    if (refreshing || exposeVisible) return
     refreshing = true
     try {
       for (const c of clients) {
-        await captureThumb(c.address)
+        const path = await captureThumb(c.address)
+        if (path) thumbCache.set(c.address, path)
       }
     } finally {
       refreshing = false
@@ -258,6 +275,7 @@ export default function ExposeWindow(monitor: number = 0) {
 
   function startRefreshIfNeeded() {
     stopRefresh()
+    if (exposeVisible) return
     if (clients.length >= cfg.heavyModeThreshold) return
     if (cfg.refreshMs <= 0) return
 
@@ -288,7 +306,7 @@ export default function ExposeWindow(monitor: number = 0) {
 
   async function show() {
     win.visible = false
-    await renderClients();
+    await renderClients(true)
     await sleep(80)
     win.visible = true
     win.grab_focus()
@@ -301,6 +319,12 @@ export default function ExposeWindow(monitor: number = 0) {
     stopRefresh()
   }
 
+
+  async function init() {
+    await renderClients(true)
+    // const activeId = await activeWorkspaceId()
+    // clients = await listClients()
+  }
 
   const win = (
     <window
@@ -342,27 +366,14 @@ export default function ExposeWindow(monitor: number = 0) {
 
         self.add_controller(keys)
 
-        self.connect("notify::visible", () => {
-          if (self.visible) {
-            renderClients().then(startRefreshIfNeeded).catch(print)
-          } else {
-            stopRefresh()
-          }
-        })
       }}
     >
       {scroller}
     </window>
   ) as Astal.Window
 
-
     ; (win as any).showExpose = show
     ; (win as any).hideExpose = hide
-
+  init();
   return win
 }
-
-/**
- * - gtbox valign fill 
- *
- */

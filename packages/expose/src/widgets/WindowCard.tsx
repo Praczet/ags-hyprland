@@ -24,7 +24,7 @@ function loadScaledPixbuf(path: string, targetW: number, cropH: number): GdkPixb
 
     if (height <= cropH) return scaled
 
-    return scaled.new_subpixbuf(0, 0, width, cropH)
+    return scaled?.new_subpixbuf(0, 0, width, cropH) ?? null
   } catch (e) {
     console.error("loadScaledPixbuf error", String(e))
     return null
@@ -49,6 +49,7 @@ export function WindowCardGtk(
   pic.set_valign(Gtk.Align.CENTER)
   pic.set_halign(Gtk.Align.CENTER)
   pic.set_content_fit(Gtk.ContentFit.SCALE_DOWN)
+  pic.add_css_class("rounded-corners")
 
   const rev = new Gtk.Revealer()
   rev.set_transition_type(Gtk.RevealerTransitionType.CROSSFADE)
@@ -56,7 +57,9 @@ export function WindowCardGtk(
   rev.set_reveal_child(false)
   rev.set_hexpand(true)
   rev.set_vexpand(false)
+  rev.add_css_class("rounded-corners")
   rev.height_request = thumbHeight
+
   rev.set_child(pic)
 
   const setThumb = (path: string) => {
