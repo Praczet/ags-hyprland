@@ -1,5 +1,6 @@
 import Gtk from "gi://Gtk?version=4.0"
 import Pango from "gi://Pango"
+import GdkPixbuf from "gi://GdkPixbuf"
 
 import { loadExposeConfig } from "../config"
 import type { ExposeClient } from "../store"
@@ -7,32 +8,66 @@ import { iconForClient } from "../icons"
 
 const cfg = loadExposeConfig()
 
+function loadScaledPixbuf(path: string, targetW: number, cropH: number): GdkPixbuf.Pixbuf | null {
+  try {
+    const original = GdkPixbuf.Pixbuf.new_from_file(path)
+    const ow = original.get_width()
+    const oh = original.get_height()
+    if (!ow || !oh) return original
+
+    const scale = ow > targetW ? targetW / ow : 1
+    const width = Math.max(1, Math.floor(ow * scale))
+    const height = Math.max(1, Math.floor(oh * scale))
+    const scaled = scale < 1
+      ? original.scale_simple(width, height, GdkPixbuf.InterpType.BILINEAR)
+      : original
+
+    if (height <= cropH) return scaled
+
+    return scaled?.new_subpixbuf(0, 0, width, cropH) ?? null
+  } catch (e) {
+    console.error("loadScaledPixbuf overlay error", String(e))
+    return null
+  }
+}
+
 export function WindowCardOverlayedGtk(
   client: ExposeClient,
   onActivate: (address: string) => void,
 ): { widget: Gtk.Button; setThumb: (path: string) => void } {
+  const tileHeight = cfg.minTileH
+  const thumbWidth = Math.max(160, cfg.minTileW - 40)
   const pic = Gtk.Picture.new()
-  pic.set_hexpand(true)
-  pic.set_vexpand(true)
-  pic.set_content_fit(Gtk.ContentFit.COVER)
+  pic.set_hexpand(false)
+  pic.set_vexpand(false)
+  pic.height_request = tileHeight
+  pic.set_can_shrink(true)
+  pic.set_valign(Gtk.Align.CENTER)
+  pic.set_halign(Gtk.Align.CENTER)
+  pic.set_content_fit(Gtk.ContentFit.SCALE_DOWN)
 
   const rev = new Gtk.Revealer()
   rev.set_transition_type(Gtk.RevealerTransitionType.CROSSFADE)
   rev.set_transition_duration(140)
   rev.set_reveal_child(false)
   rev.set_hexpand(true)
-  rev.set_vexpand(true)
+  rev.set_vexpand(false)
+  rev.height_request = tileHeight
   rev.set_child(pic)
 
   const setThumb = (path: string) => {
-    pic.set_filename(path)
+    const scaled = loadScaledPixbuf(path, thumbWidth, tileHeight)
+    if (scaled) pic.set_pixbuf(scaled)
+    else pic.set_filename(path)
     rev.set_reveal_child(true)
   }
 
   const overlay = new Gtk.Overlay()
   overlay.set_hexpand(true)
-  overlay.set_vexpand(true)
+  overlay.set_vexpand(false)
+  overlay.height_request = tileHeight
   overlay.set_valign(Gtk.Align.START)
+  overlay.set_overflow(Gtk.Overflow.HIDDEN)
   overlay.add_css_class("expose-thumb")
   overlay.set_child(rev)
 

@@ -69,7 +69,7 @@ export default function ExposeWindow(monitor: number = 0) {
     marginEnd: 60,
   })
 
-  flow.set_homogeneous(true)
+  flow.set_homogeneous(false)
 
   const scroller = new Gtk.ScrolledWindow({
     vexpand: true,

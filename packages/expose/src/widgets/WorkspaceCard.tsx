@@ -18,6 +18,7 @@ export function WorkspaceCardGtk(
   root.set_vexpand(true)
   root.set_valign(Gtk.Align.FILL)
   root.set_halign(Gtk.Align.FILL)
+  root.set_size_request(cfg.minTileW, -1)
   root.add_css_class("ws-card")
   if (opts.isActive) root.add_css_class("ws-card-active")
 
@@ -71,8 +72,9 @@ export function WorkspaceCardGtk(
 
   root.append(header)
   const sc = new Gtk.ScrolledWindow()
-  // sc.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-  sc.set_vexpand(true)
+  sc.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+  sc.set_propagate_natural_height(true)
+  sc.set_vexpand(false)
   sc.set_hexpand(true)
   sc.set_valign(Gtk.Align.FILL)
   sc.set_halign(Gtk.Align.FILL)
