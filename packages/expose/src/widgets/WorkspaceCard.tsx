@@ -32,7 +32,7 @@ export function WorkspaceCardGtk(
   header.add_css_class("ws-header")
 
   const title = new Gtk.Label({
-    label: `Workspace ${workspaceId}`,
+    label: workspaceId != -98 ? `Workspace: ${workspaceId}` : "🪄 Magic Workspace",
     hexpand: true,
     halign: Gtk.Align.START
   })

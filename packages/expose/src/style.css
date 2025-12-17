@@ -21,19 +21,20 @@
 
 .expose-btn {
   border-radius: 18px;
+  background: @primary_container;
   padding: 0;
 }
 
 .expose-card {
   border-radius: 18px;
-  background: @surface;
+  background: @primary_container;
   padding: 10px;
   border: 1px solid alpha(@outline, 0.4);
 }
 
 .expose-thumb {
   border-radius: 14px;
-  background: @surface;
+  background: @primary_container;
   min-height: 200px;
   margin-bottom: 10px;
 }
@@ -98,7 +99,7 @@
   border-radius: 18px;
   padding: 12px;
   font-size: 1.2rem;
-  background: @surface;
+  background: @primary_container;
 }
 
 /* The overlay pill (stretches horizontally) */

@@ -36,7 +36,7 @@ export function WindowCardOverlayedGtk(
   onActivate: (address: string) => void,
 ): { widget: Gtk.Button; setThumb: (path: string) => void } {
   const tileHeight = cfg.minTileH
-  const thumbWidth = Math.max(160, cfg.minTileW - 40)
+  const thumbWidth = Math.max(160, cfg.minTileW)
   const pic = Gtk.Picture.new()
   pic.set_hexpand(false)
   pic.set_vexpand(false)

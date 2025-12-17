@@ -39,7 +39,7 @@ export function WindowCardGtk(
   // picture without filename initially; we’ll set it later
   const tileHeight = cfg.minTileH
   const thumbHeight = Math.max(120, tileHeight - 80)
-  const thumbWidth = Math.max(160, cfg.minTileW - 40)
+  const thumbWidth = Math.max(160, cfg.minTileW)
 
   const pic = Gtk.Picture.new()
   pic.set_hexpand(false)

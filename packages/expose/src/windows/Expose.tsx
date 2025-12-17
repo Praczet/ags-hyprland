@@ -60,7 +60,7 @@ export default function ExposeWindow(monitor: number = 0) {
     selection_mode: Gtk.SelectionMode.NONE,
     valign: Gtk.Align.START,
     cssClasses: ["expose-flow"],
-    halign: Gtk.Align.FILL,
+    halign: Gtk.Align.CENTER,
     row_spacing: 30,
     column_spacing: 30,
     min_children_per_line: 3,
