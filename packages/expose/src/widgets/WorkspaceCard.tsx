@@ -12,6 +12,7 @@ export function WorkspaceCardGtk(
   onActivate: (addr: string) => void,
 ): { widget: Gtk.Widget; focusables: Gtk.Button[] } {
   const focusables: Gtk.Button[] = []
+  let focusCount = 0
 
   const root = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 10 })
   root.set_hexpand(true)
@@ -59,6 +60,19 @@ export function WorkspaceCardGtk(
   tiles.add_css_class("ws-tiles")
   tiles.set_valign(Gtk.Align.START)
 
+  const attachFocusTracking = (widget: Gtk.Widget) => {
+    const focusCtrl = new Gtk.EventControllerFocus()
+    focusCtrl.connect("enter", () => {
+      focusCount += 1
+      root.add_css_class("ws-card-focused")
+    })
+    focusCtrl.connect("leave", () => {
+      focusCount = Math.max(0, focusCount - 1)
+      if (focusCount === 0) root.remove_css_class("ws-card-focused")
+    })
+    widget.add_controller(focusCtrl)
+  }
+
   const MAX = 12
   for (const c of windows.slice(0, MAX)) {
     const b = WindowMiniTileGtk(
@@ -66,6 +80,7 @@ export function WorkspaceCardGtk(
       { showIcon: opts.isActive, iconSize: opts.iconSize },
       onActivate,
     )
+    attachFocusTracking(b)
     focusables.push(b)
     tiles.append(b)
   }

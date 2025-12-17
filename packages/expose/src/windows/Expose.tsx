@@ -311,11 +311,10 @@ export default function ExposeWindow(monitor: number = 0) {
       layer={Astal.Layer.OVERLAY}
       keymode={Astal.Keymode.ON_DEMAND}
       exclusivity={Astal.Exclusivity.IGNORE}
-      marginLeft={800}
       anchor={
         Astal.WindowAnchor.TOP |
         Astal.WindowAnchor.BOTTOM |
-        // Astal.WindowAnchor.LEFT |
+        Astal.WindowAnchor.LEFT |
         Astal.WindowAnchor.RIGHT
       }
       monitor={monitor}
@@ -329,11 +328,11 @@ export default function ExposeWindow(monitor: number = 0) {
               hide()
               return true
             }
-            if (keyval === Gdk.KEY_Tab) {
+            if (keyval === Gdk.KEY_Tab || keyval === Gdk.KEY_ISO_Left_Tab) {
               if (!focusButtons.length) return true
 
-              const shift = (state & Gdk.ModifierType.SHIFT_MASK) !== 0
-              focusIndex = (focusIndex + (shift ? -1 : 1) + focusButtons.length) % focusButtons.length
+              const backwards = keyval === Gdk.KEY_ISO_Left_Tab
+              focusIndex = (focusIndex + (backwards ? -1 : 1) + focusButtons.length) % focusButtons.length
               focusButtons[focusIndex].grab_focus()
               return true
             }

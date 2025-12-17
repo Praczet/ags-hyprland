@@ -131,7 +131,15 @@
   padding: 18px;
 }
 
+.ws-card-focused,
+.ws-tile:focus,
+.ws-tile:selected,
+.expose-btn:selected,
+.expose-btn:focus,
+.expose-btn:hover,
 .expose-ov-thumb:hover,
+.ws-card:focus,
+.ws-card:selected,
 .ws-card:hover,
 .ws-card-active {
   border: 1px solid @primary;
