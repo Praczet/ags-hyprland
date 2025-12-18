@@ -1,125 +1,131 @@
 import { Astal, Gtk } from "ags/gtk4"
-import type { OSDState } from "../types"
-import { subscribeOSD } from "../store"
+import { createComputed, createEffect } from "ags"
+import { osdState } from "../store" // your createState store
+import { timeout } from "ags/time"
+import Pango from "gi://Pango"
+
+
+const FADE_MS = 200
 
 export function OSDWindow(defaultMonitor = 0) {
+  // Derived accessors (reactive)
+  const monitor = createComputed(() => osdState().monitor ?? defaultMonitor)
   let winRef: Astal.Window | null = null
-  let cardRef: Gtk.Box | null = null
-  let iconRef: Gtk.Image | null = null
-  let labelRef: Gtk.Label | null = null
-  let valueRef: Gtk.Label | null = null
-  let levelRef: Gtk.LevelBar | null = null
-  let pendingState: OSDState | null = null
+  let hideTimer: any = null
 
-  const applyState = (state: OSDState) => {
-    if (!cardRef || !iconRef || !labelRef || !valueRef) {
-      pendingState = state
-      return
+  const cardClass = createComputed(() => {
+    const s = osdState()
+    return `osd-card ${s.visible ? "osd-card-visible" : "osd-card-hidden"}`
+  })
+
+  const iconName = createComputed(() => osdState().icon)
+
+  const title = createComputed(() => {
+    const { kind, label, muted } = osdState()
+    switch (kind) {
+      case "volume":
+        return muted ? `${label} (Muted)` : label
+      case "mic":
+        return muted ? `${label} (Muted)` : label
+      default:
+        return label
     }
-    pendingState = null
+  })
 
-    iconRef.set_from_icon_name(state.icon)
-    labelRef.set_label(state.label)
-    if (state.value !== null) {
-      valueRef.set_label(`${state.value}%`)
-      levelRef?.set_value(state.value)
-    } else {
-      valueRef.set_label("")
-    }
+  const valueText = createComputed(() => {
+    const v = osdState().value
+    if (v === null || v === undefined) return ""
+    return typeof v === "number" ? `${v}%` : String(v)
+  })
 
-    const showProgress = !!state.showProgress && state.value !== null
-    if (levelRef) {
-      levelRef.set_visible(showProgress)
-      if (showProgress && state.value !== null) {
-        levelRef.set_value(state.value)
-      }
-    }
+  const showProgress = createComputed(() => {
+    const s = osdState()
+    return !!s.showProgress && typeof s.value === "number"
+  })
 
-    if (state.visible) {
-      cardRef.remove_css_class("osd-card-hidden")
-      cardRef.add_css_class("osd-card-visible")
-    } else {
-      cardRef.remove_css_class("osd-card-visible")
-      cardRef.add_css_class("osd-card-hidden")
-    }
+  const progressValue = createComputed<number>(() => {
+    const v = osdState().value
+    return typeof v === "number" ? v : 0
+  })
+  // This is the "visible -> mapped" bridge.
+  createEffect(() => {
+    const s = osdState() // reactive dependency
+    if (!winRef) return
 
-    if (winRef) {
-      winRef.monitor = state.monitor ?? defaultMonitor
+    // Always keep monitor updated while visible
+    winRef.monitor = s.monitor ?? defaultMonitor
+
+    // Cancel pending hide if we get shown again quickly
+    hideTimer?.cancel?.()
+    hideTimer?.stop?.()
+    hideTimer?.destroy?.()
+    hideTimer = null
+
+    if (s.visible) {
+      // Map immediately so CSS can fade in
       winRef.visible = true
+    } else {
+      // Let CSS fade out, then unmap
+      hideTimer = timeout(FADE_MS, () => {
+        if (winRef) winRef.visible = false
+        hideTimer = null
+      })
     }
-  }
+  })
 
-  subscribeOSD(applyState)
-
-  const win = (
+  return (
     <window
       name="osd"
       namespace="adart-osd"
       class="osd-window"
       layer={Astal.Layer.OVERLAY}
       exclusivity={Astal.Exclusivity.IGNORE}
-      keymode={Astal.Keymode.ON_DEMAND}
+      keymode={Astal.Keymode.NONE}
       focusable={false}
-      visible={true}
+      // Start unmapped; we map when state.visible becomes true
+      visible={false}
       anchor={Astal.WindowAnchor.BOTTOM}
-      monitor={defaultMonitor}
+      monitor={monitor}
       $={(self: Astal.Window) => {
         winRef = self
-        if (pendingState) applyState(pendingState)
-      }}
-    >
-      <box class="osd-window-root" halign={Gtk.Align.CENTER} valign={Gtk.Align.END} hexpand vexpand>
-        <box
-          class="osd-card osd-card-hidden"
-          orientation={Gtk.Orientation.VERTICAL}
-          spacing={8}
-          halign={Gtk.Align.CENTER}
-          valign={Gtk.Align.END}
-          $={(self: Gtk.Box) => {
-            cardRef = self
-            if (pendingState) applyState(pendingState)
-          }}
-        >
-          <box class="osd-card-header" spacing={12} halign={Gtk.Align.CENTER} valign={Gtk.Align.CENTER}>
-            <image
-              class="osd-card-icon"
-              pixelSize={48}
-              $={(self: Gtk.Image) => {
-                iconRef = self
-                if (pendingState) applyState(pendingState)
-              }}
+      }}    >
+      <box
+        class={cardClass}
+        orientation={Gtk.Orientation.VERTICAL}
+        spacing={8}
+        halign={Gtk.Align.CENTER}
+        valign={Gtk.Align.END}
+      >
+        <box class="osd-card-header"
+          halign={Gtk.Align.FILL}
+          hexpand={true}
+          valign={Gtk.Align.CENTER}>
+          <image class="osd-card-icon" pixelSize={96} icon_name={iconName} />
+
+          <box
+            orientation={Gtk.Orientation.VERTICAL}
+            spacing={2}
+            hexpand={true}
+            halign={Gtk.Align.CENTER}
+          >
+            <label class="osd-card-label" label={title}
+              ellipsize={Pango.EllipsizeMode.END}
+              maxWidthChars={20}
+              singleLineMode={true}
             />
-            <box orientation={Gtk.Orientation.VERTICAL} spacing={2}>
-              <label
-                class="osd-card-label"
-                $={(self: Gtk.Label) => {
-                  labelRef = self
-                  if (pendingState) applyState(pendingState)
-                }}
-              />
-              <label
-                class="osd-card-value"
-                $={(self: Gtk.Label) => {
-                  valueRef = self
-                  if (pendingState) applyState(pendingState)
-                }}
-              />
-            </box>
+            <label class="osd-card-value" label={valueText} />
           </box>
-          <Gtk.LevelBar
-            class="osd-card-progress"
-            minValue={0}
-            maxValue={100}
-            visible={false}
-            $={(self: Gtk.LevelBar) => {
-              levelRef = self
-              if (pendingState) applyState(pendingState)
-            }}
-          />
         </box>
+
+        <Gtk.LevelBar
+          class="osd-card-progress"
+          mode={Gtk.LevelBarMode.CONTINUOUS}
+          minValue={0}
+          maxValue={100}
+          visible={showProgress}
+          value={progressValue}
+        />
       </box>
     </window>
   ) as Astal.Window
-
-  return win
 }

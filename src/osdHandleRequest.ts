@@ -1,4 +1,6 @@
 import { triggerBrightness, triggerCustom, triggerMic, triggerVolume } from "../packages/osd/src"
+import { triggerPlayerCtl } from "../packages/osd/src/handlers"
+import { PlayerCtlAction } from "../packages/osd/src/types"
 
 export function parseNumber(value?: string) {
   if (value === undefined) return undefined
@@ -40,6 +42,23 @@ export async function osdHandleRequest(argv: string[]): Promise<string> {
           const value = parseNumber(rest[2]) ?? null
           const showProgress = rest[3] ? rest[3].toLowerCase() === "true" : false
           await triggerCustom(icon, label, value, showProgress)
+          return "ok"
+        }
+      case "osdplayerctl":
+      case "osd_playerctl":
+      case "osdplayer":
+      case "osd_player":
+        {
+          const raw = (rest[0] ?? "").toLowerCase()
+          if (!raw) return "usage: osdPlayerCtl <pause|play|play-pause|next|prev>"
+
+          // Validate action
+          const allowed: PlayerCtlAction[] = ["pause", "play", "play-pause", "next", "prev"]
+          if (!allowed.includes(raw as PlayerCtlAction)) {
+            return "usage: osdPlayerCtl <pause|play|play-pause|next|prev>"
+          }
+
+          await triggerPlayerCtl(raw as PlayerCtlAction)
           return "ok"
         }
       default:

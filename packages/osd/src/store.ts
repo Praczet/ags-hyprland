@@ -1,9 +1,10 @@
+// store.ts
 import { createState } from "ags"
-import GLib from "gi://GLib"
 import { brightnessIcon, micIcon, volumeIcon } from "./icons"
-import type { OSDKind, OSDState, ShowOSDPayload } from "./types"
+import type { OSDState, ShowOSDPayload } from "./types"
+import { timeout } from "ags/time"
 
-const HIDE_DELAY_MS = 1600
+const HIDE_DELAY_MS = 3600
 
 const defaultState: OSDState = {
   kind: "volume",
@@ -15,51 +16,40 @@ const defaultState: OSDState = {
   showProgress: true,
 }
 
-const [state, setState] = createState<OSDState>(defaultState)
+// Accessor + setter
+export const [osdState, setOSDState] = createState<OSDState>(defaultState)
 
-let hideSource: number | null = null
+// Timer handle (type depends on AGS; keep it flexible)
+let hideTimer: any = null
 
-const listeners = new Set<(snapshot: OSDState) => void>()
-
-export function subscribeOSD(listener: (snapshot: OSDState) => void) {
-  listeners.add(listener)
-  listener(state())
-  return () => listeners.delete(listener)
-}
-
-function notify() {
-  const snapshot = state()
-  listeners.forEach(listener => listener(snapshot))
+function cancelHide() {
+  if (!hideTimer) return
+  // be defensive across possible Timer implementations
+  hideTimer.cancel?.()
+  hideTimer.stop?.()
+  hideTimer.destroy?.()
+  hideTimer = null
 }
 
 function scheduleHide() {
-  if (hideSource !== null) {
-    GLib.source_remove(hideSource)
-    hideSource = null
-  }
-
-  hideSource = GLib.timeout_add(GLib.PRIORITY_DEFAULT, HIDE_DELAY_MS, () => {
-    setState({ ...state(), visible: false })
-    notify()
-    hideSource = null
-    return GLib.SOURCE_REMOVE
+  cancelHide()
+  hideTimer = timeout(HIDE_DELAY_MS, () => {
+    setOSDState({ ...osdState.peek(), visible: false })
+    hideTimer = null
   })
 }
 
 function mergePayload(payload: ShowOSDPayload) {
-  const current = state()
-  setState({
+  const current = osdState.peek()
+  setOSDState({
     ...current,
     ...payload,
     monitor: payload.monitor ?? current.monitor ?? 0,
     showProgress: payload.showProgress ?? true,
     visible: true,
   })
-  notify()
   scheduleHide()
 }
-
-export const osdState = state
 
 export function showVolumeOSD(value: number, muted: boolean, monitor?: number) {
   mergePayload({
@@ -68,6 +58,7 @@ export function showVolumeOSD(value: number, muted: boolean, monitor?: number) {
     value,
     icon: volumeIcon(value, muted),
     monitor,
+    muted,
   })
 }
 
@@ -91,7 +82,13 @@ export function showBrightnessOSD(value: number, monitor?: number) {
   })
 }
 
-export function showGenericOSD(payload: { icon: string; label: string; value: number | null; monitor?: number; showProgress?: boolean }) {
+export function showGenericOSD(payload: {
+  icon: string
+  label: string
+  value: number | string | null
+  monitor?: number
+  showProgress?: boolean
+}) {
   mergePayload({
     kind: "custom",
     label: payload.label,
@@ -101,3 +98,4 @@ export function showGenericOSD(payload: { icon: string; label: string; value: nu
     showProgress: payload.showProgress,
   })
 }
+
