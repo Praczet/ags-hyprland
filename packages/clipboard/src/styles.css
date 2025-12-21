@@ -1,0 +1,174 @@
+/* ---------- Window & general layout ---------- */
+
+.clipboard-window {
+  /* semi-transparent so Hyprland blur shows through */
+  background-color: color-mix(
+    in srgb,
+    @surface_container_high 70%,
+    transparent 30%
+  );
+  padding: 12px 20px;
+  color: @on_surface;
+  /* subtle shadow so it floats above background */
+}
+
+/* generic buttons */
+
+.clipboard-window button {
+  color: @on_tertiary;
+  background-color: @tertiary;
+  background-image: none;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.clipboard-window button:hover {
+  background-color: @tertiary_container;
+  color: @on_tertiary_container;
+}
+
+.clipboard-window button:active {
+  background-color: @tertiary_fixed_dim;
+}
+
+/* search entry */
+
+.clipboard-window entry {
+  margin: 8px 0;
+  padding: 4px 8px;
+  background-color: @surface_container_low;
+  color: @on_surface;
+  border-radius: 8px;
+  border: 1px solid @outline_variant;
+}
+
+.clipboard-window entry:focus {
+  border-color: @primary;
+  box-shadow: 0 0 0 1px @primary;
+}
+
+/* ---------- Clip cards in FlowBox ---------- */
+
+/* outer FlowBox child – gives spacing but no visible background */
+.clipboard-window flowboxchild {
+  padding: 4px;
+  background-color: transparent;
+}
+
+/* the card itself */
+.myclip-entry {
+  min-height: 150px;
+  min-width: 150px;
+  border-radius: 12px;
+  background-color: @surface_container_lowest;
+  border: 1px solid @surface_container_low;
+
+  transition:
+    transform 120ms ease-out,
+    border-color 120ms ease-out,
+    box-shadow 120ms ease-out;
+}
+
+.myclip-entry:hover {
+  transform: translateY(-2px) scale(1.02);
+  border-color: @outline_variant;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
+}
+
+/* selection & keyboard focus apply to the card, not just the child box */
+.clipboard-window flowboxchild:selected .myclip-entry {
+  border-color: @primary;
+  background-color: transparent;
+  box-shadow:
+    0 0 0 1px @primary,
+    0 14px 35px rgba(0, 0, 0, 0.6);
+}
+
+.clipboard-window flowboxchild:focus .myclip-entry {
+  outline: 2px solid @outline;
+  outline-offset: -1px;
+}
+
+/* ---------- Card content ---------- */
+
+.myclip-header {
+  padding: 4px 6px;
+  background-color: @surface_container_high;
+  color: @on_surface;
+}
+
+.myclip-icon {
+  color: @secondary;
+}
+
+/* small “…” / meta text line */
+.myclip-header-meta {
+  color: @on_surface_variant;
+  font-size: 0.8rem;
+}
+
+.myclip-content-container {
+  background-color: @surface_variant;
+}
+
+/* text & code share base style */
+.myclip-content-code,
+.myclip-content-text {
+  padding: 10px;
+  color: @on_surface;
+}
+
+/* big color preview */
+.myclip-content-color {
+  font-size: 1.2rem;
+}
+
+/* code block look */
+.myclip-content-code {
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+  background-color: @surface_container_low;
+  color: @primary_fixed_dim;
+}
+
+.mycli-image-label {
+  color: @on_surface;
+  font-weight: bold;
+}
+
+/* ---------- Header action buttons (close / star) ---------- */
+
+button.mcl-action-btn {
+  background-color: transparent;
+  padding: 2px;
+  border-radius: 999px;
+  min-height: 18px;
+  min-width: 18px;
+  opacity: 0.25;
+  transition: all 0.3s ease;
+}
+
+button.mcl-action-btn.mcl-action--star image {
+  color: @on_surface;
+}
+
+button.mcl-action-btn.mcl-action--star.stared {
+  opacity: 1;
+}
+
+button.mcl-action-btn.mcl-action--del image {
+  color: @on_surface;
+}
+
+button.mcl-action-btn.mcl-action--del:hover image {
+  color: @error;
+}
+
+.mcl-action-btn:hover {
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+button.mcl-action-btn.stared image {
+  color: gold; /* nice light accent instead of plain gold */
+}

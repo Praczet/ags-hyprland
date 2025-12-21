@@ -1,0 +1,62 @@
+.osd-window {
+  background: transparent;
+}
+
+.osd-card {
+  min-width: 400px;
+  min-height: 120px;
+  padding: 18px 24px;
+  border-radius: 20px;
+  background: alpha(@background, 0.92);
+  color: @primary;
+  border: 1px solid alpha(@outline, 0.5);
+  box-shadow: 0 18px 50px alpha(@shadow, 0.6);
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.osd-card-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.osd-card-hidden {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.osd-card-icon {
+  color: @primary;
+}
+
+.osd-card-label {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.osd-card-value {
+  font-size: 1.2rem;
+  opacity: 0.8;
+}
+
+levelbar.osd-card-progress {
+  margin-top: 6px;
+  min-height: 8px;
+  background-color: transparent;
+  border-radius: 999px;
+}
+
+levelbar.osd-card-progress block {
+  border: none;
+  background-color: @primary;
+  min-height: 8px;
+  border-radius: 999px;
+}
+
+levelbar.osd-card-progress block.empty {
+  transition: background-color 120ms ease;
+  background-color: alpha(@primary, 0.2); /* fallback */
+}
