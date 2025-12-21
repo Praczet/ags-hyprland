@@ -4,7 +4,7 @@ import { brightnessIcon, micIcon, volumeIcon } from "./icons"
 import type { OSDState, ShowOSDPayload } from "./types"
 import { timeout } from "ags/time"
 
-const HIDE_DELAY_MS = 3600
+const HIDE_DELAY_MS = 1500
 
 const defaultState: OSDState = {
   kind: "volume",
