@@ -70,7 +70,7 @@ You’ll need:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/<your-username>/ags-hyprland.git
+   git clone https://github.com/Praczet/ags-hyprland.git
    cd ags-hyprland
    ```
 
