@@ -1,0 +1,39 @@
+.upcheck-window button {
+  background-color: unset;
+  color: unset;
+}
+.upcheck-window {
+  background-color: unset;
+  border-radius: 20px;
+}
+.main-view {
+  padding: 20px;
+  background-color: @surface;
+}
+.list-scroll-view {
+}
+.pane-title {
+  font-size: 1.2rem;
+}
+
+button.upcheck-row {
+  background-image: none;
+  background-color: @surface_container;
+  color: @on_surface;
+}
+
+button.upcheck-row:hover {
+  background-color: @surface_variant;
+}
+.row-content {
+  background-color: transparent;
+}
+.dim {
+  opacity: 0.55;
+}
+.new {
+  font-weight: 600;
+}
+.details {
+  padding: 0 20px;
+}
