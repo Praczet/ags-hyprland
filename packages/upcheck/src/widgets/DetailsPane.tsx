@@ -7,13 +7,21 @@ export default function DetailsPane() {
       hexpand={true} halign={Gtk.Align.FILL}
     >
       <stack
-        visible_child_name={detailsView()}
+        hexpand={true}
+        halign={Gtk.Align.FILL}
+        visible_child_name={detailsView.as(c => c)}
         transition_type={Gtk.StackTransitionType.CROSSFADE}
         // Use the children object to map names to widgets
         $={(self: Gtk.Stack) => {
           self.add_named(
-            <box>
-              <label class="muted" label="Select a package to see details." />
+            <box
+              halign={Gtk.Align.FILL}
+              hexpand={true}
+            >
+              <label
+                halign={Gtk.Align.CENTER}
+                hexpand={true}
+                class="muted" label="Select a package to see details." />
             </box> as Gtk.Box,
             "empty"
           )
@@ -43,22 +51,51 @@ export default function DetailsPane() {
           )
 
           self.add_named(
-            <box orientation={Gtk.Orientation.VERTICAL} spacing={6}>
-              <label
-                class="title"
-                xalign={0}
-                label={details.as(d => d?.name ?? "No")}
-              />
-              <label
-                class="muted"
-                xalign={0}
-                label={selected.as(s =>
-                  s ? `${s.oldVer} → ${s.newVer}` : ""
-                )}
-              />
+            <box
+              orientation={Gtk.Orientation.VERTICAL}
+              halign={Gtk.Align.FILL}
+              hexpand={true}
+              spacing={6}>
+              <box
+                orientation={Gtk.Orientation.HORIZONTAL}
+                class="package-header"
+                halign={Gtk.Align.FILL}
+                hexpand={true}
+                spacing={6}
+              >
+                <label
+                  class="title"
+                  xalign={1}
+                  hexpand={true}
+                  halign={Gtk.Align.START}
+                  label={details.as(d => d?.name ?? "---")}
+                />
+                <label
+                  class="muted"
+                  xalign={0}
+                  label={selected.as(s =>
+                    s ? `${s.oldVer}` : ""
+                  )}
+                />
+                <label
+                  class="muted"
+                  xalign={0}
+                  label="→"
+                />
+                <label
+                  class="new"
+                  xalign={0}
+                  label={selected.as(s =>
+                    s ? s.newVer : ""
+                  )}
+                />
+              </box>
               <label
                 wrap
                 xalign={0}
+                halign={Gtk.Align.CENTER}
+                hexpand={true}
+                class="description"
                 label={details.as(d => d?.desc ?? "")}
               />
             </box> as Gtk.Box,

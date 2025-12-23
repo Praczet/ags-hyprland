@@ -15,15 +15,19 @@ export const cache = new Map<string, PkgDetails>()
 
 
 export async function refreshUpdates() {
+  console.log("Refreshing updates...");
   setErr(null);
   setLoading(true);
+  setDetailsView("loading");
   try {
     const list = await getUpdates();
     setUpdates(list);
+    setDetailsView(list.length === 0 ? "nodata" : "empty");
   } catch (e: any) {
     const msg = String(e?.stderr ?? e?.message ?? e);
     setErr(msg);
     setUpdates([]); // optional: keep old list instead if you prefer
+
   } finally {
     setLoading(false);
   }

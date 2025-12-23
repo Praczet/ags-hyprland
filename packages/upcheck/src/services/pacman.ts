@@ -163,11 +163,19 @@ export async function selectItem(item: UpItem) {
   } catch (e) {
     if (my === reqId) {
       setErr(String(e));
-      setDetailsView("error");
+      if (my === reqId) setLoading(false);
     }
-  } finally {
-    if (my === reqId) setLoading(false);
   }
 }
+
+export async function openUpdaterTerminal() {
+  try {
+    await execAsync(["ghostty", "-e", "sudo", "pacman", "-Syu"]);
+  } catch (e) {
+    console.error("Failed to open updater terminal:", e);
+  }
+}
+
+
 
 

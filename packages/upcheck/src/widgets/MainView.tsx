@@ -2,6 +2,7 @@ import { Gtk } from "ags/gtk4";
 import DetailsPane from "./DetailsPane";
 import ListPane from "./ListPane";
 import ButtonsPane from "./ButtonsPane";
+import { updates } from "../store";
 
 export default function MainView() {
   return (
@@ -15,7 +16,7 @@ export default function MainView() {
     >
       <label
         class="pane-title"
-        label="Updates"
+        label={updates.as(u => `Updates Available: ${u.length}`)}
       />
       <box
         class="main-content"

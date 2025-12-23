@@ -13,7 +13,9 @@
 .list-scroll-view {
 }
 .pane-title {
-  font-size: 1.2rem;
+  font-size: 2rem;
+  font-weight: 600;
+  color: @primary;
 }
 
 button.upcheck-row {
@@ -28,12 +30,30 @@ button.upcheck-row:hover {
 .row-content {
   background-color: transparent;
 }
+.title {
+  font-weight: 600;
+}
 .dim {
   opacity: 0.55;
 }
 .new {
-  font-weight: 600;
+  font-weight: 400;
 }
 .details {
   padding: 0 20px;
+}
+.muted {
+  opacity: 0.38;
+}
+.description {
+  margin: 10px;
+  color: @on_surface_variant;
+}
+
+.package-header {
+  background-color: @secondary;
+  color: @on_secondary;
+  font-size: 1.5rem;
+  padding: 10px;
+  border-radius: 12px;
 }
