@@ -1,5 +1,4 @@
 import { Astal, Gdk, Gtk } from "ags/gtk4"
-import GLib from "gi://GLib"
 import { power } from "./power"
 
 type ConfirmState = {
@@ -69,8 +68,16 @@ export function PowerMenuWindows(monitor = 0) {
           action()
         }}
       >
-        <image icon-name="system-lock-screen-symbolic" pixelSize={32} />
-        <label label={label} />
+        <box
+          hexpand={true}
+          halign={Gtk.Align.CENTER}
+          widthRequest={120}
+        >
+          <image icon-name="system-lock-screen-symbolic" pixelSize={32} />
+          <label
+            margin_start={16}
+            label={label} />
+        </box>
       </button>
     )
   }
@@ -89,8 +96,18 @@ export function PowerMenuWindows(monitor = 0) {
           })
         }
       >
-        <image iconName={iconName} pixelSize={32} />
-        <label label={label} />
+        <box
+          hexpand={true}
+          halign={Gtk.Align.CENTER}
+          widthRequest={120}
+        >
+          <image iconName={iconName} pixelSize={32} />
+          <label
+            class="power-btn-label"
+            margin_start={16}
+            label={label}
+          />
+        </box>
       </button>
     )
   }
