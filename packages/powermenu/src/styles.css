@@ -1,11 +1,7 @@
 .powermenu-window {
   /* semi-transparent so Hyprland blur shows through */
-  background-color: color-mix(
-    in srgb,
-    @surface_container_high 70%,
-    transparent 30%
-  );
-  padding: 12px 20px;
+  background-color: color-mix(in srgb, @background 70%, transparent 30%);
+  padding: 100px;
   color: @on_surface;
 }
 .powermenu-confirm-window {
