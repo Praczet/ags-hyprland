@@ -12,6 +12,7 @@ import { ExposeWindow, css as exposeCss } from "../packages/expose/src"
 import { OSDWindow, initOSD, css as osdCss } from "../packages/osd/src"
 import { osdHandleRequest } from "./osdHandleRequest"
 import { exposeHandleRequest } from "./exposeHandleRequest"
+import { Upcheck, css as upcheckCss } from "../packages/upcheck/src/"
 
 
 async function handleRequest(argv: string[]) {
@@ -23,7 +24,7 @@ async function handleRequest(argv: string[]) {
 
 app.start({
   instanceName: "adart",
-  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss,
+  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss,
   requestHandler(argv, respond) {
     handleRequest(argv)
       .then(respond)
@@ -44,6 +45,9 @@ app.start({
 
     const osdWin = OSDWindow(0)
     app.add_window(osdWin)
+
+    const upcheckWin = Upcheck(0)
+    app.add_window(upcheckWin)
 
       ; (globalThis as any).toggleClipboard = () =>
         clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())
