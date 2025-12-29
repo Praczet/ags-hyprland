@@ -15,6 +15,7 @@ What you’ll find here:
 - a clipboard manager inspired by Pano (but less opinionated),
 - an Exposé-style window picker that feels better _to me_ than a flat rofi list,
 - small OSDs and a power menu (half practical, half an excuse to learn AGS properly),
+- a dashboard overlay with configurable widgets (calendar, weather, clocks),
 - and a lot of little details that exist simply because they annoyed me elsewhere.
 
 Not that there’s anything wrong with **rofi** — quite the opposite.  
@@ -88,6 +89,7 @@ You’ll need:
 - `shared/` – shared utilities and styles
 - `ags-configs/` – AGS-specific configuration fragments
 - `packages/` – feature modules (clipboard, expose, OSDs, etc.)
+- `packages/dashboard/` – dashboard widgets and Google integration
 - `scripts/` – helper scripts used from Hyprland keybinds
 - `widget/`, `playground/` – local experiments (git-ignored)
 
@@ -113,6 +115,44 @@ APP="$REPO_DIR/src/app.ts"
 
 "$REPO_DIR/scripts/ags-ensure.sh" "$INSTANCE" "$APP"
 ```
+
+Dashboard toggle script:
+
+```bash
+scripts/adart-dashboard.sh
+```
+
+## Dashboard Configuration
+
+Dashboard config lives at `~/.config/ags/dashboard.json`. The widget list is flexible; add or remove widgets and control layout with `col`, `row`, and spans.
+
+Minimal example:
+
+```json
+{
+  "widgets": [
+    { "id": "clock", "type": "clock", "col": 1, "row": 1 },
+    { "id": "calendar", "type": "calendar", "col": 2, "row": 1 }
+  ]
+}
+```
+
+For full options (weather, analog clock, custom widgets), see `packages/dashboard/README.md`.
+
+## Google Calendar & Tasks Auth
+
+The dashboard can pull calendar data and tasks using Google OAuth.
+
+1) Create a **Desktop** OAuth client in Google Cloud Console.  
+2) Add `http://localhost:8765` to the redirect URIs.  
+3) Save credentials to `~/.config/ags/google-credentials.json`.  
+4) Run:
+
+```bash
+node scripts/google-auth-device.js
+```
+
+This creates `~/.config/ags/google-tokens.json`, which the dashboard uses for refresh tokens (Calendar + Tasks scopes).
 
 The instance name `adart` is my personal namespace (AdamDruzdArt).  
 It is intentionally hard-coded in a few places — this repo is first and foremost _my_ setup.
