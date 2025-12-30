@@ -1,10 +1,13 @@
 # Dashboard package
 
 ## Intro
+
 Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, TickTick). Configuration lives in `~/.config/ags/dashboard.json`.
 
 ## Configuration
+
 Top-level keys:
+
 - `google`: Calendar + Tasks integration.
 - `ticktick`: TickTick tasks integration.
 - `widgets`: widget list with grid placement and per-widget config.
@@ -51,6 +54,7 @@ Custom widgets live in `~/.config/ags/dashboard-widgets/<name>.js`.
 ## Widgets
 
 ### Calendar
+
 `markedDates` accepts `YYYY-MM-DD`. `useGoogle` pulls marks from Google calendars. `showEvents` renders an embedded event list (same renderer as the Next Event widget), and `noEvents` caps it.
 
 ```json
@@ -131,6 +135,7 @@ Custom widgets live in `~/.config/ags/dashboard-widgets/<name>.js`.
 ```
 
 ### Weather
+
 Requires `latitude` + `longitude`.
 
 ```json
@@ -156,6 +161,7 @@ Requires `latitude` + `longitude`.
 ```
 
 ### Tasks (Google)
+
 Groups tasks by Overdue / Today / Tomorrow / Future. Requires Tasks scope.
 
 ```json
@@ -178,6 +184,7 @@ Groups tasks by Overdue / Today / Tomorrow / Future. Requires Tasks scope.
 ```
 
 ### TickTick
+
 `mode: "tasks"` groups by Overdue / Today / Tomorrow / Future. `mode: "projects"` groups by project.
 
 ```json
@@ -232,6 +239,7 @@ export default function Widget(config) {
 ```
 
 ## Google auth
+
 Authorize (loopback flow, Desktop client). Make sure you grant Calendar + Tasks scopes:
 
 ```bash
@@ -261,6 +269,7 @@ Example Google section (multiple calendars with colors):
 ```
 
 ## TickTick auth
+
 Create an OAuth app, request `tasks:read`, and exchange the code for a token. The helper script uses loopback OAuth (no redirect URI required by TickTick):
 
 ```bash

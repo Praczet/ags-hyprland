@@ -62,4 +62,3 @@ The script just ensures the `adart` instance is running and sends `toggleExpose`
 - Hard-coded instance name (`adart`) is intentional.
 - This is not a generic window switcher framework.
 - If you prefer lists: use rofi. Seriously — it’s excellent.
-

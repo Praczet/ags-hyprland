@@ -1,4 +1,4 @@
-https://github.com/user-attachments/assets/90462704-715d-4615-8af8-67b285b82722
+<https://github.com/user-attachments/assets/90462704-715d-4615-8af8-67b285b82722>
 
 # AGS + Hyprland — my personal shell experiments
 
@@ -97,11 +97,13 @@ You’ll need:
 
 ## Package READMEs
 
-- Clipboard: `packages/clipboard/README.md`
-- Expose: `packages/expose/README.md`
-- OSD: `packages/osd/README.md`
-- Power menu: `packages/powermenu/README.md`
-- Dashboard: `packages/dashboard/README.md`
+- Packages index: [README](packages/README.md)
+- Clipboard: [README](packages/clipboard/README.md)
+- Expose: [README](packages/expose/README.md)
+- OSD: [README](packages/osd/README.md)
+- Power menu: [README](packages/powermenu/README.md)
+- Dashboard: [README](packages/dashboard/README.md)
+- Upcheck: [README](packages/upcheck/README.md)
 
 ---
 
