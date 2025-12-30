@@ -1,5 +1,7 @@
 # AGS Exposé — windows, but spatial
 
+<img width="3463" height="637" alt="2025-12-30-165031_hyprshot" src="https://github.com/user-attachments/assets/1f33aa82-30a7-44e2-936e-dd4b76d913ce" />
+
 This package implements an **Exposé-style window overview** for AGS on Hyprland.
 
 I like seeing windows as _things in space_, not as a text list.  
