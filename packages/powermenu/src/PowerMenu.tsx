@@ -1,5 +1,4 @@
 import { Astal, Gdk, Gtk } from "ags/gtk4"
-import GLib from "gi://GLib"
 import { power } from "./power"
 
 type ConfirmState = {
@@ -69,8 +68,16 @@ export function PowerMenuWindows(monitor = 0) {
           action()
         }}
       >
-        <image icon-name="system-lock-screen-symbolic" pixelSize={32} />
-        <label label={label} />
+        <box
+          hexpand={true}
+          halign={Gtk.Align.CENTER}
+          widthRequest={120}
+        >
+          <image icon-name="system-lock-screen-symbolic" pixelSize={32} />
+          <label
+            margin_start={16}
+            label={label} />
+        </box>
       </button>
     )
   }
@@ -89,8 +96,18 @@ export function PowerMenuWindows(monitor = 0) {
           })
         }
       >
-        <image iconName={iconName} pixelSize={32} />
-        <label label={label} />
+        <box
+          hexpand={true}
+          halign={Gtk.Align.CENTER}
+          widthRequest={120}
+        >
+          <image iconName={iconName} pixelSize={32} />
+          <label
+            class="power-btn-label"
+            margin_start={16}
+            label={label}
+          />
+        </box>
       </button>
     )
   }
@@ -104,10 +121,13 @@ export function PowerMenuWindows(monitor = 0) {
       namespace="adart-powermenu"
       monitor={monitor}
       visible={false}
-      keymode={Astal.Keymode.ON_DEMAND}
+      keymode={Astal.Keymode.EXCLUSIVE}
+      exclusivity={Astal.Exclusivity.IGNORE}
+      layer={Astal.Layer.OVERLAY}
       anchor={
         Astal.WindowAnchor.TOP |
-        Astal.WindowAnchor.RIGHT
+        Astal.WindowAnchor.RIGHT |
+        Astal.WindowAnchor.BOTTOM
       }
       $={(w: Gtk.Window) => {
         mainWin = w
@@ -122,27 +142,26 @@ export function PowerMenuWindows(monitor = 0) {
         })
         w.add_controller(key)
 
-        // 2) Clicking outside (i.e., on the window background) closes
-        // This works best if the window covers the screen area for that anchor.
         const click = new Gtk.GestureClick()
-        click.connect("pressed", (_g, _nPress, x, y) => {
-          const picked = w.pick(x, y, Gtk.PickFlags.DEFAULT)
+        click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE);
+        click.connect("pressed", (gesture, _nPress, x, y) => {
+          const child = w.get_child();
+          if (child) {
+            const alloc = child.get_allocation();
+            const isInside = (
+              x >= alloc.x &&
+              x <= alloc.x + alloc.width &&
+              y >= alloc.y &&
+              y <= alloc.y + alloc.height
+            );
 
-          // If click didn't hit a child widget (or you hit the window itself),
-          // treat it as "outside" and close.
-          if (!picked || picked === w) {
-            w.hide()
+            if (!isInside) {
+              w.hide();
+              gesture.set_state(Gtk.EventSequenceState.CLAIMED);
+            }
           }
         })
         w.add_controller(click)
-
-        // w.connect("notify::is-active", () => {
-        //   // delay a tiny bit to avoid races right after present()
-        //   GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => {
-        //     if (w.visible && !w.is_active) w.hide()
-        //     return GLib.SOURCE_REMOVE
-        //   })
-        // })
       }}
       onShow={() => firstBtn?.grab_focus()}
     >
@@ -177,7 +196,7 @@ export function PowerMenuWindows(monitor = 0) {
       visible={false}
       exclusivity={Astal.Exclusivity.IGNORE}
       layer={Astal.Layer.OVERLAY}
-      keymode={Astal.Keymode.ON_DEMAND}
+      keymode={Astal.Keymode.EXCLUSIVE}
       anchor={
         Astal.WindowAnchor.TOP |
         Astal.WindowAnchor.RIGHT |
@@ -202,10 +221,25 @@ export function PowerMenuWindows(monitor = 0) {
         w.add_controller(key)
 
         const click = new Gtk.GestureClick()
-        click.connect("pressed", (_g, _nPress, x, y) => {
-          const picked = w.pick(x, y, Gtk.PickFlags.DEFAULT)
-          if (!picked || picked === w) {
-            w.hide()
+        click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE);
+        click.connect("pressed", (gesture, _nPress, x, y) => {
+          const child = w.get_child();
+          console.log(child);
+          if (child) {
+            // Check if the click (x, y) is inside the MainView's allocation
+            const alloc = child.get_allocation();
+
+            const isInside = (
+              x >= alloc.x &&
+              x <= alloc.x + alloc.width &&
+              y >= alloc.y &&
+              y <= alloc.y + alloc.height
+            );
+
+            if (!isInside) {
+              w.hide();
+              gesture.set_state(Gtk.EventSequenceState.CLAIMED);
+            }
           }
         })
         w.add_controller(click)
