@@ -33,11 +33,6 @@ export function initTickTickState() {
           projectName: name,
           projectColor: color,
         })
-        if ((t.title ?? "").includes("TO FIX - Replace water tap filters")) {
-          if (t.id && (t.projectId ?? p.id)) {
-            await fetchTaskById(cfg.accessToken, t.projectId ?? p.id, t.id)
-          }
-        }
       }
     }
 

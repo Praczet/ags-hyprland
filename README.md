@@ -151,10 +151,10 @@ For full options (weather, analog clock, custom widgets), see `packages/dashboar
 
 The dashboard can pull calendar data and tasks using Google OAuth.
 
-1) Create a **Desktop** OAuth client in Google Cloud Console.  
-2) Add `http://localhost:8765` to the redirect URIs.  
-3) Save credentials to `~/.config/ags/google-credentials.json`.  
-4) Run:
+1. Create a **Desktop** OAuth client in Google Cloud Console.
+2. Add `http://localhost:8765` to the redirect URIs.
+3. Save credentials to `~/.config/ags/google-credentials.json`.
+4. Run:
 
 ```bash
 node scripts/google-auth-device.js
@@ -166,14 +166,14 @@ This creates `~/.config/ags/google-tokens.json`, which the dashboard uses for re
 
 TickTick widgets use OAuth access tokens.
 
-1) Create a TickTick OAuth app.  
-2) Use the helper script:
+1. Create a TickTick OAuth app.
+2. Use the helper script:
 
 ```bash
 node scripts/ticktick-auth.js <clientId> <clientSecret>
 ```
 
-3) Paste the `access_token` into `~/.config/ags/dashboard.json` under `ticktick.accessToken`.
+1. Paste the `access_token` into `~/.config/ags/dashboard.json` under `ticktick.accessToken`.
 
 The instance name `adart` is my personal namespace (AdamDruzdArt).  
 It is intentionally hard-coded in a few places — this repo is first and foremost _my_ setup.
@@ -204,8 +204,8 @@ npm run format
 
 ## Credits
 
-Big thanks to HyprAccelerator (and especially HyperAccelerator) for the detailed Hyprland workflows and explanations.  
-Those guides saved me a lot of time — and probably a few unnecessary rewrites — while I was figuring out how all the moving parts fit together.
+Big thanks to [HyprAccelerator](https://saneaspect.gumroad.com/l/hypraccelerator) for the detailed Hyprland workflows and explanations.  
+Those guides saved me a lot of time — and probably a few unnecessary rewrites — while I was figuring out how all the moving parts in Hyprland fit together.
 
 ---
 
