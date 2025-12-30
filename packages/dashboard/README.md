@@ -1,26 +1,15 @@
 # Dashboard package
 
-Overlay dashboard with configurable widgets (calendar, next event, weather, clock).
+## Intro
+Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, TickTick). Configuration lives in `~/.config/ags/dashboard.json`.
 
-Config file: `~/.config/ags/dashboard.json`
+## Configuration
+Top-level keys:
+- `google`: Calendar + Tasks integration.
+- `ticktick`: TickTick tasks integration.
+- `widgets`: widget list with grid placement and per-widget config.
 
-Example Google section (multiple calendars with colors):
-
-```json
-{
-  "google": {
-    "credentialsPath": "~/.config/ags/google-credentials.json",
-    "tokensPath": "~/.config/ags/google-tokens.json",
-    "calendars": [
-      { "id": "primary", "color": "#4f46e5", "label": "Personal" },
-      { "id": "work@domain.com", "color": "#10b981", "label": "Work" }
-    ],
-    "gmailQuery": "is:unread label:inbox category:primary"
-  }
-}
-```
-
-Clock widget config example (hide title):
+Widget chrome toggles (apply to any widget):
 
 ```json
 {
@@ -30,62 +19,39 @@ Clock widget config example (hide title):
       "type": "clock",
       "col": 1,
       "row": 1,
-      "config": {
-        "showTitle": false,
-        "timeFormat": "%H:%M",
-        "dateFormat": "%A, %Y-%m-%d"
-      }
+      "showBackground": false,
+      "showBorder": false,
+      "showShadow": false
     }
   ]
 }
 ```
 
-You can use the same `showTitle` flag for other widgets (weather, calendar, next-event).
-
-Weather widget example (lat/lon required):
+Widget sizing (optional):
 
 ```json
 {
   "widgets": [
     {
-      "id": "weather",
-      "type": "weather",
-      "col": 1,
-      "row": 2,
-      "config": {
-        "city": "Warsaw",
-        "latitude": 52.2297,
-        "longitude": 21.0122,
-        "unit": "c",
-        "refreshMins": 10
-      }
-    }
-  ]
-}
-```
-
-Calendar widget example with marked dates:
-
-```json
-{
-  "widgets": [
-    {
-      "id": "calendar",
-      "type": "calendar",
-      "col": 3,
+      "id": "tasks",
+      "type": "tasks",
+      "col": 5,
       "row": 1,
-      "config": {
-        "markedDates": [
-          "2025-11-30",
-          "2025-12-05"
-        ]
-      }
+      "rowSpan": 2,
+      "expandX": true,
+      "expandY": true,
+      "minHeight": 420
     }
   ]
 }
 ```
 
-Calendar widget with embedded events:
+Custom widgets live in `~/.config/ags/dashboard-widgets/<name>.js`.
+
+## Widgets
+
+### Calendar
+`markedDates` accepts `YYYY-MM-DD`. `useGoogle` pulls marks from Google calendars. `showEvents` renders an embedded event list (same renderer as the Next Event widget), and `noEvents` caps it.
 
 ```json
 {
@@ -105,25 +71,11 @@ Calendar widget with embedded events:
 }
 ```
 
-Google Calendar integration example:
+### Next Event
 
 ```json
 {
-  "google": {
-    "credentialsPath": "~/.config/ags/google-credentials.json",
-    "tokensPath": "~/.config/ags/google-tokens.json",
-    "calendars": [
-      { "id": "primary", "color": "#4f46e5", "label": "Personal" }
-    ]
-  },
   "widgets": [
-    {
-      "id": "calendar",
-      "type": "calendar",
-      "col": 3,
-      "row": 1,
-      "config": { "useGoogle": true }
-    },
     {
       "id": "next-event",
       "type": "next-event",
@@ -135,40 +87,27 @@ Google Calendar integration example:
 }
 ```
 
-Authorize (loopback flow, Desktop client). Make sure you grant Calendar + Tasks scopes:
-
-```bash
-node scripts/google-auth-device.js
-```
-
-Make sure your OAuth client has this redirect URI:
-
-```
-http://localhost:8765
-```
-
-Google Tasks widget example:
+### Clock
 
 ```json
 {
-  "google": {
-    "taskListId": "TASK_LIST_ID",
-    "taskMaxItems": 20,
-    "taskShowCompleted": false
-  },
   "widgets": [
     {
-      "id": "tasks",
-      "type": "tasks",
+      "id": "clock",
+      "type": "clock",
       "col": 1,
-      "row": 3,
-      "config": { "useGoogle": true, "maxItems": 10 }
+      "row": 1,
+      "config": {
+        "showTitle": false,
+        "timeFormat": "%H:%M",
+        "dateFormat": "%A, %Y-%m-%d"
+      }
     }
   ]
 }
 ```
 
-Analog clock widget example:
+### Analog Clock
 
 ```json
 {
@@ -191,7 +130,79 @@ Analog clock widget example:
 }
 ```
 
-Custom widget (runtime JS) example:
+### Weather
+Requires `latitude` + `longitude`.
+
+```json
+{
+  "widgets": [
+    {
+      "id": "weather",
+      "type": "weather",
+      "col": 1,
+      "row": 2,
+      "config": {
+        "city": "Warsaw",
+        "latitude": 52.2297,
+        "longitude": 21.0122,
+        "unit": "c",
+        "refreshMins": 10,
+        "nextDays": true,
+        "nextDaysCount": 7
+      }
+    }
+  ]
+}
+```
+
+### Tasks (Google)
+Groups tasks by Overdue / Today / Tomorrow / Future. Requires Tasks scope.
+
+```json
+{
+  "google": {
+    "taskListId": "TASK_LIST_ID",
+    "taskMaxItems": 20,
+    "taskShowCompleted": false
+  },
+  "widgets": [
+    {
+      "id": "tasks",
+      "type": "tasks",
+      "col": 1,
+      "row": 3,
+      "config": { "useGoogle": true, "maxItems": 10 }
+    }
+  ]
+}
+```
+
+### TickTick
+`mode: "tasks"` groups by Overdue / Today / Tomorrow / Future. `mode: "projects"` groups by project.
+
+```json
+{
+  "ticktick": {
+    "accessToken": "TICKTICK_ACCESS_TOKEN",
+    "refreshMins": 5,
+    "showCompleted": false
+  },
+  "widgets": [
+    {
+      "id": "ticktick",
+      "type": "ticktick",
+      "col": 2,
+      "row": 3,
+      "config": {
+        "mode": "tasks",
+        "maxItems": 20
+      }
+    }
+  ]
+}
+```
+
+### Custom
 
 ```json
 {
@@ -208,28 +219,7 @@ Custom widget (runtime JS) example:
 }
 ```
 
-Widget chrome toggles (apply to any widget):
-
-```json
-{
-  "widgets": [
-    {
-      "id": "clock",
-      "type": "clock",
-      "col": 1,
-      "row": 1,
-      "showBackground": false,
-      "showBorder": false,
-      "showShadow": false
-    }
-  ]
-}
-```
-
-Place the file at:
-`~/.config/ags/dashboard-widgets/my-widget.js`
-
-Example module:
+Example module (`~/.config/ags/dashboard-widgets/my-widget.js`):
 
 ```js
 import Gtk from "gi://Gtk"
@@ -239,4 +229,40 @@ export default function Widget(config) {
   box.append(new Gtk.Label({ label: "Hello custom widget" }))
   return box
 }
+```
+
+## Google auth
+Authorize (loopback flow, Desktop client). Make sure you grant Calendar + Tasks scopes:
+
+```bash
+node scripts/google-auth-device.js
+```
+
+Your OAuth client must include this redirect URI:
+
+```
+http://localhost:8765
+```
+
+Example Google section (multiple calendars with colors):
+
+```json
+{
+  "google": {
+    "credentialsPath": "~/.config/ags/google-credentials.json",
+    "tokensPath": "~/.config/ags/google-tokens.json",
+    "calendars": [
+      { "id": "primary", "color": "#4f46e5", "label": "Personal" },
+      { "id": "work@domain.com", "color": "#10b981", "label": "Work" }
+    ],
+    "refreshMins": 10
+  }
+}
+```
+
+## TickTick auth
+Create an OAuth app, request `tasks:read`, and exchange the code for a token. The helper script uses loopback OAuth (no redirect URI required by TickTick):
+
+```bash
+node scripts/ticktick-auth.js <clientId> <clientSecret>
 ```

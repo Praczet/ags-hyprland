@@ -60,10 +60,17 @@ export function initGoogleCalendarState(): GoogleCalendarState {
 
   refresh().catch(err => console.error("google calendar refresh:", err))
 
-  GLib.timeout_add(GLib.PRIORITY_DEFAULT, 5 * 60 * 1000, () => {
+  const refreshMins = cfgRefreshMins()
+  GLib.timeout_add(GLib.PRIORITY_DEFAULT, refreshMins * 60 * 1000, () => {
     refresh().catch(err => console.error("google calendar refresh:", err))
     return GLib.SOURCE_CONTINUE
   })
+
+  function cfgRefreshMins() {
+    const cfg = loadDashboardConfig().google
+    if (!cfg) return 10
+    return Number.isFinite(Number(cfg.refreshMins)) ? Math.max(1, Math.floor(Number(cfg.refreshMins))) : 10
+  }
 
   return { markedDates, nextEvent, events, tasks, taskListTitle, refresh }
 }

@@ -4,8 +4,8 @@ export function WidgetFrame(title: string | undefined, body: Gtk.Widget) {
   return (
     <box class="dashboard-widget-inner" orientation={Gtk.Orientation.VERTICAL} spacing={8}>
       {title ? (
-        <box halign={Gtk.Align.CENTER} class="dashboard-widget-title-pill">
-          <label class="dashboard-widget-title" label={title} halign={Gtk.Align.CENTER} />
+        <box class="dashboard-widget-title-wrap" hexpand={true}>
+          <label class="dashboard-widget-title" label={title} halign={Gtk.Align.CENTER} hexpand={true} />
         </box>
       ) : null}
       {body}

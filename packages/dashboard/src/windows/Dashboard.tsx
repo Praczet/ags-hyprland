@@ -9,6 +9,8 @@ import { AnalogClockWidget, type AnalogClockConfig } from "../widgets/AnalogCloc
 import { initGoogleCalendarState } from "../services/googleState"
 import { mountCustomWidget } from "../widgets/customLoader"
 import { TasksWidget, type TasksConfig } from "../widgets/Tasks"
+import { TickTickWidget, type TickTickConfig } from "../widgets/TickTick"
+import { initTickTickState } from "../services/ticktickState"
 
 type WidgetFactory = (cfg: DashboardWidgetConfig) => Gtk.Widget
 
@@ -49,6 +51,8 @@ function toWeatherConfig(cfg: DashboardWidgetConfig): WeatherConfig {
     longitude: Number.isFinite(Number(raw.longitude)) ? Number(raw.longitude) : undefined,
     unit: raw.unit === "f" ? "f" : "c",
     refreshMins: Number.isFinite(Number(raw.refreshMins)) ? Number(raw.refreshMins) : undefined,
+    nextDays: typeof raw.nextDays === "boolean" ? raw.nextDays : undefined,
+    nextDaysCount: Number.isFinite(Number(raw.nextDaysCount)) ? Number(raw.nextDaysCount) : undefined,
   }
 }
 
@@ -86,10 +90,22 @@ function toTasksConfig(cfg: DashboardWidgetConfig): TasksConfig {
   }
 }
 
+function toTickTickConfig(cfg: DashboardWidgetConfig): TickTickConfig {
+  const raw = isObject(cfg.config) ? cfg.config : {}
+  return {
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
+    mode: raw.mode === "projects" ? "projects" : "tasks",
+    maxItems: Number.isFinite(Number(raw.maxItems)) ? Math.floor(Number(raw.maxItems)) : undefined,
+  }
+}
+
 export default function DashboardWindow(monitor: number = 0) {
   const cfg = loadDashboardConfig()
   const usesGoogle = cfg.widgets.some(w => w.type === "tasks" || (isObject(w.config) && (w.config as any).useGoogle === true))
+  const usesTickTick = cfg.widgets.some(w => w.type === "ticktick")
   const google = usesGoogle ? initGoogleCalendarState() : null
+  const ticktick = usesTickTick ? initTickTickState() : null
   const registry: Record<DashboardWidgetType, WidgetFactory> = {
     clock: (cfg) => ClockWidget(toClockConfig(cfg)),
     "analog-clock": (cfg) => AnalogClockWidget(toTitleConfig(cfg) as AnalogClockConfig),
@@ -114,6 +130,11 @@ export default function DashboardWindow(monitor: number = 0) {
         tcfg.listTitle = google.taskListTitle
       }
       return TasksWidget(tcfg)
+    },
+    ticktick: (cfg) => {
+      const tcfg = toTickTickConfig(cfg)
+      if (ticktick) tcfg.tasks = ticktick.tasks
+      return TickTickWidget(tcfg)
     },
     custom: (cfg) => {
       const host = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
@@ -150,6 +171,16 @@ export default function DashboardWindow(monitor: number = 0) {
     })
     wrapper.set_hexpand(false)
     wrapper.set_vexpand(false)
+    if (w.expandX) {
+      wrapper.set_hexpand(true)
+      wrapper.set_halign(Gtk.Align.FILL)
+    }
+    if (w.expandY) {
+      wrapper.set_vexpand(true)
+      wrapper.set_valign(Gtk.Align.FILL)
+    }
+    if (typeof w.minWidth === "number") wrapper.set_size_request(w.minWidth, -1)
+    if (typeof w.minHeight === "number") wrapper.set_size_request(-1, w.minHeight)
     if (w.showBackground === false) wrapper.add_css_class("dashboard-widget-no-bg")
     if (w.showBorder === false) wrapper.add_css_class("dashboard-widget-no-border")
     if (w.showShadow === false) wrapper.add_css_class("dashboard-widget-no-shadow")

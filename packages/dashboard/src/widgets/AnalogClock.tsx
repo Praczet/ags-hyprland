@@ -154,6 +154,7 @@ export function AnalogClockWidget(cfg: AnalogClockConfig = {}) {
   if (showDigital) {
     const wrap = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
     wrap.add_css_class("dashboard-analog-digital-wrap")
+    wrap.set_margin_top(Math.round(size * 0.8) - 24)
     wrap.append(digitalLabel)
     overlay.add_overlay(wrap)
   }

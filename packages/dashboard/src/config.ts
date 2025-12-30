@@ -6,7 +6,7 @@ export type CalendarSource = {
   label?: string
 }
 
-export type DashboardWidgetType = "clock" | "analog-clock" | "weather" | "calendar" | "next-event" | "tasks" | "custom"
+export type DashboardWidgetType = "clock" | "analog-clock" | "weather" | "calendar" | "next-event" | "tasks" | "ticktick" | "custom"
 
 export type DashboardWidgetConfig = {
   id: string
@@ -20,6 +20,10 @@ export type DashboardWidgetConfig = {
   showBackground?: boolean
   showBorder?: boolean
   showShadow?: boolean
+  expandX?: boolean
+  expandY?: boolean
+  minWidth?: number
+  minHeight?: number
   config?: Record<string, unknown>
 }
 
@@ -34,15 +38,24 @@ export type GoogleConfig = {
   tokensPath: string
   calendars: CalendarSource[]
   gmailQuery?: string
+  refreshMins?: number
   taskListId?: string
   taskMaxItems?: number
   taskShowCompleted?: boolean
+}
+
+export type TickTickConfig = {
+  accessToken?: string
+  projectIds?: string[]
+  refreshMins?: number
+  showCompleted?: boolean
 }
 
 export type DashboardConfig = {
   layout: DashboardLayout
   widgets: DashboardWidgetConfig[]
   google?: GoogleConfig
+  ticktick?: TickTickConfig
 }
 
 const defaultConfig: DashboardConfig = {
@@ -63,8 +76,13 @@ const defaultConfig: DashboardConfig = {
     tokensPath: "~/.config/ags/google-tokens.json",
     calendars: [{ id: "primary" }],
     gmailQuery: "is:unread label:inbox category:primary",
+    refreshMins: 10,
     taskMaxItems: 20,
     taskShowCompleted: false,
+  },
+  ticktick: {
+    refreshMins: 5,
+    showCompleted: false,
   },
 }
 
@@ -93,6 +111,7 @@ export function loadDashboardConfig(): DashboardConfig {
   const layout = isObject(u.layout) ? u.layout : {}
   const widgets = Array.isArray(u.widgets) ? u.widgets.filter(isObject) : []
   const g = isObject(u.google) ? u.google : {}
+  const t = isObject(u.ticktick) ? u.ticktick : {}
   const calendars = Array.isArray(g.calendars) ? g.calendars.filter(isObject) : []
 
   return {
@@ -105,7 +124,7 @@ export function loadDashboardConfig(): DashboardConfig {
       ? widgets.map(w => ({
         id: typeof w.id === "string" ? w.id : "widget",
         type: (typeof w.type === "string"
-          && ["clock", "analog-clock", "weather", "calendar", "next-event", "tasks", "custom"].includes(w.type))
+          && ["clock", "analog-clock", "weather", "calendar", "next-event", "tasks", "ticktick", "custom"].includes(w.type))
           ? (w.type as DashboardWidgetType)
           : "clock",
         col: Number.isFinite(Number(w.col)) ? Math.max(1, Math.floor(Number(w.col))) : 1,
@@ -120,6 +139,10 @@ export function loadDashboardConfig(): DashboardConfig {
         showBackground: typeof w.showBackground === "boolean" ? w.showBackground : undefined,
         showBorder: typeof w.showBorder === "boolean" ? w.showBorder : undefined,
         showShadow: typeof w.showShadow === "boolean" ? w.showShadow : undefined,
+        expandX: typeof w.expandX === "boolean" ? w.expandX : undefined,
+        expandY: typeof w.expandY === "boolean" ? w.expandY : undefined,
+        minWidth: Number.isFinite(Number(w.minWidth)) ? Math.floor(Number(w.minWidth)) : undefined,
+        minHeight: Number.isFinite(Number(w.minHeight)) ? Math.floor(Number(w.minHeight)) : undefined,
         config: isObject(w.config) ? w.config : undefined,
       }))
       : defaultConfig.widgets,
@@ -138,9 +161,18 @@ export function loadDashboardConfig(): DashboardConfig {
         }))
         : defaultConfig.google!.calendars,
       gmailQuery: typeof g.gmailQuery === "string" ? g.gmailQuery : defaultConfig.google!.gmailQuery,
+      refreshMins: Number.isFinite(Number(g.refreshMins)) ? Math.floor(Number(g.refreshMins)) : defaultConfig.google!.refreshMins,
       taskListId: typeof g.taskListId === "string" ? g.taskListId : undefined,
       taskMaxItems: Number.isFinite(Number(g.taskMaxItems)) ? Math.floor(Number(g.taskMaxItems)) : undefined,
       taskShowCompleted: typeof g.taskShowCompleted === "boolean" ? g.taskShowCompleted : undefined,
+    },
+    ticktick: {
+      accessToken: typeof t.accessToken === "string" ? t.accessToken : undefined,
+      projectIds: Array.isArray(t.projectIds)
+        ? t.projectIds.filter((id: unknown) => typeof id === "string")
+        : undefined,
+      refreshMins: Number.isFinite(Number(t.refreshMins)) ? Math.floor(Number(t.refreshMins)) : defaultConfig.ticktick!.refreshMins,
+      showCompleted: typeof t.showCompleted === "boolean" ? t.showCompleted : defaultConfig.ticktick!.showCompleted,
     },
   }
 }

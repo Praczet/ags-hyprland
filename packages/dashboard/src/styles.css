@@ -161,19 +161,16 @@
   transform: translate(3800px, 3800px);
 }
 
-.dashboard-widget-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  padding: 4px 12px;
+.dashboard-widget-title-wrap {
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid alpha(@outline, 0.35);
 }
 
-.dashboard-widget-title-pill {
-  background: alpha(@background, 0.8);
-  border: 1px solid alpha(@outline, 0.5);
-  border-radius: 999px;
-  margin-top: -24px;
-  margin-bottom: 12px;
-  padding: 2px;
+.dashboard-widget-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  padding: 0;
 }
 
 .dashboard-widget-error {
@@ -195,6 +192,23 @@
   padding: 4px 0;
 }
 
+.dashboard-task-group {
+  font-weight: 600;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.dashboard-task-title {
+}
+
+.dashboard-task-overdue .dashboard-task-title {
+  color: @error;
+}
+
+.dashboard-task-today .dashboard-task-title {
+  color: @primary;
+}
+
 .dashboard-task-due {
   opacity: 0.7;
   font-size: 0.9rem;
@@ -211,6 +225,38 @@
   color: @secondary;
 }
 
+.dashboard-weather-forecast {
+  margin-top: 8px;
+}
+
+.dashboard-weather-forecast-row label {
+  font-size: 0.95rem;
+}
+
+.dashboard-weather-forecast-track {
+  background: transparent;
+  border-radius: 999px;
+}
+
+.dashboard-weather-forecast-range {
+  background: @secondary;
+  border-radius: 999px;
+}
+
+.dashboard-weather-forecast-range-cold {
+  background: #7dbce8;
+}
+
+.dashboard-weather-forecast-range-warm {
+  background: #f2a2a2;
+}
+
+
+.dashboard-weather-forecast-marker {
+  background: @primary;
+  border-radius: 0;
+}
+
 .dashboard-clock-time {
   font-size: 5.4rem;
   font-weight: 700;
@@ -222,7 +268,6 @@
 }
 
 .dashboard-analog-digital-wrap {
-  margin-top: 150px;
 }
 
 .dashboard-analog-digital {
