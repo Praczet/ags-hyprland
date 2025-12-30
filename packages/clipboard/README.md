@@ -1,3 +1,5 @@
+https://github.com/user-attachments/assets/763c680b-bcc0-45ff-b80d-b34d9b907331
+
 # AGS Clipboard — because copy & paste deserves memory
 
 This is a clipboard history popup for **AGS (Aylur’s Gtk Shell)** running on **Hyprland**.
@@ -13,6 +15,9 @@ This is my take on that idea:
 - and visually calm.
 
 No ambition to be universal. Just useful.
+
+<img width="2433" height="1434" alt="clipboard" src="https://github.com/user-attachments/assets/41091f4b-4d90-4ffc-b527-01961449a150" />
+
 
 ---
 
