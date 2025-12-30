@@ -1,5 +1,7 @@
 # AGS OSD — quiet feedback, nothing more
 
+<img width="1888" height="1439" alt="osd_pause" src="https://github.com/user-attachments/assets/605daf03-e297-4792-8433-9cdd0f8b96f9" />
+
 This package provides **on-screen displays** for volume, mic, brightness, and custom status events.
 
 No bouncing animations.  
