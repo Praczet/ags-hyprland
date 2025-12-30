@@ -1,5 +1,7 @@
 # AGS Upcheck — pacman updates at a glance
 
+<img width="1663" height="1440" alt="2025-12-30-164945_hyprshot" src="https://github.com/user-attachments/assets/e81e2c69-cb71-4bf2-b548-fcca50012b95" />
+
 Upcheck is an AGS overlay that lists pending Arch updates using `checkupdates`, with package details from `pacquery`. It provides a two‑pane view (list + details) and quick actions to refresh or launch a full system update.
 
 ---
