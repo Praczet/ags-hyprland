@@ -1,3 +1,5 @@
+https://github.com/user-attachments/assets/90462704-715d-4615-8af8-67b285b82722
+
 # AGS + Hyprland — my personal shell experiments
 
 This repository contains my **AGS (Aylur’s Gtk Shell)** setup for **Hyprland**.
