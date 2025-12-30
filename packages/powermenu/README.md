@@ -1,11 +1,16 @@
 # AGS Power Menu — deliberate friction
 
+<img width="1513" height="1438" alt="2025-12-30-153237_hyprshot" src="https://github.com/user-attachments/assets/dae53e70-951f-474c-92bf-5a49bbcfb891" />
+
 A small power menu for AGS on Hyprland.
 
 Lock, logout, suspend, reboot, power-off — with confirmation where it matters.
 
 Fast enough to use.  
 Slow enough to prevent accidents.
+
+<img width="1475" height="1440" alt="2025-12-30-153250_hyprshot" src="https://github.com/user-attachments/assets/aec46b87-a752-42d1-93ad-0fd02ce370c5" />
+
 
 ---
 
