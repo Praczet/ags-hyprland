@@ -1,8 +1,18 @@
+<https://github.com/user-attachments/assets/90462704-715d-4615-8af8-67b285b82722>
+
 # Dashboard package
 
 ## Intro
 
 Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, TickTick). Configuration lives in `~/.config/ags/dashboard.json`.
+
+## Themes
+
+<img width="1586" height="1033" alt="2025-12-30-153049_hyprshot" src="https://github.com/user-attachments/assets/c68e392d-9ef2-458b-a191-35f9ce295080" />
+<img width="1541" height="1028" alt="2025-12-30-152944_hyprshot" src="https://github.com/user-attachments/assets/bae0d1a8-f7ef-4a9a-9099-3ad1357a1083" />
+
+
+
 
 ## Configuration
 
