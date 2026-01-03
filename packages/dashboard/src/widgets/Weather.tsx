@@ -161,17 +161,12 @@ function buildTempBarWidget(minTemp: number, maxTemp: number, todayTemp: number,
   const center = Math.floor(width / 2)
   const leftSpan = center
   const rightSpan = width - center
-  const maxNeg = Math.min(0, rangeMin)
-  const maxPos = Math.max(0, rangeMax)
+  const maxAbs = Math.max(Math.abs(rangeMin), Math.abs(rangeMax))
 
   const mapDelta = (delta: number) => {
-    if (delta <= 0) {
-      if (maxNeg === 0 || leftSpan === 0) return center
-      const t = Math.max(0, Math.min(1, delta / maxNeg))
-      return Math.round(center + t * -leftSpan)
-    }
-    if (maxPos === 0 || rightSpan === 0) return center
-    const t = Math.max(0, Math.min(1, delta / maxPos))
+    if (maxAbs === 0) return center
+    const t = Math.max(-1, Math.min(1, delta / maxAbs))
+    if (t <= 0) return Math.round(center + t * leftSpan)
     return Math.round(center + t * rightSpan)
   }
 
