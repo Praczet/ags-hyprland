@@ -16,15 +16,15 @@ function CCHeaderIcon(props: { mclType: ClipTypes }) {
 function getHeaderImageForType(mclType: ClipTypes): string {
   switch (mclType) {
     case ClipTypes.Link:
-      return "emblem-web-symbolic";
+      return "web-browser-symbolic";
     case ClipTypes.Emoji:
       return "face-smile-symbolic";
     case ClipTypes.Text:
-      return "text-symbolic";
+      return "text-x-generic-symbolic";
     case ClipTypes.Code:
       return "utilities-terminal-symbolic";
     case ClipTypes.Color:
-      return "color-picker-symbolic";
+      return "color-select-symbolic";
     case ClipTypes.File:
       return "text-x-generic-symbolic";
     case ClipTypes.Image:

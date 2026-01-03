@@ -51,11 +51,21 @@ export type TickTickConfig = {
   showCompleted?: boolean
 }
 
+export type WeatherDashboardConfig = {
+  refreshMins?: number
+  notifyOnRefresh?: boolean
+  notifyOnlyOnChange?: boolean
+  particleAnimations?: boolean
+  particleFps?: number
+  particleDebugMode?: "none" | "rain" | "snow" | "storm" | "wind"
+}
+
 export type DashboardConfig = {
   layout: DashboardLayout
   widgets: DashboardWidgetConfig[]
   google?: GoogleConfig
   ticktick?: TickTickConfig
+  weather?: WeatherDashboardConfig
 }
 
 const defaultConfig: DashboardConfig = {
@@ -83,6 +93,14 @@ const defaultConfig: DashboardConfig = {
   ticktick: {
     refreshMins: 5,
     showCompleted: false,
+  },
+  weather: {
+    refreshMins: 10,
+    notifyOnRefresh: false,
+    notifyOnlyOnChange: false,
+    particleAnimations: false,
+    particleFps: 15,
+    particleDebugMode: "none",
   },
 }
 
@@ -112,6 +130,7 @@ export function loadDashboardConfig(): DashboardConfig {
   const widgets = Array.isArray(u.widgets) ? u.widgets.filter(isObject) : []
   const g = isObject(u.google) ? u.google : {}
   const t = isObject(u.ticktick) ? u.ticktick : {}
+  const w = isObject(u.weather) ? u.weather : {}
   const calendars = Array.isArray(g.calendars) ? g.calendars.filter(isObject) : []
 
   return {
@@ -173,6 +192,14 @@ export function loadDashboardConfig(): DashboardConfig {
         : undefined,
       refreshMins: Number.isFinite(Number(t.refreshMins)) ? Math.floor(Number(t.refreshMins)) : defaultConfig.ticktick!.refreshMins,
       showCompleted: typeof t.showCompleted === "boolean" ? t.showCompleted : defaultConfig.ticktick!.showCompleted,
+    },
+    weather: {
+      refreshMins: Number.isFinite(Number(w.refreshMins)) ? Math.floor(Number(w.refreshMins)) : defaultConfig.weather!.refreshMins,
+      notifyOnRefresh: typeof w.notifyOnRefresh === "boolean" ? w.notifyOnRefresh : defaultConfig.weather!.notifyOnRefresh,
+      notifyOnlyOnChange: typeof w.notifyOnlyOnChange === "boolean" ? w.notifyOnlyOnChange : defaultConfig.weather!.notifyOnlyOnChange,
+      particleAnimations: typeof w.particleAnimations === "boolean" ? w.particleAnimations : defaultConfig.weather!.particleAnimations,
+      particleFps: Number.isFinite(Number(w.particleFps)) ? Math.floor(Number(w.particleFps)) : defaultConfig.weather!.particleFps,
+      particleDebugMode: typeof w.particleDebugMode === "string" ? w.particleDebugMode : defaultConfig.weather!.particleDebugMode,
     },
   }
 }
