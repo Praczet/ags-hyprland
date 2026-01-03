@@ -60,6 +60,15 @@ function toWeatherConfig(cfg: DashboardWidgetConfig, globalCfg?: WeatherDashboar
     notifyOnlyOnChange: typeof raw.notifyOnlyOnChange === "boolean"
       ? raw.notifyOnlyOnChange
       : (typeof globalCfg?.notifyOnlyOnChange === "boolean" ? globalCfg?.notifyOnlyOnChange : undefined),
+    particleAnimations: typeof raw.particleAnimations === "boolean"
+      ? raw.particleAnimations
+      : (typeof globalCfg?.particleAnimations === "boolean" ? globalCfg?.particleAnimations : undefined),
+    particleFps: Number.isFinite(Number(raw.particleFps))
+      ? Number(raw.particleFps)
+      : (Number.isFinite(Number(globalCfg?.particleFps)) ? Number(globalCfg?.particleFps) : undefined),
+    particleDebugMode: typeof raw.particleDebugMode === "string"
+      ? raw.particleDebugMode as WeatherConfig["particleDebugMode"]
+      : (typeof globalCfg?.particleDebugMode === "string" ? globalCfg?.particleDebugMode : undefined),
     nextDays: typeof raw.nextDays === "boolean" ? raw.nextDays : undefined,
     nextDaysCount: Number.isFinite(Number(raw.nextDaysCount)) ? Number(raw.nextDaysCount) : undefined,
   }

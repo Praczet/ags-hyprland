@@ -55,6 +55,9 @@ export type WeatherDashboardConfig = {
   refreshMins?: number
   notifyOnRefresh?: boolean
   notifyOnlyOnChange?: boolean
+  particleAnimations?: boolean
+  particleFps?: number
+  particleDebugMode?: "none" | "rain" | "snow" | "storm" | "wind"
 }
 
 export type DashboardConfig = {
@@ -95,6 +98,9 @@ const defaultConfig: DashboardConfig = {
     refreshMins: 10,
     notifyOnRefresh: false,
     notifyOnlyOnChange: false,
+    particleAnimations: false,
+    particleFps: 15,
+    particleDebugMode: "none",
   },
 }
 
@@ -191,6 +197,9 @@ export function loadDashboardConfig(): DashboardConfig {
       refreshMins: Number.isFinite(Number(w.refreshMins)) ? Math.floor(Number(w.refreshMins)) : defaultConfig.weather!.refreshMins,
       notifyOnRefresh: typeof w.notifyOnRefresh === "boolean" ? w.notifyOnRefresh : defaultConfig.weather!.notifyOnRefresh,
       notifyOnlyOnChange: typeof w.notifyOnlyOnChange === "boolean" ? w.notifyOnlyOnChange : defaultConfig.weather!.notifyOnlyOnChange,
+      particleAnimations: typeof w.particleAnimations === "boolean" ? w.particleAnimations : defaultConfig.weather!.particleAnimations,
+      particleFps: Number.isFinite(Number(w.particleFps)) ? Math.floor(Number(w.particleFps)) : defaultConfig.weather!.particleFps,
+      particleDebugMode: typeof w.particleDebugMode === "string" ? w.particleDebugMode : defaultConfig.weather!.particleDebugMode,
     },
   }
 }

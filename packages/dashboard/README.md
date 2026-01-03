@@ -153,7 +153,10 @@ Requires `latitude` + `longitude`. Global options live under `weather` and widge
   "weather": {
     "refreshMins": 10,
     "notifyOnRefresh": false,
-    "notifyOnlyOnChange": false
+    "notifyOnlyOnChange": false,
+    "particleAnimations": false,
+    "particleFps": 15,
+    "particleDebugMode": "none"
   },
   "widgets": [
     {
@@ -169,6 +172,9 @@ Requires `latitude` + `longitude`. Global options live under `weather` and widge
         "refreshMins": 10,
         "notifyOnRefresh": false,
         "notifyOnlyOnChange": false,
+        "particleAnimations": true,
+        "particleFps": 15,
+        "particleDebugMode": "none",
         "nextDays": true,
         "nextDaysCount": 7
       }

@@ -10,6 +10,17 @@ type WeatherWidgetConfig = WeatherConfig & {
   error?: Accessor<string | null>
 }
 
+type ParticleMode = "none" | "rain" | "snow" | "storm" | "wind"
+
+type Particle = {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  size: number
+  alpha: number
+}
+
 function parseColor(input: string) {
   const c = new Gdk.RGBA()
   c.parse(input)
@@ -183,6 +194,69 @@ function buildTempBarWidget(minTemp: number, maxTemp: number, todayTemp: number,
   return overlay
 }
 
+function particleModeFor(code?: number, wind?: number): ParticleMode {
+  if (typeof code === "number") {
+    if ([95, 96, 99].includes(code)) return "storm"
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return "snow"
+    if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return "rain"
+  }
+  if (typeof wind === "number" && wind >= 35) return "wind"
+  return "none"
+}
+
+function particleCountFor(mode: ParticleMode, width: number, height: number) {
+  if (mode === "none") return 0
+  const area = width * height
+  const base = Math.max(10, Math.min(60, Math.round(area / 8000)))
+  if (mode === "snow") return Math.max(8, Math.round(base * 0.8))
+  if (mode === "wind") return Math.max(10, Math.round(base * 0.9))
+  if (mode === "storm") return Math.round(base * 1.3)
+  return base
+}
+
+function spawnParticle(mode: ParticleMode, width: number, height: number): Particle {
+  const x = Math.random() * width
+  const y = Math.random() * height
+  if (mode === "snow") {
+    return {
+      x,
+      y,
+      vx: (Math.random() * 20) - 10,
+      vy: 20 + Math.random() * 35,
+      size: 1 + Math.random() * 2,
+      alpha: 0.4 + Math.random() * 0.35,
+    }
+  }
+  if (mode === "wind") {
+    return {
+      x,
+      y,
+      vx: 140 + Math.random() * 120,
+      vy: (Math.random() * 12) - 6,
+      size: 12 + Math.random() * 10,
+      alpha: 0.25 + Math.random() * 0.2,
+    }
+  }
+  if (mode === "storm") {
+    return {
+      x,
+      y,
+      vx: 40 + Math.random() * 30,
+      vy: 240 + Math.random() * 120,
+      size: 10 + Math.random() * 8,
+      alpha: 0.35 + Math.random() * 0.25,
+    }
+  }
+  return {
+    x,
+    y,
+    vx: 20 + Math.random() * 30,
+    vy: 160 + Math.random() * 80,
+    size: 8 + Math.random() * 6,
+    alpha: 0.25 + Math.random() * 0.25,
+  }
+}
+
 export function WeatherWidget(cfg: WeatherWidgetConfig = {}) {
   const title = cfg.showTitle === false ? undefined : (cfg.title ?? "Weather")
   const unit = cfg.unit === "f" ? "f" : "c"
@@ -202,6 +276,80 @@ export function WeatherWidget(cfg: WeatherWidgetConfig = {}) {
   icon.add_css_class("dashboard-weather-icon")
   const forecastBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
   forecastBox.add_css_class("dashboard-weather-forecast")
+  forecastBox.set_visible(showForecast)
+
+  const topBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 8 })
+  topBox.set_hexpand(true)
+  topBox.set_halign(Gtk.Align.FILL)
+  const topRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12 })
+  topRow.set_halign(Gtk.Align.CENTER)
+  topRow.set_hexpand(true)
+  topRow.append(icon)
+  const topText = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
+  topText.append(temp)
+  topText.append(summary)
+  topText.append(wind)
+  topRow.append(topText)
+  topBox.append(city)
+  topBox.append(topRow)
+
+  const topOverlay = new Gtk.Overlay()
+  topOverlay.set_child(topBox)
+  topOverlay.set_halign(Gtk.Align.FILL)
+  topOverlay.set_valign(Gtk.Align.CENTER)
+  topOverlay.set_hexpand(true)
+  topOverlay.set_vexpand(false)
+
+  const particlesArea = new Gtk.DrawingArea()
+  particlesArea.set_hexpand(true)
+  particlesArea.set_vexpand(true)
+  particlesArea.set_halign(Gtk.Align.FILL)
+  particlesArea.set_valign(Gtk.Align.FILL)
+  particlesArea.set_visible(false)
+  topOverlay.add_overlay(particlesArea)
+
+  let particleMode: ParticleMode = "none"
+  let particles: Particle[] = []
+  let lastWidth = 0
+  let lastHeight = 0
+  let lastTick = GLib.get_monotonic_time()
+
+  const debugModes = new Set<ParticleMode>(["none", "rain", "snow", "storm", "wind"])
+  const rawDebug = typeof cfg.particleDebugMode === "string" ? cfg.particleDebugMode.toLowerCase() : ""
+  const debugMode = debugModes.has(rawDebug as ParticleMode)
+    ? rawDebug as ParticleMode
+    : null
+  const animationsEnabled = cfg.particleAnimations === true || debugMode !== null
+  const fpsChoices = new Set([10, 15, 24, 30])
+  const particleFps = fpsChoices.has(Number(cfg.particleFps)) ? Number(cfg.particleFps) : 15
+
+  particlesArea.set_draw_func((_area, cr, width, height) => {
+    if (!animationsEnabled || particleMode === "none" || width <= 0 || height <= 0) return
+    if (width !== lastWidth || height !== lastHeight) {
+      lastWidth = width
+      lastHeight = height
+      const count = particleCountFor(particleMode, width, height)
+      particles = Array.from({ length: count }, () => spawnParticle(particleMode, width, height))
+    }
+
+    const ctx = particlesArea.get_style_context()
+    const primary = lookupColor(ctx, "primary", "#86d1e9")
+
+    for (const p of particles) {
+      cr.setSourceRGBA(primary.red, primary.green, primary.blue, p.alpha)
+      if (particleMode === "snow") {
+        cr.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        cr.fill()
+      } else {
+        cr.setLineWidth(particleMode === "wind" ? 1 : 1.5)
+        const dx = particleMode === "wind" ? p.size * 1.0 : p.size * 0.5
+        const dy = particleMode === "wind" ? p.size * 0.25 : p.size
+        cr.moveTo(p.x, p.y)
+        cr.lineTo(p.x + dx, p.y + dy)
+        cr.stroke()
+      }
+    }
+  })
 
   const updateLabels = (data: WeatherResponse) => {
     const current = data.current ?? {}
@@ -222,6 +370,21 @@ export function WeatherWidget(cfg: WeatherWidgetConfig = {}) {
       wind.set_label(`Wind ${Math.round(current.wind_speed_10m)} km/h`)
     } else {
       wind.set_label("")
+    }
+
+    if (animationsEnabled) {
+      const nextMode = debugMode ?? particleModeFor(current.weathercode, current.wind_speed_10m)
+      if (nextMode !== particleMode) {
+        particleMode = nextMode
+        particles = []
+        lastWidth = 0
+        lastHeight = 0
+        lastTick = GLib.get_monotonic_time()
+      }
+      particlesArea.set_visible(particleMode !== "none")
+      if (particleMode === "none") {
+        particles = []
+      }
     }
 
     forecastBox.set_visible(showForecast)
@@ -294,6 +457,8 @@ export function WeatherWidget(cfg: WeatherWidgetConfig = {}) {
   const setErrorState = (message: string) => {
     summary.set_label(message)
     wind.set_label("")
+    particlesArea.set_visible(false)
+    particleMode = "none"
   }
 
   if (typeof cfg.data === "function") {
@@ -315,19 +480,45 @@ export function WeatherWidget(cfg: WeatherWidgetConfig = {}) {
   }
 
   const body = (
-    <box orientation={Gtk.Orientation.VERTICAL} spacing={8} halign={Gtk.Align.CENTER}>
-      {city}
-      <box orientation={Gtk.Orientation.HORIZONTAL} spacing={12} halign={Gtk.Align.CENTER}>
-        {icon}
-        <box orientation={Gtk.Orientation.VERTICAL} spacing={6}>
-          {temp}
-          {summary}
-          {wind}
-        </box>
-      </box>
+    <box orientation={Gtk.Orientation.VERTICAL} spacing={8} halign={Gtk.Align.FILL} hexpand={true}>
+      {topOverlay}
       {forecastBox}
     </box>
   ) as Gtk.Box
+
+  if (animationsEnabled) {
+    const interval = Math.max(1, Math.floor(1000 / particleFps))
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, interval, () => {
+      if (particleMode !== "none" && topOverlay.get_visible()) {
+        const now = GLib.get_monotonic_time()
+        const dt = Math.max(0.01, (now - lastTick) / 1_000_000)
+        lastTick = now
+        const width = lastWidth || 1
+        const height = lastHeight || 1
+
+        for (const p of particles) {
+          p.x += p.vx * dt
+          p.y += p.vy * dt
+          if (p.x > width + 10 || p.y > height + 10) {
+            const np = spawnParticle(particleMode, width, height)
+            if (particleMode === "wind") {
+              p.x = -20
+              p.y = Math.random() * height
+            } else {
+              p.x = np.x
+              p.y = -10
+            }
+            p.vx = np.vx
+            p.vy = np.vy
+            p.size = np.size
+            p.alpha = np.alpha
+          }
+        }
+        particlesArea.queue_draw()
+      }
+      return GLib.SOURCE_CONTINUE
+    })
+  }
 
   return WidgetFrame(title, body)
 }

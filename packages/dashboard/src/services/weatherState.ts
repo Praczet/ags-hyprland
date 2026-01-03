@@ -13,6 +13,9 @@ export type WeatherConfig = {
   refreshMins?: number
   notifyOnRefresh?: boolean
   notifyOnlyOnChange?: boolean
+  particleAnimations?: boolean
+  particleFps?: number
+  particleDebugMode?: "none" | "rain" | "snow" | "storm" | "wind"
   nextDays?: boolean
   nextDaysCount?: number
 }
