@@ -1,76 +1,13 @@
-import { fetch, URL } from "ags/fetch"
+import { type Accessor, createEffect } from "ags"
 import { Gdk, Gtk } from "ags/gtk4"
 import GLib from "gi://GLib"
+import type { WeatherConfig, WeatherResponse } from "../services/weatherState"
+import { weatherCodeIcon, weatherCodeLabel } from "../services/weatherCodes"
 import { WidgetFrame } from "./WidgetFrame"
 
-export type WeatherConfig = {
-  title?: string
-  showTitle?: boolean
-  city?: string
-  latitude?: number
-  longitude?: number
-  unit?: "c" | "f"
-  refreshMins?: number
-  nextDays?: boolean
-  nextDaysCount?: number
-}
-
-type WeatherResponse = {
-  current?: {
-    temperature_2m?: number
-    wind_speed_10m?: number
-    weathercode?: number
-  }
-  daily?: {
-    time?: string[]
-    temperature_2m_min?: number[]
-    temperature_2m_max?: number[]
-    weathercode?: number[]
-  }
-}
-
-const weatherCodeLabel: Record<number, string> = {
-  0: "Clear",
-  1: "Mainly clear",
-  2: "Partly cloudy",
-  3: "Overcast",
-  45: "Fog",
-  48: "Rime fog",
-  51: "Light drizzle",
-  53: "Drizzle",
-  55: "Dense drizzle",
-  61: "Light rain",
-  63: "Rain",
-  65: "Heavy rain",
-  71: "Light snow",
-  73: "Snow",
-  75: "Heavy snow",
-  80: "Rain showers",
-  81: "Heavy showers",
-  82: "Violent showers",
-  95: "Thunderstorm",
-}
-
-const weatherCodeIcon: Record<number, string> = {
-  0: "weather-clear-symbolic",
-  1: "weather-few-clouds-symbolic",
-  2: "weather-clouds-symbolic",
-  3: "weather-overcast-symbolic",
-  45: "weather-fog-symbolic",
-  48: "weather-fog-symbolic",
-  51: "weather-showers-scattered-symbolic",
-  53: "weather-showers-scattered-symbolic",
-  55: "weather-showers-symbolic",
-  61: "weather-showers-symbolic",
-  63: "weather-showers-symbolic",
-  65: "weather-showers-symbolic",
-  71: "weather-snow-symbolic",
-  73: "weather-snow-symbolic",
-  75: "weather-snow-symbolic",
-  80: "weather-showers-scattered-symbolic",
-  81: "weather-showers-symbolic",
-  82: "weather-showers-symbolic",
-  95: "weather-storm-symbolic",
+type WeatherWidgetConfig = WeatherConfig & {
+  data?: Accessor<WeatherResponse | null>
+  error?: Accessor<string | null>
 }
 
 function parseColor(input: string) {
@@ -246,7 +183,7 @@ function buildTempBarWidget(minTemp: number, maxTemp: number, todayTemp: number,
   return overlay
 }
 
-export function WeatherWidget(cfg: WeatherConfig = {}) {
+export function WeatherWidget(cfg: WeatherWidgetConfig = {}) {
   const title = cfg.showTitle === false ? undefined : (cfg.title ?? "Weather")
   const unit = cfg.unit === "f" ? "f" : "c"
   const showForecast = cfg.nextDays === true
@@ -354,53 +291,28 @@ export function WeatherWidget(cfg: WeatherConfig = {}) {
     })
   }
 
-  const fetchWeather = async () => {
-    if (typeof cfg.latitude !== "number" || typeof cfg.longitude !== "number") {
-      summary.set_label("Set lat/lon in config")
-      return
-    }
-    try {
-      const base = "https://api.open-meteo.com/v1/forecast"
-      const qs = [
-        `latitude=${encodeURIComponent(String(cfg.latitude))}`,
-        `longitude=${encodeURIComponent(String(cfg.longitude))}`,
-        "current=temperature_2m,weathercode,wind_speed_10m",
-        `temperature_unit=${unit === "f" ? "fahrenheit" : "celsius"}`,
-        "wind_speed_unit=kmh",
-        "timezone=auto",
-        showForecast ? "daily=temperature_2m_max,temperature_2m_min,weathercode" : "",
-        showForecast ? `forecast_days=${forecastCount + 1}` : "",
-      ].filter(Boolean).join("&")
-      const urlStr = `${base}?${qs}`
-      const res = await fetch(new URL(urlStr), {
-        method: "GET",
-        headers: {
-          "Accept": "application/json",
-          "User-Agent": "ags-dashboard",
-        },
-      })
-      if (!res.ok) {
-        const txt = await res.text()
-        console.error("[weather] error", res.status, txt)
-        throw new Error(`weather ${res.status}`)
-      }
-      const txt = await res.text()
-      if (!txt) throw new Error("weather empty response")
-      const json = JSON.parse(txt) as WeatherResponse
-      updateLabels(json)
-    } catch (err) {
-      summary.set_label("Weather unavailable")
-      wind.set_label("")
-      console.error("weather fetch error", err)
-    }
+  const setErrorState = (message: string) => {
+    summary.set_label(message)
+    wind.set_label("")
   }
 
-  fetchWeather().catch(() => { })
-  const refresh = Number.isFinite(cfg.refreshMins) ? Math.max(1, Math.floor(cfg.refreshMins as number)) : 10
-  GLib.timeout_add(GLib.PRIORITY_DEFAULT, refresh * 60 * 1000, () => {
-    fetchWeather().catch(() => { })
-    return GLib.SOURCE_CONTINUE
-  })
+  if (typeof cfg.data === "function") {
+    createEffect(() => {
+      const err = typeof cfg.error === "function" ? cfg.error() : null
+      if (err) {
+        setErrorState(err)
+        return
+      }
+      const next = cfg.data?.()
+      if (next) {
+        updateLabels(next)
+      } else {
+        summary.set_label("Loading…")
+      }
+    }, { immediate: true })
+  } else {
+    setErrorState("Weather unavailable")
+  }
 
   const body = (
     <box orientation={Gtk.Orientation.VERTICAL} spacing={8} halign={Gtk.Align.CENTER}>

@@ -146,10 +146,15 @@ Custom widgets live in `~/.config/ags/dashboard-widgets/<name>.js`.
 
 ### Weather
 
-Requires `latitude` + `longitude`.
+Requires `latitude` + `longitude`. Global options live under `weather` and widget-level options can override them.
 
 ```json
 {
+  "weather": {
+    "refreshMins": 10,
+    "notifyOnRefresh": false,
+    "notifyOnlyOnChange": false
+  },
   "widgets": [
     {
       "id": "weather",
@@ -162,6 +167,8 @@ Requires `latitude` + `longitude`.
         "longitude": 21.0122,
         "unit": "c",
         "refreshMins": 10,
+        "notifyOnRefresh": false,
+        "notifyOnlyOnChange": false,
         "nextDays": true,
         "nextDaysCount": 7
       }

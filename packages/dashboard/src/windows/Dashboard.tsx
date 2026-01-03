@@ -1,8 +1,8 @@
 import { Astal, Gdk, Gtk } from "ags/gtk4"
 import GLib from "gi://GLib"
-import { loadDashboardConfig, type DashboardWidgetConfig, type DashboardWidgetType } from "../config"
+import { loadDashboardConfig, type DashboardWidgetConfig, type DashboardWidgetType, type WeatherDashboardConfig } from "../config"
 import { ClockWidget, type ClockConfig } from "../widgets/Clock"
-import { WeatherWidget, type WeatherConfig } from "../widgets/Weather"
+import { WeatherWidget } from "../widgets/Weather"
 import { CalendarWidget, type CalendarConfig } from "../widgets/Calendar"
 import { NextEventWidget, type NextEventConfig } from "../widgets/NextEvent"
 import { AnalogClockWidget, type AnalogClockConfig } from "../widgets/AnalogClock"
@@ -11,6 +11,7 @@ import { mountCustomWidget } from "../widgets/customLoader"
 import { TasksWidget, type TasksConfig } from "../widgets/Tasks"
 import { TickTickWidget, type TickTickConfig } from "../widgets/TickTick"
 import { initTickTickState } from "../services/ticktickState"
+import { initWeatherState, type WeatherConfig } from "../services/weatherState"
 
 type WidgetFactory = (cfg: DashboardWidgetConfig) => Gtk.Widget
 
@@ -41,7 +42,7 @@ function toTitleConfig(cfg: DashboardWidgetConfig): { title?: string; showTitle?
   }
 }
 
-function toWeatherConfig(cfg: DashboardWidgetConfig): WeatherConfig {
+function toWeatherConfig(cfg: DashboardWidgetConfig, globalCfg?: WeatherDashboardConfig): WeatherConfig {
   const raw = isObject(cfg.config) ? cfg.config : {}
   return {
     title: typeof raw.title === "string" ? raw.title : undefined,
@@ -50,7 +51,15 @@ function toWeatherConfig(cfg: DashboardWidgetConfig): WeatherConfig {
     latitude: Number.isFinite(Number(raw.latitude)) ? Number(raw.latitude) : undefined,
     longitude: Number.isFinite(Number(raw.longitude)) ? Number(raw.longitude) : undefined,
     unit: raw.unit === "f" ? "f" : "c",
-    refreshMins: Number.isFinite(Number(raw.refreshMins)) ? Number(raw.refreshMins) : undefined,
+    refreshMins: Number.isFinite(Number(raw.refreshMins))
+      ? Number(raw.refreshMins)
+      : (Number.isFinite(Number(globalCfg?.refreshMins)) ? Number(globalCfg?.refreshMins) : undefined),
+    notifyOnRefresh: typeof raw.notifyOnRefresh === "boolean"
+      ? raw.notifyOnRefresh
+      : (typeof globalCfg?.notifyOnRefresh === "boolean" ? globalCfg?.notifyOnRefresh : undefined),
+    notifyOnlyOnChange: typeof raw.notifyOnlyOnChange === "boolean"
+      ? raw.notifyOnlyOnChange
+      : (typeof globalCfg?.notifyOnlyOnChange === "boolean" ? globalCfg?.notifyOnlyOnChange : undefined),
     nextDays: typeof raw.nextDays === "boolean" ? raw.nextDays : undefined,
     nextDaysCount: Number.isFinite(Number(raw.nextDaysCount)) ? Number(raw.nextDaysCount) : undefined,
   }
@@ -109,7 +118,11 @@ export default function DashboardWindow(monitor: number = 0) {
   const registry: Record<DashboardWidgetType, WidgetFactory> = {
     clock: (cfg) => ClockWidget(toClockConfig(cfg)),
     "analog-clock": (cfg) => AnalogClockWidget(toTitleConfig(cfg) as AnalogClockConfig),
-    weather: (cfg) => WeatherWidget(toWeatherConfig(cfg)),
+    weather: (widgetCfg) => {
+      const weatherCfg = toWeatherConfig(widgetCfg, cfg.weather)
+      const state = initWeatherState(weatherCfg)
+      return WeatherWidget({ ...weatherCfg, data: state.data, error: state.error })
+    },
     calendar: (cfg) => {
       const cal = toCalendarConfig(cfg)
       if (cal.useGoogle && google) {

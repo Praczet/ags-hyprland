@@ -31,12 +31,12 @@ const volumeTiers: IconTierMap = {
 }
 
 const brightnessTiers: IconTierMap = {
-  fallback: "display-brightness-off-symbolic",
+  fallback: "display-brightness-symbolic",
   tiers: [
-    { threshold: 0, icon: "display-brightness-off-symbolic" },
-    { threshold: 1, icon: "display-brightness-low-symbolic" },
-    { threshold: 34, icon: "display-brightness-medium-symbolic" },
-    { threshold: 67, icon: "display-brightness-high-symbolic" },
+    { threshold: 0, icon: "display-brightness-symbolic" },
+    { threshold: 1, icon: "display-brightness-symbolic" },
+    { threshold: 34, icon: "display-brightness-symbolic" },
+    { threshold: 67, icon: "display-brightness-symbolic" },
     { threshold: 85, icon: "weather-clear-symbolic" },
   ],
 }
