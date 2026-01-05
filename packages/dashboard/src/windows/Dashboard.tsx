@@ -1,6 +1,6 @@
 import { Astal, Gdk, Gtk } from "ags/gtk4"
 import GLib from "gi://GLib"
-import { loadDashboardConfig, type DashboardWidgetConfig, type DashboardWidgetType, type WeatherDashboardConfig } from "../config"
+import { loadDashboardConfig, type DashboardWidgetConfig, type DashboardWidgetType, type StickynotesConfig, type WeatherDashboardConfig } from "../config"
 import { ClockWidget, type ClockConfig } from "../widgets/Clock"
 import { WeatherWidget } from "../widgets/Weather"
 import { CalendarWidget, type CalendarConfig } from "../widgets/Calendar"
@@ -10,6 +10,7 @@ import { initGoogleCalendarState } from "../services/googleState"
 import { mountCustomWidget } from "../widgets/customLoader"
 import { TasksWidget, type TasksConfig } from "../widgets/Tasks"
 import { TickTickWidget, type TickTickConfig } from "../widgets/TickTick"
+import { StickyNotesWidget, StickyNoteWidget, loadStickyNote, type StickyNotesListConfig, type StickyNoteWidgetConfig } from "../widgets/StickyNotes"
 import { initTickTickState } from "../services/ticktickState"
 import { initWeatherState, type WeatherConfig } from "../services/weatherState"
 
@@ -118,8 +119,42 @@ function toTickTickConfig(cfg: DashboardWidgetConfig): TickTickConfig {
   }
 }
 
+function toStickyNotesConfig(cfg: DashboardWidgetConfig, globalCfg?: StickynotesConfig): StickyNotesListConfig {
+  const raw = isObject(cfg.config) ? cfg.config : {}
+  return {
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
+    notesConfigPath: typeof raw.notesConfigPath === "string"
+      ? raw.notesConfigPath
+      : (typeof globalCfg?.notesConfigPath === "string" ? globalCfg?.notesConfigPath : undefined),
+    refreshMins: Number.isFinite(Number(raw.refreshMins))
+      ? Math.floor(Number(raw.refreshMins))
+      : (Number.isFinite(Number(globalCfg?.refreshMins)) ? Math.floor(Number(globalCfg?.refreshMins)) : undefined),
+    maxNotes: Number.isFinite(Number(raw.maxNotes)) ? Math.floor(Number(raw.maxNotes)) : undefined,
+    maxNoteHeight: Number.isFinite(Number(cfg.maxNoteHeight)) ? Math.floor(Number(cfg.maxNoteHeight)) : undefined,
+    maxNoteWidth: Number.isFinite(Number(cfg.maxNoteWidth)) ? Math.floor(Number(cfg.maxNoteWidth)) : undefined,
+  }
+}
+
+function toStickyNoteConfig(cfg: DashboardWidgetConfig, globalCfg?: StickynotesConfig): StickyNoteWidgetConfig | null {
+  const noteId = typeof cfg.noteId === "string" ? cfg.noteId : undefined
+  if (!noteId) return null
+  const configPath = typeof globalCfg?.notesConfigPath === "string" ? globalCfg?.notesConfigPath : "~/.config/ags/notes.json"
+  const note = loadStickyNote(configPath, noteId)
+  if (!note) return null
+  return {
+    note,
+    maxNoteHeight: Number.isFinite(Number(cfg.maxNoteHeight)) ? Math.floor(Number(cfg.maxNoteHeight)) : undefined,
+    maxNoteWidth: Number.isFinite(Number(cfg.maxNoteWidth)) ? Math.floor(Number(cfg.maxNoteWidth)) : undefined,
+    refreshMins: Number.isFinite(Number(globalCfg?.refreshMins)) ? Math.floor(Number(globalCfg?.refreshMins)) : undefined,
+    notesConfigPath: configPath,
+    noteId,
+  }
+}
+
 export default function DashboardWindow(monitor: number = 0) {
   const cfg = loadDashboardConfig()
+  const cfgStickynotes = cfg.stickynotes
   const usesGoogle = cfg.widgets.some(w => w.type === "tasks" || (isObject(w.config) && (w.config as any).useGoogle === true))
   const usesTickTick = cfg.widgets.some(w => w.type === "ticktick")
   const google = usesGoogle ? initGoogleCalendarState() : null
@@ -158,6 +193,12 @@ export default function DashboardWindow(monitor: number = 0) {
       if (ticktick) tcfg.tasks = ticktick.tasks
       return TickTickWidget(tcfg)
     },
+    "sticky-notes": (cfg) => StickyNotesWidget(toStickyNotesConfig(cfg, cfgStickynotes)),
+    "sticky-note": (cfg) => {
+      const noteCfg = toStickyNoteConfig(cfg, cfgStickynotes)
+      if (!noteCfg) return new Gtk.Label({ label: "Missing sticky note", xalign: 0 })
+      return StickyNoteWidget(noteCfg)
+    },
     custom: (cfg) => {
       const host = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
       console.log("mounting custom widget", cfg.customName, cfg.config)
@@ -193,11 +234,14 @@ export default function DashboardWindow(monitor: number = 0) {
     })
     wrapper.set_hexpand(false)
     wrapper.set_vexpand(false)
-    if (w.expandX) {
+    const defaultExpand = w.type === "sticky-notes" || w.type === "sticky-note"
+    const expandX = typeof w.expandX === "boolean" ? w.expandX : defaultExpand
+    const expandY = typeof w.expandY === "boolean" ? w.expandY : defaultExpand
+    if (expandX) {
       wrapper.set_hexpand(true)
       wrapper.set_halign(Gtk.Align.FILL)
     }
-    if (w.expandY) {
+    if (expandY) {
       wrapper.set_vexpand(true)
       wrapper.set_valign(Gtk.Align.FILL)
     }

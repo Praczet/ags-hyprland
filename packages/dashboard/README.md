@@ -232,6 +232,76 @@ Groups tasks by Overdue / Today / Tomorrow / Future. Requires Tasks scope.
 }
 ```
 
+### Sticky Notes
+
+Sticky notes read from `~/.config/ags/notes.json`. You can render a list of notes (`sticky-notes`) or a single note (`sticky-note`).
+
+Dashboard config (top-level + widgets):
+
+```json
+{
+  "stickynotes": {
+    "refreshMins": 5,
+    "notesConfigPath": "~/.config/ags/notes.json"
+  },
+  "widgets": [
+    {
+      "id": "sticky-notes",
+      "type": "sticky-notes",
+      "col": 5,
+      "row": 1,
+      "colSpan": 5,
+      "rowSpan": 5,
+      "maxNoteHeight": 220,
+      "maxNoteWidth": 360,
+      "config": {
+        "title": "Sticky Notes",
+        "maxNotes": 20
+      }
+    },
+    {
+      "id": "sticky-note-1",
+      "type": "sticky-note",
+      "col": 5,
+      "row": 6,
+      "colSpan": 2,
+      "noteId": "sql-mariadb-dump.md",
+      "maxNoteHeight": 220
+    }
+  ]
+}
+```
+
+Notes config example (`~/.config/ags/notes.json`):
+
+```json
+{
+  "notesDir": "~/Notes",
+  "scanFolder": false,
+  "pattern": "-SM\\.md$",
+  "selected": [
+    "sql-mariadb-dump.md",
+    "sql-export-csv.md",
+    "sql-export-pdf.md"
+  ],
+  "defaults": {
+    "background": "@surface_container",
+    "renderMarkdown": true
+  },
+  "notes": {
+    "sql-mariadb-dump.md": {
+      "background": "#2f3a31",
+      "excludeFromNotes": true
+    },
+    "sql-export-csv.md": {
+      "renderMarkdown": false
+    }
+  }
+}
+```
+
+If `scanFolder` is `true`, the list widget shows the union of `selected` and files matching `pattern`. If `scanFolder` is `false`, it only shows `selected`. Notes with `excludeFromNotes: true` are hidden from the list widget but can still be rendered with a `sticky-note` widget.
+
 ### Custom
 
 ```json
