@@ -18,18 +18,26 @@ export type StickyNotesListConfig = {
   showTitle?: boolean
   notesConfigPath?: string
   refreshMins?: number
+  openNote?: string
+  onOpenNote?: () => void
   maxNotes?: number
   maxNoteHeight?: number
   maxNoteWidth?: number
+  minNoteHeight?: number
+  minNoteWidth?: number
 }
 
 export type StickyNoteWidgetConfig = {
   note: StickyNoteEntry
   maxNoteHeight?: number
   maxNoteWidth?: number
+  minNoteHeight?: number
+  minNoteWidth?: number
   refreshMins?: number
   notesConfigPath?: string
   noteId?: string
+  openNote?: string
+  onOpenNote?: () => void
 }
 
 type NotesConfig = {
@@ -39,6 +47,8 @@ type NotesConfig = {
   selected?: string[]
   maxNoteHeight?: number
   maxNoteWidth?: number
+  minNoteHeight?: number
+  minNoteWidth?: number
   defaults?: {
     background?: string
     renderMarkdown?: boolean
@@ -71,6 +81,12 @@ function applyCss(widget: Gtk.Widget, css: string) {
   }
   provider.load_from_string(css)
   ctx.add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
+}
+
+function buildOpenNoteCommand(template: string, notePath: string) {
+  const quotedPath = GLib.shell_quote(notePath)
+  if (template.includes("{path}")) return template.replaceAll("{path}", quotedPath)
+  return `${template} ${quotedPath}`
 }
 
 function parseSimpleFrontmatter(txt: string): Frontmatter {
@@ -153,6 +169,8 @@ function loadNotesConfig(path: string): NotesConfig {
     selected: Array.isArray(u.selected) ? u.selected.filter((s: unknown) => typeof s === "string") : [],
     maxNoteHeight: Number.isFinite(Number(u.maxNoteHeight)) ? Math.floor(Number(u.maxNoteHeight)) : undefined,
     maxNoteWidth: Number.isFinite(Number(u.maxNoteWidth)) ? Math.floor(Number(u.maxNoteWidth)) : undefined,
+    minNoteHeight: Number.isFinite(Number(u.minNoteHeight)) ? Math.floor(Number(u.minNoteHeight)) : undefined,
+    minNoteWidth: Number.isFinite(Number(u.minNoteWidth)) ? Math.floor(Number(u.minNoteWidth)) : undefined,
     defaults: isObject(u.defaults)
       ? {
         background: typeof u.defaults.background === "string" ? u.defaults.background : undefined,
@@ -244,9 +262,15 @@ export function loadStickyNotes(configPath: string = "~/.config/ags/notes.json")
   }
   const maxNoteHeight = Number.isFinite(Number(cfg.maxNoteHeight))
     ? Math.max(120, Math.floor(Number(cfg.maxNoteHeight)))
-    : 240
+    : undefined
   const maxNoteWidth = Number.isFinite(Number(cfg.maxNoteWidth))
     ? Math.max(120, Math.floor(Number(cfg.maxNoteWidth)))
+    : undefined
+  const minNoteHeight = Number.isFinite(Number(cfg.minNoteHeight))
+    ? Math.max(1, Math.floor(Number(cfg.minNoteHeight)))
+    : undefined
+  const minNoteWidth = Number.isFinite(Number(cfg.minNoteWidth))
+    ? Math.max(1, Math.floor(Number(cfg.minNoteWidth)))
     : undefined
   const overrides = new Map<string, { background?: string; renderMarkdown?: boolean; excludeFromNotes?: boolean }>()
   const overridesByName = new Map<string, { background?: string; renderMarkdown?: boolean; excludeFromNotes?: boolean }>()
@@ -290,7 +314,7 @@ export function loadStickyNotes(configPath: string = "~/.config/ags/notes.json")
       // ignore read errors
     }
   }
-  return { notes, maxNoteHeight, maxNoteWidth, config: cfg }
+  return { notes, maxNoteHeight, maxNoteWidth, minNoteHeight, minNoteWidth, config: cfg }
 }
 
 export function loadStickyNote(configPath: string, noteId: string) {
@@ -312,10 +336,18 @@ export function StickyNoteWidget(cfg: StickyNoteWidgetConfig) {
   let note = cfg.note
   const maxNoteHeight = Number.isFinite(Number(cfg.maxNoteHeight))
     ? Math.max(120, Math.floor(Number(cfg.maxNoteHeight)))
-    : 240
+    : undefined
   const maxNoteWidth = Number.isFinite(Number(cfg.maxNoteWidth))
     ? Math.max(120, Math.floor(Number(cfg.maxNoteWidth)))
     : undefined
+  const minNoteHeight = Number.isFinite(Number(cfg.minNoteHeight))
+    ? Math.max(1, Math.floor(Number(cfg.minNoteHeight)))
+    : undefined
+  const minNoteWidth = Number.isFinite(Number(cfg.minNoteWidth))
+    ? Math.max(1, Math.floor(Number(cfg.minNoteWidth)))
+    : undefined
+  const widthRequest = maxNoteWidth ?? minNoteWidth
+  const heightRequest = maxNoteHeight ?? minNoteHeight
 
   const card = new Gtk.Box({
     orientation: Gtk.Orientation.VERTICAL,
@@ -326,7 +358,16 @@ export function StickyNoteWidget(cfg: StickyNoteWidgetConfig) {
     halign: Gtk.Align.FILL,
     valign: Gtk.Align.FILL,
   })
-  if (maxNoteWidth) card.set_size_request(maxNoteWidth, -1)
+  if (widthRequest || heightRequest) card.set_size_request(widthRequest ?? -1, heightRequest ?? -1)
+  if (cfg.openNote) {
+    const click = new Gtk.GestureClick()
+    click.connect("released", (_gesture: Gtk.GestureClick, _nPress: number, _x: number, _y: number) => {
+      const command = buildOpenNoteCommand(cfg.openNote!, note.path)
+      GLib.spawn_command_line_async(command)
+      cfg.onOpenNote?.()
+    })
+    card.add_controller(click)
+  }
 
   const header = new Gtk.Label({
     label: note.title,
@@ -343,7 +384,7 @@ export function StickyNoteWidget(cfg: StickyNoteWidgetConfig) {
   scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
   scroller.set_halign(Gtk.Align.FILL)
   scroller.set_valign(Gtk.Align.FILL)
-  scroller.set_size_request(maxNoteWidth ?? -1, maxNoteHeight)
+  if (widthRequest || heightRequest) scroller.set_size_request(widthRequest ?? -1, heightRequest ?? -1)
 
   const renderContent = (next: StickyNoteEntry | null) => {
     if (!next) {
@@ -412,6 +453,8 @@ export function StickyNotesWidget(cfg: StickyNotesListConfig = {}) {
   const maxNotes = Number.isFinite(Number(cfg.maxNotes)) ? Math.max(1, Math.floor(Number(cfg.maxNotes))) : undefined
   const maxNoteHeight = Number.isFinite(Number(cfg.maxNoteHeight)) ? Math.max(1, Math.floor(Number(cfg.maxNoteHeight))) : undefined
   const maxNoteWidth = Number.isFinite(Number(cfg.maxNoteWidth)) ? Math.max(1, Math.floor(Number(cfg.maxNoteWidth))) : undefined
+  const minNoteHeight = Number.isFinite(Number(cfg.minNoteHeight)) ? Math.max(1, Math.floor(Number(cfg.minNoteHeight))) : undefined
+  const minNoteWidth = Number.isFinite(Number(cfg.minNoteWidth)) ? Math.max(1, Math.floor(Number(cfg.minNoteWidth))) : undefined
   const refreshMins = Number.isFinite(Number(cfg.refreshMins)) ? Math.max(1, Math.floor(Number(cfg.refreshMins))) : undefined
 
   const list = new Gtk.FlowBox({
@@ -439,6 +482,12 @@ export function StickyNotesWidget(cfg: StickyNotesListConfig = {}) {
 
   const render = () => {
     const data = loadStickyNotes(configPath)
+    const resolvedMaxNoteWidth = maxNoteWidth ?? data.maxNoteWidth
+    if (resolvedMaxNoteWidth) {
+      list.set_max_children_per_line(9999)
+    } else {
+      list.set_max_children_per_line(1)
+    }
     clearContainer(list)
     const shouldExclude = (note: StickyNoteEntry) => {
       if (note.excludeFromNotes === true) return true
@@ -458,6 +507,10 @@ export function StickyNotesWidget(cfg: StickyNotesListConfig = {}) {
         note,
         maxNoteHeight: maxNoteHeight ?? data.maxNoteHeight,
         maxNoteWidth: maxNoteWidth ?? data.maxNoteWidth,
+        minNoteHeight: minNoteHeight ?? data.minNoteHeight,
+        minNoteWidth: minNoteWidth ?? data.minNoteWidth,
+        openNote: cfg.openNote,
+        onOpenNote: cfg.onOpenNote,
       }))
     }
   }

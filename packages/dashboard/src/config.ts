@@ -17,6 +17,8 @@ export type DashboardWidgetConfig = {
   rowSpan?: number
   maxNoteHeight?: number
   maxNoteWidth?: number
+  minNoteHeight?: number
+  minNoteWidth?: number
   noteId?: string
   from?: "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right"
   customName?: string
@@ -75,6 +77,7 @@ export type DashboardConfig = {
 export type StickynotesConfig = {
   refreshMins?: number
   notesConfigPath?: string
+  openNote?: string
 }
 
 const defaultConfig: DashboardConfig = {
@@ -162,6 +165,8 @@ export function loadDashboardConfig(): DashboardConfig {
         rowSpan: Number.isFinite(Number(w.rowSpan)) ? Math.max(1, Math.floor(Number(w.rowSpan))) : undefined,
         maxNoteHeight: Number.isFinite(Number(w.maxNoteHeight)) ? Math.max(1, Math.floor(Number(w.maxNoteHeight))) : undefined,
         maxNoteWidth: Number.isFinite(Number(w.maxNoteWidth)) ? Math.max(1, Math.floor(Number(w.maxNoteWidth))) : undefined,
+        minNoteHeight: Number.isFinite(Number(w.minNoteHeight)) ? Math.max(1, Math.floor(Number(w.minNoteHeight))) : undefined,
+        minNoteWidth: Number.isFinite(Number(w.minNoteWidth)) ? Math.max(1, Math.floor(Number(w.minNoteWidth))) : undefined,
         noteId: typeof w.noteId === "string" ? w.noteId : undefined,
         from: typeof w.from === "string"
           && ["left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"].includes(w.from)
@@ -220,6 +225,9 @@ export function loadDashboardConfig(): DashboardConfig {
         : undefined,
       notesConfigPath: typeof (s as any).notesConfigPath === "string"
         ? (s as any).notesConfigPath
+        : undefined,
+      openNote: typeof (s as any).openNote === "string"
+        ? (s as any).openNote
         : undefined,
     },
   }

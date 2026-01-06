@@ -235,6 +235,7 @@ Groups tasks by Overdue / Today / Tomorrow / Future. Requires Tasks scope.
 ### Sticky Notes
 
 Sticky notes read from `~/.config/ags/notes.json`. You can render a list of notes (`sticky-notes`) or a single note (`sticky-note`).
+`openNote` supports `{path}` (recommended). If not provided, the note path is appended to the command.
 
 Dashboard config (top-level + widgets):
 
@@ -242,7 +243,8 @@ Dashboard config (top-level + widgets):
 {
   "stickynotes": {
     "refreshMins": 5,
-    "notesConfigPath": "~/.config/ags/notes.json"
+    "notesConfigPath": "~/.config/ags/notes.json",
+    "openNote": "ghostty -e nvim {path}"
   },
   "widgets": [
     {
@@ -252,6 +254,8 @@ Dashboard config (top-level + widgets):
       "row": 1,
       "colSpan": 5,
       "rowSpan": 5,
+      "minNoteHeight": 180,
+      "minNoteWidth": 320,
       "maxNoteHeight": 220,
       "maxNoteWidth": 360,
       "config": {
@@ -266,6 +270,7 @@ Dashboard config (top-level + widgets):
       "row": 6,
       "colSpan": 2,
       "noteId": "sql-mariadb-dump.md",
+      "minNoteHeight": 180,
       "maxNoteHeight": 220
     }
   ]
@@ -284,6 +289,8 @@ Notes config example (`~/.config/ags/notes.json`):
     "sql-export-csv.md",
     "sql-export-pdf.md"
   ],
+  "minNoteHeight": 180,
+  "minNoteWidth": 320,
   "defaults": {
     "background": "@surface_container",
     "renderMarkdown": true

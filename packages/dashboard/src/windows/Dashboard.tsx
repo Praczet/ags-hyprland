@@ -127,12 +127,17 @@ function toStickyNotesConfig(cfg: DashboardWidgetConfig, globalCfg?: Stickynotes
     notesConfigPath: typeof raw.notesConfigPath === "string"
       ? raw.notesConfigPath
       : (typeof globalCfg?.notesConfigPath === "string" ? globalCfg?.notesConfigPath : undefined),
+    openNote: typeof raw.openNote === "string"
+      ? raw.openNote
+      : (typeof globalCfg?.openNote === "string" ? globalCfg?.openNote : undefined),
     refreshMins: Number.isFinite(Number(raw.refreshMins))
       ? Math.floor(Number(raw.refreshMins))
       : (Number.isFinite(Number(globalCfg?.refreshMins)) ? Math.floor(Number(globalCfg?.refreshMins)) : undefined),
     maxNotes: Number.isFinite(Number(raw.maxNotes)) ? Math.floor(Number(raw.maxNotes)) : undefined,
     maxNoteHeight: Number.isFinite(Number(cfg.maxNoteHeight)) ? Math.floor(Number(cfg.maxNoteHeight)) : undefined,
     maxNoteWidth: Number.isFinite(Number(cfg.maxNoteWidth)) ? Math.floor(Number(cfg.maxNoteWidth)) : undefined,
+    minNoteHeight: Number.isFinite(Number(cfg.minNoteHeight)) ? Math.floor(Number(cfg.minNoteHeight)) : undefined,
+    minNoteWidth: Number.isFinite(Number(cfg.minNoteWidth)) ? Math.floor(Number(cfg.minNoteWidth)) : undefined,
   }
 }
 
@@ -146,9 +151,12 @@ function toStickyNoteConfig(cfg: DashboardWidgetConfig, globalCfg?: StickynotesC
     note,
     maxNoteHeight: Number.isFinite(Number(cfg.maxNoteHeight)) ? Math.floor(Number(cfg.maxNoteHeight)) : undefined,
     maxNoteWidth: Number.isFinite(Number(cfg.maxNoteWidth)) ? Math.floor(Number(cfg.maxNoteWidth)) : undefined,
+    minNoteHeight: Number.isFinite(Number(cfg.minNoteHeight)) ? Math.floor(Number(cfg.minNoteHeight)) : undefined,
+    minNoteWidth: Number.isFinite(Number(cfg.minNoteWidth)) ? Math.floor(Number(cfg.minNoteWidth)) : undefined,
     refreshMins: Number.isFinite(Number(globalCfg?.refreshMins)) ? Math.floor(Number(globalCfg?.refreshMins)) : undefined,
     notesConfigPath: configPath,
     noteId,
+    openNote: typeof globalCfg?.openNote === "string" ? globalCfg?.openNote : undefined,
   }
 }
 
@@ -159,6 +167,7 @@ export default function DashboardWindow(monitor: number = 0) {
   const usesTickTick = cfg.widgets.some(w => w.type === "ticktick")
   const google = usesGoogle ? initGoogleCalendarState() : null
   const ticktick = usesTickTick ? initTickTickState() : null
+  let animateOut = () => {}
   const registry: Record<DashboardWidgetType, WidgetFactory> = {
     clock: (cfg) => ClockWidget(toClockConfig(cfg)),
     "analog-clock": (cfg) => AnalogClockWidget(toTitleConfig(cfg) as AnalogClockConfig),
@@ -193,10 +202,11 @@ export default function DashboardWindow(monitor: number = 0) {
       if (ticktick) tcfg.tasks = ticktick.tasks
       return TickTickWidget(tcfg)
     },
-    "sticky-notes": (cfg) => StickyNotesWidget(toStickyNotesConfig(cfg, cfgStickynotes)),
+    "sticky-notes": (cfg) => StickyNotesWidget({ ...toStickyNotesConfig(cfg, cfgStickynotes), onOpenNote: () => animateOut() }),
     "sticky-note": (cfg) => {
       const noteCfg = toStickyNoteConfig(cfg, cfgStickynotes)
       if (!noteCfg) return new Gtk.Label({ label: "Missing sticky note", xalign: 0 })
+      noteCfg.onOpenNote = () => animateOut()
       return StickyNoteWidget(noteCfg)
     },
     custom: (cfg) => {
@@ -335,7 +345,7 @@ export default function DashboardWindow(monitor: number = 0) {
     })
   }
 
-  const animateOut = () => {
+  animateOut = () => {
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 32, () => {
       widgetWrappers.forEach(({ widget }) => {
         widget.add_css_class("dashboard-widget-exit")
