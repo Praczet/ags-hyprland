@@ -1,7 +1,7 @@
 import { Gtk } from "ags/gtk4"
 import GLib from "gi://GLib"
 import Gio from "gi://Gio"
-import { renderMarkdownPango } from "../services/renderMarkdown"
+import { MarkdownView } from "./MarkdownView"
 
 export type StickyNoteEntry = {
   id: string
@@ -360,16 +360,19 @@ export function StickyNoteWidget(cfg: StickyNoteWidgetConfig) {
     note = next
     header.set_label(note.title)
     if (note.background) applyCss(card, `background: ${note.background};`)
+
+    // NOTE: This checks if we should render full markdown.
     if (note.renderMarkdown) {
-      const label = new Gtk.Label({
-        wrap: true,
-        xalign: 0,
-        selectable: true,
-        cssClasses: ["sticky-note-text"],
-      })
-      label.set_use_markup(true)
-      label.set_markup(renderMarkdownPango(note.body))
-      scroller.set_child(label)
+      // We use the new MarkdownView widget here.
+      // It returns a Box (or similar Widget) containing the rendered blocks.
+      const mdView = MarkdownView(note.body)
+
+      // Optional: Add some internal margin if the view touches the scroll edges
+      mdView.set_margin_start(2)
+      mdView.set_margin_end(2)
+      mdView.set_margin_bottom(2)
+
+      scroller.set_child(mdView)
     } else {
       const label = new Gtk.Label({
         label: note.body,
@@ -398,7 +401,7 @@ function clearContainer(container: Gtk.Widget) {
   let child = container.get_first_child()
   while (child) {
     const next = child.get_next_sibling()
-    ; (container as unknown as { remove: (w: Gtk.Widget) => void }).remove(child)
+      ; (container as unknown as { remove: (w: Gtk.Widget) => void }).remove(child)
     child = next
   }
 }
