@@ -75,17 +75,19 @@ Disk pie:
 - `disk`: device name (e.g. `nvme0n1`)
 - `size`: number
 - `legendPosition`: `top | left | right | bottom`
+- `opacity`: 0-1 (default 0.7)
 
 Memory pie:
 - `size`: number
 - `legendPosition`: `top | left | right | bottom`
+- `opacity`: 0-1 (default 0.7)
 
 CPU graph:
 - `refreshTime`: ms (default 1000)
+- `opacity`: 0-1 (default 0.7, applies to core bars)
 
 ## Notes
 
 - Copy-to-clipboard uses `wl-copy` or `xclip`.
 - GPU info uses `lspci` if available.
 - Packages info uses `pacman`, `flatpak`, and `snap` if available.
-

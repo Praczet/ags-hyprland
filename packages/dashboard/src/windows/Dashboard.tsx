@@ -162,7 +162,7 @@ function toStickyNoteConfig(cfg: DashboardWidgetConfig, globalCfg?: StickynotesC
   }
 }
 
-function toAegisConfig(cfg: DashboardWidgetConfig): { title?: string; showTitle?: boolean; mode?: AegisMode; sections?: SectionId[]; showSectionTitles?: boolean; disk?: string; size?: number; legendPosition?: "top" | "left" | "right" | "bottom"; refreshMs?: number; refreshTime?: number } {
+function toAegisConfig(cfg: DashboardWidgetConfig): { title?: string; showTitle?: boolean; mode?: AegisMode; sections?: SectionId[]; showSectionTitles?: boolean; disk?: string; size?: number; legendPosition?: "top" | "left" | "right" | "bottom"; refreshMs?: number; refreshTime?: number; opacity?: number } {
   const raw = isObject(cfg.config) ? cfg.config : {}
   const mode = typeof raw.mode === "string" ? raw.mode : undefined
   const sectionsRaw = Array.isArray(raw.sections) ? raw.sections.filter((s: unknown) => typeof s === "string") : undefined
@@ -180,6 +180,7 @@ function toAegisConfig(cfg: DashboardWidgetConfig): { title?: string; showTitle?
       : undefined,
     refreshMs: Number.isFinite(Number(raw.refreshMs)) ? Math.max(250, Math.floor(Number(raw.refreshMs))) : undefined,
     refreshTime: Number.isFinite(Number(raw.refreshTime)) ? Math.max(250, Math.floor(Number(raw.refreshTime))) : undefined,
+    opacity: Number.isFinite(Number(raw.opacity)) ? Number(raw.opacity) : undefined,
   }
 }
 
@@ -267,17 +268,17 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
     "aegis-disk-pie": (cfg) => {
       const acfg = toAegisConfig(cfg)
       const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Disk")
-      return WidgetFrame(title, AegisDiskPieWidget({ disk: acfg.disk, size: acfg.size, legendPosition: acfg.legendPosition }))
+      return WidgetFrame(title, AegisDiskPieWidget({ disk: acfg.disk, size: acfg.size, legendPosition: acfg.legendPosition, opacity: acfg.opacity }))
     },
     "aegis-memory-pie": (cfg) => {
       const acfg = toAegisConfig(cfg)
       const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Memory")
-      return WidgetFrame(title, AegisMemoryPieWidget({ size: acfg.size, legendPosition: acfg.legendPosition }))
+      return WidgetFrame(title, AegisMemoryPieWidget({ size: acfg.size, legendPosition: acfg.legendPosition, opacity: acfg.opacity }))
     },
     "aegis-cpu-graph": (cfg) => {
       const acfg = toAegisConfig(cfg)
       const title = acfg.showTitle === false ? undefined : (acfg.title ?? "CPU")
-      return WidgetFrame(title, AegisCpuGraphWidget({ refreshMs: acfg.refreshMs, refreshTime: acfg.refreshTime }))
+      return WidgetFrame(title, AegisCpuGraphWidget({ refreshMs: acfg.refreshMs, refreshTime: acfg.refreshTime, opacity: acfg.opacity }))
     },
     custom: (cfg) => {
       const host = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })

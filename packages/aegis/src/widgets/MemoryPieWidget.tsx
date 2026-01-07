@@ -8,6 +8,7 @@ import { buildInfoRow } from "./rows"
 export type AegisMemoryPieConfig = {
   size?: number
   legendPosition?: "top" | "left" | "right" | "bottom"
+  opacity?: number
 }
 
 function parseColor(input: string) {
@@ -37,6 +38,9 @@ export function AegisMemoryPieWidget(cfg: AegisMemoryPieConfig = {}) {
   const service = getSysinfoService()
   const size = Number.isFinite(cfg.size) ? Math.max(80, Math.floor(cfg.size as number)) : 140
   const legend = cfg.legendPosition ?? "left"
+  const opacity = Number.isFinite(cfg.opacity)
+    ? Math.max(0, Math.min(1, Number(cfg.opacity)))
+    : 0.7
 
   let usedFraction = 0
   const area = new Gtk.DrawingArea({ content_width: size, content_height: size })
@@ -67,12 +71,12 @@ export function AegisMemoryPieWidget(cfg: AegisMemoryPieConfig = {}) {
     const cy = height / 2
     const r = Math.min(width, height) / 2 - 6
 
-    cr.setSourceRGBA(freeColor.red, freeColor.green, freeColor.blue, 0.7)
+    cr.setSourceRGBA(freeColor.red, freeColor.green, freeColor.blue, 0.7 * opacity)
     cr.arc(cx, cy, r, 0, Math.PI * 2)
     cr.fill()
 
     if (usedFraction > 0) {
-      cr.setSourceRGBA(usedColor.red, usedColor.green, usedColor.blue, 0.9)
+      cr.setSourceRGBA(usedColor.red, usedColor.green, usedColor.blue, 0.9 * opacity)
       cr.moveTo(cx, cy)
       cr.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * usedFraction)
       cr.closePath()

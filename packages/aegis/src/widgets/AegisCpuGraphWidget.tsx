@@ -6,6 +6,7 @@ import GLib from "gi://GLib"
 export type AegisCpuGraphConfig = {
   refreshMs?: number
   refreshTime?: number
+  opacity?: number
 }
 
 type CpuSample = {
@@ -110,6 +111,9 @@ export function AegisCpuGraphWidget(cfg: AegisCpuGraphConfig = {}) {
     ? Number(cfg.refreshTime)
     : (Number.isFinite(cfg.refreshMs) ? Number(cfg.refreshMs) : 1000)
   const refreshMs = Math.max(250, Math.floor(refreshInput))
+  const coreOpacity = Number.isFinite(cfg.opacity)
+    ? Math.max(0, Math.min(1, Number(cfg.opacity)))
+    : 0.7
   const model = readCpuModel()
 
   const [sample, setSample] = createState<CpuSample | null>(null)
@@ -212,6 +216,7 @@ export function AegisCpuGraphWidget(cfg: AegisCpuGraphConfig = {}) {
       label.set_valign(Gtk.Align.CENTER)
       const bar = new Gtk.ProgressBar()
       bar.add_css_class("aegis-cpu-bar")
+      bar.set_opacity(coreOpacity)
       bar.set_hexpand(true)
       bar.set_vexpand(true)
       bar.set_size_request(-1, 12)

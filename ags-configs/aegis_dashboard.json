@@ -20,7 +20,8 @@
       "rowSpan": 1,
       "expandX": true,
       "config": {
-        "size": 240
+        "size": 240,
+        "opacity": 0.3
       }
     },
     {
@@ -33,7 +34,8 @@
       "expandX": true,
       "config": {
         "size": 240,
-        "legendPosition": "left"
+        "legendPosition": "left",
+        "opacity": 0.3
       }
     },
     {
@@ -46,7 +48,8 @@
       "expandX": true,
       "config": {
         "size": 240,
-        "legendPosition": "left"
+        "legendPosition": "left",
+        "opacity": 0.3
       }
     },
     {

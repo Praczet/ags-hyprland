@@ -247,6 +247,16 @@ Groups tasks by Overdue / Today / Tomorrow / Future. Requires Tasks scope.
 }
 ```
 
+### Aegis widgets
+
+All Aegis widgets use `config` fields documented in the Aegis package. Notable additions:
+
+- `aegis-cpu-graph`: `opacity` (0-1, applies to core bars; default 0.7)
+- `aegis-disk-pie`: `opacity` (0-1, applies to the pie; default 0.7)
+- `aegis-memory-pie`: `opacity` (0-1, applies to the pie; default 0.7)
+
+This repo includes an Aegis-focused dashboard preset at `ags-configs/aegis_dashboard.json`.
+
 ### Sticky Notes
 
 Sticky notes read from `~/.config/ags/notes.json`. You can render a list of notes (`sticky-notes`) or a single note (`sticky-note`).
