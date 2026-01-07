@@ -1,6 +1,12 @@
 # Aegis
 
-Aegis is a GUI-first system info + diagnostics suite for AGS. It works as a standalone window and as dashboard widgets, and shares a single sysinfo service across all widgets.
+<img width="1803" height="1186" alt="image" src="https://github.com/user-attachments/assets/fd36d42a-5f00-4b44-ae41-547ae3c73b07" />
+
+
+> [!NOTE]
+> **A**daptive **E**nvironment **G**raphical **I**nformation **S**ystem
+
+Aegis is a GUI-first system info + diagnostics "suite" for AGS. It works as a standalone window and as dashboard widgets, and shares a single sysinfo service across all widgets.
 
 ## Features
 
@@ -82,3 +88,4 @@ CPU graph:
 - Copy-to-clipboard uses `wl-copy` or `xclip`.
 - GPU info uses `lspci` if available.
 - Packages info uses `pacman`, `flatpak`, and `snap` if available.
+
