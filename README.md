@@ -98,6 +98,7 @@ You’ll need:
 ## Package READMEs
 
 - Packages index: [README](packages/README.md)
+- Aegis: [README](packages/aegis/README.md)
 - Clipboard: [README](packages/clipboard/README.md)
 - Expose: [README](packages/expose/README.md)
 - OSD: [README](packages/osd/README.md)

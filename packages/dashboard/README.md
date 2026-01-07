@@ -6,6 +6,21 @@
 
 Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, TickTick). Configuration lives in `~/.config/ags/dashboard.json`.
 
+### Request usage
+
+Default config:
+
+```
+ags --instance adart request toggleDashboard
+```
+
+Custom config (relative paths resolve from `~/.config/ags/`):
+
+```
+ags --instance adart request toggleDashboard custom.json
+ags --instance adart request toggleDashboard /full/path/custom.json
+```
+
 ## Themes
 
 <img width="1586" height="1033" alt="2025-12-30-153049_hyprshot" src="https://github.com/user-attachments/assets/c68e392d-9ef2-458b-a191-35f9ce295080" />

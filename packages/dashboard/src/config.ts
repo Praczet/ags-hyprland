@@ -6,7 +6,7 @@ export type CalendarSource = {
   label?: string
 }
 
-export type DashboardWidgetType = "clock" | "analog-clock" | "weather" | "calendar" | "next-event" | "tasks" | "ticktick" | "sticky-notes" | "sticky-note" | "custom"
+export type DashboardWidgetType = "clock" | "analog-clock" | "weather" | "calendar" | "next-event" | "tasks" | "ticktick" | "sticky-notes" | "sticky-note" | "aegis" | "aegis-summary" | "aegis-disk" | "aegis-memory" | "aegis-network" | "aegis-battery" | "aegis-disk-pie" | "aegis-memory-pie" | "aegis-cpu-graph" | "custom"
 
 export type DashboardWidgetConfig = {
   id: string
@@ -127,8 +127,16 @@ function expandHome(path: string) {
   return path
 }
 
-export function loadDashboardConfig(): DashboardConfig {
-  const path = `${GLib.get_home_dir()}/.config/ags/dashboard.json`
+export function resolveDashboardConfigPath(path?: string) {
+  const raw = typeof path === "string" ? path.trim() : ""
+  if (!raw) return `${GLib.get_home_dir()}/.config/ags/dashboard.json`
+  if (raw.startsWith("~/")) return `${GLib.get_home_dir()}/${raw.slice(2)}`
+  if (GLib.path_is_absolute(raw)) return raw
+  return `${GLib.get_home_dir()}/.config/ags/${raw}`
+}
+
+export function loadDashboardConfig(configPath?: string): DashboardConfig {
+  const path = resolveDashboardConfigPath(configPath)
   let user: unknown = null
   try {
     const txt = GLib.file_get_contents(path)?.[1]
@@ -156,7 +164,7 @@ export function loadDashboardConfig(): DashboardConfig {
       ? widgets.map(w => ({
         id: typeof w.id === "string" ? w.id : "widget",
         type: (typeof w.type === "string"
-          && ["clock", "analog-clock", "weather", "calendar", "next-event", "tasks", "ticktick", "sticky-notes", "sticky-note", "custom"].includes(w.type))
+          && ["clock", "analog-clock", "weather", "calendar", "next-event", "tasks", "ticktick", "sticky-notes", "sticky-note", "aegis", "aegis-summary", "aegis-disk", "aegis-memory", "aegis-network", "aegis-battery", "aegis-disk-pie", "aegis-memory-pie", "aegis-cpu-graph", "custom"].includes(w.type))
           ? (w.type as DashboardWidgetType)
           : "clock",
         col: Number.isFinite(Number(w.col)) ? Math.max(1, Math.floor(Number(w.col))) : 1,

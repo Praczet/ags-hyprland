@@ -15,9 +15,13 @@ import { exposeHandleRequest } from "./exposeHandleRequest"
 import { Upcheck, css as upcheckCss } from "../packages/upcheck/src/"
 import { DashboardWindow, css as dashboardCss } from "../packages/dashboard/src"
 import { dashboardHandleRequest } from "./dashboardHandleRequest"
+import { AegisWindow, css as aegisCss } from "../packages/aegis/src"
+import { aegisHandleRequest } from "./aegisHandleRequest"
 
 
 async function handleRequest(argv: string[]) {
+  const aegis = await aegisHandleRequest(argv)
+  if (aegis !== undefined) return aegis
   const dash = await dashboardHandleRequest(argv)
   if (dash !== undefined) return dash
   const result = await exposeHandleRequest(argv)
@@ -28,7 +32,7 @@ async function handleRequest(argv: string[]) {
 
 app.start({
   instanceName: "adart",
-  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss + dashboardCss,
+  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss + dashboardCss + aegisCss,
   requestHandler(argv, respond) {
     handleRequest(argv)
       .then(respond)
@@ -55,6 +59,9 @@ app.start({
 
     const dashboardWin = DashboardWindow(0)
     app.add_window(dashboardWin)
+
+    const aegisWin = AegisWindow(0)
+    app.add_window(aegisWin)
 
       ; (globalThis as any).toggleClipboard = () =>
         clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())

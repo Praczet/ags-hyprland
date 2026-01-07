@@ -13,6 +13,8 @@ import { TickTickWidget, type TickTickConfig } from "../widgets/TickTick"
 import { StickyNotesWidget, StickyNoteWidget, loadStickyNote, type StickyNotesListConfig, type StickyNoteWidgetConfig } from "../widgets/StickyNotes"
 import { initTickTickState } from "../services/ticktickState"
 import { initWeatherState, type WeatherConfig } from "../services/weatherState"
+import { AegisWidget, AegisSummaryWidget, AegisDiskWidget, AegisMemoryWidget, AegisNetworkWidget, AegisBatteryWidget, AegisDiskPieWidget, AegisMemoryPieWidget, AegisCpuGraphWidget, type AegisMode, type SectionId } from "../../../aegis/src"
+import { WidgetFrame } from "../widgets/WidgetFrame"
 
 type WidgetFactory = (cfg: DashboardWidgetConfig) => Gtk.Widget
 
@@ -160,14 +162,35 @@ function toStickyNoteConfig(cfg: DashboardWidgetConfig, globalCfg?: StickynotesC
   }
 }
 
-export default function DashboardWindow(monitor: number = 0) {
-  const cfg = loadDashboardConfig()
+function toAegisConfig(cfg: DashboardWidgetConfig): { title?: string; showTitle?: boolean; mode?: AegisMode; sections?: SectionId[]; showSectionTitles?: boolean; disk?: string; size?: number; legendPosition?: "top" | "left" | "right" | "bottom"; refreshMs?: number; refreshTime?: number } {
+  const raw = isObject(cfg.config) ? cfg.config : {}
+  const mode = typeof raw.mode === "string" ? raw.mode : undefined
+  const sectionsRaw = Array.isArray(raw.sections) ? raw.sections.filter((s: unknown) => typeof s === "string") : undefined
+  const sections = sectionsRaw?.filter(s => ["system", "hardware", "memory", "storage", "network", "power", "hyprland", "status"].includes(s)) as SectionId[] | undefined
+  return {
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
+    mode: mode === "minimal" || mode === "summary" || mode === "full" ? (mode as AegisMode) : undefined,
+    sections,
+    showSectionTitles: typeof raw.showSectionTitles === "boolean" ? raw.showSectionTitles : undefined,
+    disk: typeof raw.disk === "string" ? raw.disk : undefined,
+    size: Number.isFinite(Number(raw.size)) ? Math.floor(Number(raw.size)) : undefined,
+    legendPosition: raw.legendPosition === "top" || raw.legendPosition === "left" || raw.legendPosition === "right" || raw.legendPosition === "bottom"
+      ? raw.legendPosition
+      : undefined,
+    refreshMs: Number.isFinite(Number(raw.refreshMs)) ? Math.max(250, Math.floor(Number(raw.refreshMs))) : undefined,
+    refreshTime: Number.isFinite(Number(raw.refreshTime)) ? Math.max(250, Math.floor(Number(raw.refreshTime))) : undefined,
+  }
+}
+
+export default function DashboardWindow(monitor: number = 0, configPath?: string, windowName?: string) {
+  const cfg = loadDashboardConfig(configPath)
   const cfgStickynotes = cfg.stickynotes
   const usesGoogle = cfg.widgets.some(w => w.type === "tasks" || (isObject(w.config) && (w.config as any).useGoogle === true))
   const usesTickTick = cfg.widgets.some(w => w.type === "ticktick")
   const google = usesGoogle ? initGoogleCalendarState() : null
   const ticktick = usesTickTick ? initTickTickState() : null
-  let animateOut = () => {}
+  let animateOut = () => { }
   const registry: Record<DashboardWidgetType, WidgetFactory> = {
     clock: (cfg) => ClockWidget(toClockConfig(cfg)),
     "analog-clock": (cfg) => AnalogClockWidget(toTitleConfig(cfg) as AnalogClockConfig),
@@ -208,6 +231,53 @@ export default function DashboardWindow(monitor: number = 0) {
       if (!noteCfg) return new Gtk.Label({ label: "Missing sticky note", xalign: 0 })
       noteCfg.onOpenNote = () => animateOut()
       return StickyNoteWidget(noteCfg)
+    },
+    aegis: (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Aegis")
+      const body = AegisWidget({ mode: acfg.mode, sections: acfg.sections, showSectionTitles: acfg.showSectionTitles })
+      return WidgetFrame(title, body)
+    },
+    "aegis-summary": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Aegis Summary")
+      const body = AegisSummaryWidget({ mode: acfg.mode, sections: acfg.sections, showSectionTitles: acfg.showSectionTitles })
+      return WidgetFrame(title, body)
+    },
+    "aegis-disk": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Disk")
+      return WidgetFrame(title, AegisDiskWidget())
+    },
+    "aegis-memory": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Memory")
+      return WidgetFrame(title, AegisMemoryWidget())
+    },
+    "aegis-network": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Network")
+      return WidgetFrame(title, AegisNetworkWidget())
+    },
+    "aegis-battery": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Power")
+      return WidgetFrame(title, AegisBatteryWidget())
+    },
+    "aegis-disk-pie": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Disk")
+      return WidgetFrame(title, AegisDiskPieWidget({ disk: acfg.disk, size: acfg.size, legendPosition: acfg.legendPosition }))
+    },
+    "aegis-memory-pie": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Memory")
+      return WidgetFrame(title, AegisMemoryPieWidget({ size: acfg.size, legendPosition: acfg.legendPosition }))
+    },
+    "aegis-cpu-graph": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "CPU")
+      return WidgetFrame(title, AegisCpuGraphWidget({ refreshMs: acfg.refreshMs, refreshTime: acfg.refreshTime }))
     },
     custom: (cfg) => {
       const host = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
@@ -296,7 +366,7 @@ export default function DashboardWindow(monitor: number = 0) {
 
   const win = (
     <window
-      name="dashboard"
+      name={windowName ?? "dashboard"}
       namespace="adart-dashboard"
       class="dashboard"
       visible={false}
@@ -366,7 +436,11 @@ export default function DashboardWindow(monitor: number = 0) {
   }
 
     ; (win as any).showDashboard = () => {
-      win.visible = true
+      if (typeof win.present === "function") {
+        win.present()
+      } else {
+        win.visible = true
+      }
       win.grab_focus()
       animateIn()
     }
