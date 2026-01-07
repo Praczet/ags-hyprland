@@ -1,6 +1,6 @@
 import { Astal, Gdk, Gtk } from "ags/gtk4"
 import GLib from "gi://GLib"
-import { loadDashboardConfig, type DashboardWidgetConfig, type DashboardWidgetType, type WeatherDashboardConfig } from "../config"
+import { loadDashboardConfig, type DashboardWidgetConfig, type DashboardWidgetType, type StickynotesConfig, type WeatherDashboardConfig } from "../config"
 import { ClockWidget, type ClockConfig } from "../widgets/Clock"
 import { WeatherWidget } from "../widgets/Weather"
 import { CalendarWidget, type CalendarConfig } from "../widgets/Calendar"
@@ -10,8 +10,11 @@ import { initGoogleCalendarState } from "../services/googleState"
 import { mountCustomWidget } from "../widgets/customLoader"
 import { TasksWidget, type TasksConfig } from "../widgets/Tasks"
 import { TickTickWidget, type TickTickConfig } from "../widgets/TickTick"
+import { StickyNotesWidget, StickyNoteWidget, loadStickyNote, type StickyNotesListConfig, type StickyNoteWidgetConfig } from "../widgets/StickyNotes"
 import { initTickTickState } from "../services/ticktickState"
 import { initWeatherState, type WeatherConfig } from "../services/weatherState"
+import { AegisWidget, AegisSummaryWidget, AegisDiskWidget, AegisMemoryWidget, AegisNetworkWidget, AegisBatteryWidget, AegisDiskPieWidget, AegisMemoryPieWidget, AegisCpuGraphWidget, type AegisMode, type SectionId } from "../../../aegis/src"
+import { WidgetFrame } from "../widgets/WidgetFrame"
 
 type WidgetFactory = (cfg: DashboardWidgetConfig) => Gtk.Widget
 
@@ -118,12 +121,76 @@ function toTickTickConfig(cfg: DashboardWidgetConfig): TickTickConfig {
   }
 }
 
-export default function DashboardWindow(monitor: number = 0) {
-  const cfg = loadDashboardConfig()
+function toStickyNotesConfig(cfg: DashboardWidgetConfig, globalCfg?: StickynotesConfig): StickyNotesListConfig {
+  const raw = isObject(cfg.config) ? cfg.config : {}
+  return {
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
+    notesConfigPath: typeof raw.notesConfigPath === "string"
+      ? raw.notesConfigPath
+      : (typeof globalCfg?.notesConfigPath === "string" ? globalCfg?.notesConfigPath : undefined),
+    openNote: typeof raw.openNote === "string"
+      ? raw.openNote
+      : (typeof globalCfg?.openNote === "string" ? globalCfg?.openNote : undefined),
+    refreshMins: Number.isFinite(Number(raw.refreshMins))
+      ? Math.floor(Number(raw.refreshMins))
+      : (Number.isFinite(Number(globalCfg?.refreshMins)) ? Math.floor(Number(globalCfg?.refreshMins)) : undefined),
+    maxNotes: Number.isFinite(Number(raw.maxNotes)) ? Math.floor(Number(raw.maxNotes)) : undefined,
+    maxNoteHeight: Number.isFinite(Number(cfg.maxNoteHeight)) ? Math.floor(Number(cfg.maxNoteHeight)) : undefined,
+    maxNoteWidth: Number.isFinite(Number(cfg.maxNoteWidth)) ? Math.floor(Number(cfg.maxNoteWidth)) : undefined,
+    minNoteHeight: Number.isFinite(Number(cfg.minNoteHeight)) ? Math.floor(Number(cfg.minNoteHeight)) : undefined,
+    minNoteWidth: Number.isFinite(Number(cfg.minNoteWidth)) ? Math.floor(Number(cfg.minNoteWidth)) : undefined,
+  }
+}
+
+function toStickyNoteConfig(cfg: DashboardWidgetConfig, globalCfg?: StickynotesConfig): StickyNoteWidgetConfig | null {
+  const noteId = typeof cfg.noteId === "string" ? cfg.noteId : undefined
+  if (!noteId) return null
+  const configPath = typeof globalCfg?.notesConfigPath === "string" ? globalCfg?.notesConfigPath : "~/.config/ags/notes.json"
+  const note = loadStickyNote(configPath, noteId)
+  if (!note) return null
+  return {
+    note,
+    maxNoteHeight: Number.isFinite(Number(cfg.maxNoteHeight)) ? Math.floor(Number(cfg.maxNoteHeight)) : undefined,
+    maxNoteWidth: Number.isFinite(Number(cfg.maxNoteWidth)) ? Math.floor(Number(cfg.maxNoteWidth)) : undefined,
+    minNoteHeight: Number.isFinite(Number(cfg.minNoteHeight)) ? Math.floor(Number(cfg.minNoteHeight)) : undefined,
+    minNoteWidth: Number.isFinite(Number(cfg.minNoteWidth)) ? Math.floor(Number(cfg.minNoteWidth)) : undefined,
+    refreshMins: Number.isFinite(Number(globalCfg?.refreshMins)) ? Math.floor(Number(globalCfg?.refreshMins)) : undefined,
+    notesConfigPath: configPath,
+    noteId,
+    openNote: typeof globalCfg?.openNote === "string" ? globalCfg?.openNote : undefined,
+  }
+}
+
+function toAegisConfig(cfg: DashboardWidgetConfig): { title?: string; showTitle?: boolean; mode?: AegisMode; sections?: SectionId[]; showSectionTitles?: boolean; disk?: string; size?: number; legendPosition?: "top" | "left" | "right" | "bottom"; refreshMs?: number; refreshTime?: number } {
+  const raw = isObject(cfg.config) ? cfg.config : {}
+  const mode = typeof raw.mode === "string" ? raw.mode : undefined
+  const sectionsRaw = Array.isArray(raw.sections) ? raw.sections.filter((s: unknown) => typeof s === "string") : undefined
+  const sections = sectionsRaw?.filter(s => ["system", "hardware", "memory", "storage", "network", "power", "hyprland", "status"].includes(s)) as SectionId[] | undefined
+  return {
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
+    mode: mode === "minimal" || mode === "summary" || mode === "full" ? (mode as AegisMode) : undefined,
+    sections,
+    showSectionTitles: typeof raw.showSectionTitles === "boolean" ? raw.showSectionTitles : undefined,
+    disk: typeof raw.disk === "string" ? raw.disk : undefined,
+    size: Number.isFinite(Number(raw.size)) ? Math.floor(Number(raw.size)) : undefined,
+    legendPosition: raw.legendPosition === "top" || raw.legendPosition === "left" || raw.legendPosition === "right" || raw.legendPosition === "bottom"
+      ? raw.legendPosition
+      : undefined,
+    refreshMs: Number.isFinite(Number(raw.refreshMs)) ? Math.max(250, Math.floor(Number(raw.refreshMs))) : undefined,
+    refreshTime: Number.isFinite(Number(raw.refreshTime)) ? Math.max(250, Math.floor(Number(raw.refreshTime))) : undefined,
+  }
+}
+
+export default function DashboardWindow(monitor: number = 0, configPath?: string, windowName?: string) {
+  const cfg = loadDashboardConfig(configPath)
+  const cfgStickynotes = cfg.stickynotes
   const usesGoogle = cfg.widgets.some(w => w.type === "tasks" || (isObject(w.config) && (w.config as any).useGoogle === true))
   const usesTickTick = cfg.widgets.some(w => w.type === "ticktick")
   const google = usesGoogle ? initGoogleCalendarState() : null
   const ticktick = usesTickTick ? initTickTickState() : null
+  let animateOut = () => { }
   const registry: Record<DashboardWidgetType, WidgetFactory> = {
     clock: (cfg) => ClockWidget(toClockConfig(cfg)),
     "analog-clock": (cfg) => AnalogClockWidget(toTitleConfig(cfg) as AnalogClockConfig),
@@ -157,6 +224,60 @@ export default function DashboardWindow(monitor: number = 0) {
       const tcfg = toTickTickConfig(cfg)
       if (ticktick) tcfg.tasks = ticktick.tasks
       return TickTickWidget(tcfg)
+    },
+    "sticky-notes": (cfg) => StickyNotesWidget({ ...toStickyNotesConfig(cfg, cfgStickynotes), onOpenNote: () => animateOut() }),
+    "sticky-note": (cfg) => {
+      const noteCfg = toStickyNoteConfig(cfg, cfgStickynotes)
+      if (!noteCfg) return new Gtk.Label({ label: "Missing sticky note", xalign: 0 })
+      noteCfg.onOpenNote = () => animateOut()
+      return StickyNoteWidget(noteCfg)
+    },
+    aegis: (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Aegis")
+      const body = AegisWidget({ mode: acfg.mode, sections: acfg.sections, showSectionTitles: acfg.showSectionTitles })
+      return WidgetFrame(title, body)
+    },
+    "aegis-summary": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Aegis Summary")
+      const body = AegisSummaryWidget({ mode: acfg.mode, sections: acfg.sections, showSectionTitles: acfg.showSectionTitles })
+      return WidgetFrame(title, body)
+    },
+    "aegis-disk": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Disk")
+      return WidgetFrame(title, AegisDiskWidget())
+    },
+    "aegis-memory": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Memory")
+      return WidgetFrame(title, AegisMemoryWidget())
+    },
+    "aegis-network": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Network")
+      return WidgetFrame(title, AegisNetworkWidget())
+    },
+    "aegis-battery": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Power")
+      return WidgetFrame(title, AegisBatteryWidget())
+    },
+    "aegis-disk-pie": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Disk")
+      return WidgetFrame(title, AegisDiskPieWidget({ disk: acfg.disk, size: acfg.size, legendPosition: acfg.legendPosition }))
+    },
+    "aegis-memory-pie": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "Memory")
+      return WidgetFrame(title, AegisMemoryPieWidget({ size: acfg.size, legendPosition: acfg.legendPosition }))
+    },
+    "aegis-cpu-graph": (cfg) => {
+      const acfg = toAegisConfig(cfg)
+      const title = acfg.showTitle === false ? undefined : (acfg.title ?? "CPU")
+      return WidgetFrame(title, AegisCpuGraphWidget({ refreshMs: acfg.refreshMs, refreshTime: acfg.refreshTime }))
     },
     custom: (cfg) => {
       const host = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
@@ -193,11 +314,14 @@ export default function DashboardWindow(monitor: number = 0) {
     })
     wrapper.set_hexpand(false)
     wrapper.set_vexpand(false)
-    if (w.expandX) {
+    const defaultExpand = w.type === "sticky-notes" || w.type === "sticky-note"
+    const expandX = typeof w.expandX === "boolean" ? w.expandX : defaultExpand
+    const expandY = typeof w.expandY === "boolean" ? w.expandY : defaultExpand
+    if (expandX) {
       wrapper.set_hexpand(true)
       wrapper.set_halign(Gtk.Align.FILL)
     }
-    if (w.expandY) {
+    if (expandY) {
       wrapper.set_vexpand(true)
       wrapper.set_valign(Gtk.Align.FILL)
     }
@@ -242,7 +366,7 @@ export default function DashboardWindow(monitor: number = 0) {
 
   const win = (
     <window
-      name="dashboard"
+      name={windowName ?? "dashboard"}
       namespace="adart-dashboard"
       class="dashboard"
       visible={false}
@@ -291,7 +415,7 @@ export default function DashboardWindow(monitor: number = 0) {
     })
   }
 
-  const animateOut = () => {
+  animateOut = () => {
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 32, () => {
       widgetWrappers.forEach(({ widget }) => {
         widget.add_css_class("dashboard-widget-exit")
@@ -312,7 +436,11 @@ export default function DashboardWindow(monitor: number = 0) {
   }
 
     ; (win as any).showDashboard = () => {
-      win.visible = true
+      if (typeof win.present === "function") {
+        win.present()
+      } else {
+        win.visible = true
+      }
       win.grab_focus()
       animateIn()
     }

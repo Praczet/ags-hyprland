@@ -6,7 +6,7 @@ export type CalendarSource = {
   label?: string
 }
 
-export type DashboardWidgetType = "clock" | "analog-clock" | "weather" | "calendar" | "next-event" | "tasks" | "ticktick" | "custom"
+export type DashboardWidgetType = "clock" | "analog-clock" | "weather" | "calendar" | "next-event" | "tasks" | "ticktick" | "sticky-notes" | "sticky-note" | "aegis" | "aegis-summary" | "aegis-disk" | "aegis-memory" | "aegis-network" | "aegis-battery" | "aegis-disk-pie" | "aegis-memory-pie" | "aegis-cpu-graph" | "custom"
 
 export type DashboardWidgetConfig = {
   id: string
@@ -15,6 +15,11 @@ export type DashboardWidgetConfig = {
   row: number
   colSpan?: number
   rowSpan?: number
+  maxNoteHeight?: number
+  maxNoteWidth?: number
+  minNoteHeight?: number
+  minNoteWidth?: number
+  noteId?: string
   from?: "left" | "right" | "top" | "bottom" | "top-left" | "top-right" | "bottom-left" | "bottom-right"
   customName?: string
   showBackground?: boolean
@@ -66,6 +71,13 @@ export type DashboardConfig = {
   google?: GoogleConfig
   ticktick?: TickTickConfig
   weather?: WeatherDashboardConfig
+  stickynotes?: StickynotesConfig
+}
+
+export type StickynotesConfig = {
+  refreshMins?: number
+  notesConfigPath?: string
+  openNote?: string
 }
 
 const defaultConfig: DashboardConfig = {
@@ -115,8 +127,16 @@ function expandHome(path: string) {
   return path
 }
 
-export function loadDashboardConfig(): DashboardConfig {
-  const path = `${GLib.get_home_dir()}/.config/ags/dashboard.json`
+export function resolveDashboardConfigPath(path?: string) {
+  const raw = typeof path === "string" ? path.trim() : ""
+  if (!raw) return `${GLib.get_home_dir()}/.config/ags/dashboard.json`
+  if (raw.startsWith("~/")) return `${GLib.get_home_dir()}/${raw.slice(2)}`
+  if (GLib.path_is_absolute(raw)) return raw
+  return `${GLib.get_home_dir()}/.config/ags/${raw}`
+}
+
+export function loadDashboardConfig(configPath?: string): DashboardConfig {
+  const path = resolveDashboardConfigPath(configPath)
   let user: unknown = null
   try {
     const txt = GLib.file_get_contents(path)?.[1]
@@ -131,6 +151,7 @@ export function loadDashboardConfig(): DashboardConfig {
   const g = isObject(u.google) ? u.google : {}
   const t = isObject(u.ticktick) ? u.ticktick : {}
   const w = isObject(u.weather) ? u.weather : {}
+  const s = isObject((u as any).stickynotes) ? (u as any).stickynotes : {}
   const calendars = Array.isArray(g.calendars) ? g.calendars.filter(isObject) : []
 
   return {
@@ -143,13 +164,18 @@ export function loadDashboardConfig(): DashboardConfig {
       ? widgets.map(w => ({
         id: typeof w.id === "string" ? w.id : "widget",
         type: (typeof w.type === "string"
-          && ["clock", "analog-clock", "weather", "calendar", "next-event", "tasks", "ticktick", "custom"].includes(w.type))
+          && ["clock", "analog-clock", "weather", "calendar", "next-event", "tasks", "ticktick", "sticky-notes", "sticky-note", "aegis", "aegis-summary", "aegis-disk", "aegis-memory", "aegis-network", "aegis-battery", "aegis-disk-pie", "aegis-memory-pie", "aegis-cpu-graph", "custom"].includes(w.type))
           ? (w.type as DashboardWidgetType)
           : "clock",
         col: Number.isFinite(Number(w.col)) ? Math.max(1, Math.floor(Number(w.col))) : 1,
         row: Number.isFinite(Number(w.row)) ? Math.max(1, Math.floor(Number(w.row))) : 1,
         colSpan: Number.isFinite(Number(w.colSpan)) ? Math.max(1, Math.floor(Number(w.colSpan))) : undefined,
         rowSpan: Number.isFinite(Number(w.rowSpan)) ? Math.max(1, Math.floor(Number(w.rowSpan))) : undefined,
+        maxNoteHeight: Number.isFinite(Number(w.maxNoteHeight)) ? Math.max(1, Math.floor(Number(w.maxNoteHeight))) : undefined,
+        maxNoteWidth: Number.isFinite(Number(w.maxNoteWidth)) ? Math.max(1, Math.floor(Number(w.maxNoteWidth))) : undefined,
+        minNoteHeight: Number.isFinite(Number(w.minNoteHeight)) ? Math.max(1, Math.floor(Number(w.minNoteHeight))) : undefined,
+        minNoteWidth: Number.isFinite(Number(w.minNoteWidth)) ? Math.max(1, Math.floor(Number(w.minNoteWidth))) : undefined,
+        noteId: typeof w.noteId === "string" ? w.noteId : undefined,
         from: typeof w.from === "string"
           && ["left", "right", "top", "bottom", "top-left", "top-right", "bottom-left", "bottom-right"].includes(w.from)
           ? (w.from as DashboardWidgetConfig["from"])
@@ -200,6 +226,17 @@ export function loadDashboardConfig(): DashboardConfig {
       particleAnimations: typeof w.particleAnimations === "boolean" ? w.particleAnimations : defaultConfig.weather!.particleAnimations,
       particleFps: Number.isFinite(Number(w.particleFps)) ? Math.floor(Number(w.particleFps)) : defaultConfig.weather!.particleFps,
       particleDebugMode: typeof w.particleDebugMode === "string" ? w.particleDebugMode : defaultConfig.weather!.particleDebugMode,
+    },
+    stickynotes: {
+      refreshMins: Number.isFinite(Number((s as any).refreshMins))
+        ? Math.floor(Number((s as any).refreshMins))
+        : undefined,
+      notesConfigPath: typeof (s as any).notesConfigPath === "string"
+        ? (s as any).notesConfigPath
+        : undefined,
+      openNote: typeof (s as any).openNote === "string"
+        ? (s as any).openNote
+        : undefined,
     },
   }
 }

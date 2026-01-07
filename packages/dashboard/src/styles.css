@@ -219,6 +219,28 @@
   margin-bottom: 4px;
 }
 
+.sticky-notes-list {
+}
+
+.sticky-note-card {
+  background: @surface_container;
+  border: 1px solid alpha(@outline, 0.35);
+  border-radius: 14px;
+  padding: 10px;
+}
+
+.sticky-note-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.sticky-note-scroll {
+}
+
+.sticky-note-text {
+  margin: 6px;
+}
+
 .dashboard-weather-temp {
   font-size: 2.4rem;
   font-weight: 600;
@@ -251,7 +273,6 @@
   background: #f2a2a2;
 }
 
-
 .dashboard-weather-forecast-marker {
   background: @primary;
   border-radius: 0;
@@ -274,4 +295,86 @@
   font-size: 2.1rem;
   font-weight: 600;
   padding: 0;
+}
+
+/* HEADERS */
+.md-h1 {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 10px 0;
+  color: @primary;
+}
+.md-h2 {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 8px 0;
+  color: @secondary;
+}
+.md-h3 {
+  font-size: 16px;
+  font-weight: bold;
+  margin: 6px 0;
+}
+
+/* CODE BLOCKS */
+.md-code-frame {
+  background-color: @surface_container_highest; /* Dark background from Matugen */
+  border-radius: 8px;
+  border: 1px solid @outline_variant;
+  margin: 8px 0;
+}
+.md-code-view {
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 13px;
+  background-color: transparent;
+  color: @on_surface;
+}
+
+/* CALLOUTS */
+.md-callout {
+  background-color: alpha(@surface_container_high, 0.5);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+.md-callout-note {
+  border-left-color: @primary;
+}
+.md-callout-tip {
+  border-left-color: @tertiary;
+}
+.md-callout-warning {
+  border-left-color: @error;
+}
+.md-callout-important {
+  border-left-color: @secondary;
+}
+
+/* TABLES */
+.md-table {
+  margin: 10px 0;
+  border: 1px solid @outline_variant;
+  border-radius: 6px;
+  padding: 5px;
+}
+.md-table-header {
+  font-weight: bold;
+  border-bottom: 1px solid @outline;
+  padding: 4px 8px;
+  color: @primary;
+}
+.md-table-cell {
+  padding: 4px 8px;
+  color: @on_surface_variant;
+}
+
+/* QUOTES */
+.md-quote {
+  border-left: 3px solid @primary_fixed;
+  padding-left: 10px;
+  color: @on_surface_variant;
+  margin: 4px 0;
+  font-style: italic;
 }

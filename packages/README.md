@@ -14,6 +14,10 @@ Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, T
 
 <img width="1541" height="1028" alt="2025-12-30-152944_hyprshot" src="https://github.com/user-attachments/assets/3c1564a0-829c-4738-a740-95ece5c5b0db" />
 
+## aegis
+
+GUI-first system information suite with a standalone window and dashboard widgets (summary, disk, memory, network, battery, pies, CPU graph).
+
 
 ## expose
 
@@ -41,5 +45,4 @@ Power menu with confirmation dialogs for destructive actions.
 Pacman update checker overlay with list + details panes.
 
 <img width="1663" height="1440" alt="2025-12-30-164945_hyprshot" src="https://github.com/user-attachments/assets/1aa6d9b8-69e4-4f3f-9292-7c5fcd286750" />
-
 

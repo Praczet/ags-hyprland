@@ -6,6 +6,21 @@
 
 Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, TickTick). Configuration lives in `~/.config/ags/dashboard.json`.
 
+### Request usage
+
+Default config:
+
+```
+ags --instance adart request toggleDashboard
+```
+
+Custom config (relative paths resolve from `~/.config/ags/`):
+
+```
+ags --instance adart request toggleDashboard custom.json
+ags --instance adart request toggleDashboard /full/path/custom.json
+```
+
 ## Themes
 
 <img width="1586" height="1033" alt="2025-12-30-153049_hyprshot" src="https://github.com/user-attachments/assets/c68e392d-9ef2-458b-a191-35f9ce295080" />
@@ -231,6 +246,83 @@ Groups tasks by Overdue / Today / Tomorrow / Future. Requires Tasks scope.
   ]
 }
 ```
+
+### Sticky Notes
+
+Sticky notes read from `~/.config/ags/notes.json`. You can render a list of notes (`sticky-notes`) or a single note (`sticky-note`).
+`openNote` supports `{path}` (recommended). If not provided, the note path is appended to the command.
+
+Dashboard config (top-level + widgets):
+
+```json
+{
+  "stickynotes": {
+    "refreshMins": 5,
+    "notesConfigPath": "~/.config/ags/notes.json",
+    "openNote": "ghostty -e nvim {path}"
+  },
+  "widgets": [
+    {
+      "id": "sticky-notes",
+      "type": "sticky-notes",
+      "col": 5,
+      "row": 1,
+      "colSpan": 5,
+      "rowSpan": 5,
+      "minNoteHeight": 180,
+      "minNoteWidth": 320,
+      "maxNoteHeight": 220,
+      "maxNoteWidth": 360,
+      "config": {
+        "title": "Sticky Notes",
+        "maxNotes": 20
+      }
+    },
+    {
+      "id": "sticky-note-1",
+      "type": "sticky-note",
+      "col": 5,
+      "row": 6,
+      "colSpan": 2,
+      "noteId": "sql-mariadb-dump.md",
+      "minNoteHeight": 180,
+      "maxNoteHeight": 220
+    }
+  ]
+}
+```
+
+Notes config example (`~/.config/ags/notes.json`):
+
+```json
+{
+  "notesDir": "~/Notes",
+  "scanFolder": false,
+  "pattern": "-SM\\.md$",
+  "selected": [
+    "sql-mariadb-dump.md",
+    "sql-export-csv.md",
+    "sql-export-pdf.md"
+  ],
+  "minNoteHeight": 180,
+  "minNoteWidth": 320,
+  "defaults": {
+    "background": "@surface_container",
+    "renderMarkdown": true
+  },
+  "notes": {
+    "sql-mariadb-dump.md": {
+      "background": "#2f3a31",
+      "excludeFromNotes": true
+    },
+    "sql-export-csv.md": {
+      "renderMarkdown": false
+    }
+  }
+}
+```
+
+If `scanFolder` is `true`, the list widget shows the union of `selected` and files matching `pattern`. If `scanFolder` is `false`, it only shows `selected`. Notes with `excludeFromNotes: true` are hidden from the list widget but can still be rendered with a `sticky-note` widget.
 
 ### Custom
 

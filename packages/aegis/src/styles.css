@@ -1,0 +1,200 @@
+.aegis-window {
+  background: alpha(@background, 0.35);
+}
+
+.aegis-window-inner {
+  padding: 28px 32px;
+  border-radius: 20px;
+  background: alpha(@background, 0.96);
+  color: @primary;
+  border: 1px solid alpha(@outline, 0.4);
+  box-shadow: 0 18px 50px alpha(@shadow, 0.55);
+  min-width: 500px;
+}
+
+.aegis-window-header {
+  margin-bottom: 10px;
+}
+
+.aegis-window-title {
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.aegis-root {
+  font-size: 1rem;
+}
+
+.aegis-section {
+  padding: 6px 0 8px;
+}
+
+.aegis-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.aegis-section-rows {
+  margin-left: 12px;
+}
+
+.aegis-hero {
+  padding: 8px 0 12px;
+  border-bottom: 1px solid alpha(@outline, 0.25);
+}
+
+.aegis-hero-block {
+  min-width: 0;
+}
+
+.aegis-hero-icon {
+  margin-right: 6px;
+}
+
+.aegis-hero-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.aegis-hero-subtitle {
+  opacity: 0.7;
+}
+
+.aegis-hero-divider,
+.aegis-columns-divider {
+  margin: 0 8px;
+  background-color: alpha(@outline, 0.25);
+  min-width: 1px;
+}
+
+.aegis-columns {
+  margin-top: 8px;
+}
+
+.aegis-column {
+  min-width: 0;
+}
+
+.aegis-row {
+  padding: 2px 0;
+}
+
+.aegis-footer {
+  margin-top: 10px;
+  opacity: 0.6;
+}
+
+.aegis-footer-link,
+.aegis-footer-label {
+  font-size: 0.95rem;
+}
+
+.aegis-footer-sep {
+  opacity: 0.5;
+}
+
+.aegis-disk-pie-wrap {
+  padding: 4px 0;
+}
+
+.aegis-disk-pie-info {
+  min-width: 200px;
+}
+
+.aegis-disk-swatch {
+  border-radius: 2px;
+  margin-top: 4px;
+}
+
+.aegis-memory-pie-wrap {
+  padding: 4px 0;
+}
+
+.aegis-memory-pie-info {
+  min-width: 200px;
+}
+
+.aegis-memory-swatch {
+  border-radius: 2px;
+  margin-top: 4px;
+}
+
+.aegis-cpu-title {
+  font-weight: 600;
+}
+
+.aegis-cpu-meta,
+.aegis-cpu-value {
+  opacity: 0.75;
+}
+
+.aegis-cpu-bar {
+  min-height: 12px;
+}
+
+.aegis-cpu-core-row {
+  margin-left: 12px;
+}
+
+.aegis-cpu-core-row,
+.aegis-cpu-row {
+  min-height: 22px;
+}
+
+.aegis-cpu-bar > trough {
+  min-height: 12px;
+}
+
+.aegis-cpu-bar > trough > progress {
+  min-height: 12px;
+}
+
+.aegis-cpu-bar progressbar {
+  border-radius: 999px;
+  background: alpha(@primary, 0.2);
+}
+
+.aegis-cpu-bar progressbar > trough > progress {
+  border-radius: 999px;
+  background: @primary;
+}
+
+.aegis-label {
+  opacity: 0.8;
+}
+
+.aegis-value {
+  font-weight: 500;
+}
+
+.aegis-progress {
+  min-height: 8px;
+}
+
+.aegis-progress progressbar {
+  border-radius: 999px;
+  background: alpha(@primary, 0.2);
+}
+
+.aegis-progress progressbar > trough > progress {
+  border-radius: 999px;
+  background: @primary;
+}
+
+.aegis-disk-block {
+  padding-bottom: 6px;
+  border-bottom: 1px solid alpha(@outline, 0.2);
+}
+
+.aegis-disk-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.aegis-copyable {
+}
+
+.aegis-error {
+  color: @error;
+}
