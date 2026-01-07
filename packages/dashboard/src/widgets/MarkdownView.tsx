@@ -145,11 +145,13 @@ function CodeWidget(lang: string, content: string) {
       wrap_mode: Gtk.WrapMode.WORD_CHAR,
       monospace: true,
       show_line_numbers: true,
+      hexpand: true,
+      halign: Gtk.Align.FILL,
       cssClasses: ["md-code-view"]
     })
 
     // Wrap in frame
-    return new Gtk.Frame({ child: view, cssClasses: ["md-code-frame"] })
+    return new Gtk.Frame({ child: view, cssClasses: ["md-code-frame"], hexpand: true, halign: Gtk.Align.FILL })
   }
 
   // Fallback if no GtkSourceView
