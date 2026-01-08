@@ -1,6 +1,6 @@
 import type { AegisMode, BatteryInfo, DiskInfo, NetworkInterfaceInfo, SysinfoModel } from "../types"
 
-export type SectionId = "system" | "hardware" | "memory" | "storage" | "network" | "power" | "hyprland" | "status"
+export type SectionId = "system" | "hardware" | "memory" | "storage" | "network" | "power" | "hyprland" | "status" | "network-info"
 
 export type InfoRow = {
   label: string
@@ -144,7 +144,7 @@ export function buildSections(data: SysinfoModel, mode: AegisMode, sectionFilter
     id: "network",
     title: "Network",
     rows: [
-      { label: "Iterfaces", value: networkSummary(data.network.interfaces), minMode: "summary" },
+      { label: "Interfaces", value: networkSummary(data.network.interfaces), minMode: "summary" },
       ...data.network.interfaces.map(n => ({
         label: n.name,
         value: `${formatBytes(n.rxBytes)} ↓ / ${formatBytes(n.txBytes)} ↑`,
@@ -194,6 +194,24 @@ export function buildSections(data: SysinfoModel, mode: AegisMode, sectionFilter
     title: "Status",
     rows: [
       { label: "Updated", value: formatTimestamp(data.refreshedAt), minMode: "full" },
+    ],
+  })
+
+  const networkInfo = data.network.info ?? {}
+  sections.push({
+    id: "network-info",
+    title: "Network Info",
+    rows: [
+      ...data.network.interfaces.map(n => ({
+        label: `${n.name}${n.primary ? " (primary)" : ""}`,
+        value: `${n.type ?? "--"} • ${n.state ?? "down"} • ${n.ssid ?? "--"}`,
+        minMode: "summary" as const,
+        icon: mode === "full" ? n.icon : undefined,
+      })),
+      { label: "Host", value: networkInfo.hostname ?? "--", minMode: "minimal" },
+      { label: "IP", value: networkInfo.ip ?? "--", minMode: "minimal" },
+      { label: "Gateway", value: networkInfo.gateway ?? "--", minMode: "minimal" },
+      { label: "SSID", value: networkInfo.ssid ?? "--", minMode: "minimal" },
     ],
   })
 

@@ -68,8 +68,10 @@ ags request -i adart aegismode full
 
 Common:
 - `mode`: `minimal | summary | full`
-- `sections`: `system | hardware | memory | storage | network | power | hyprland | status`
+- `sections`: `system | hardware | memory | storage | network | power | hyprland | status | network-info`
 - `showSectionTitles`: `boolean`
+- `allowBackgroundRefresh`: `boolean` (keep sysinfo timer running even when window/dashboard is hidden)
+- `refreshOnShow`: `boolean` (force a refresh when the window/dashboard becomes visible)
 
 Disk pie:
 - `disk`: device name (e.g. `nvme0n1`)

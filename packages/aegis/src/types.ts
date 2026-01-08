@@ -36,6 +36,16 @@ export type NetworkInterfaceInfo = {
   txBytes?: number
   icon?: string
   ssid?: string
+  type?: "wifi" | "ethernet"
+  primary?: boolean
+}
+
+export type NetworkInfo = {
+  hostname?: string
+  iface?: string
+  ssid?: string
+  ip?: string
+  gateway?: string
 }
 
 export type BatteryInfo = {
@@ -95,6 +105,7 @@ export type SysinfoModel = {
   physicalDisks: PhysicalDiskInfo[]
   network: {
     interfaces: NetworkInterfaceInfo[]
+    info?: NetworkInfo
   }
   power: {
     batteries: BatteryInfo[]

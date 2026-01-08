@@ -9,6 +9,7 @@ import { AegisDiskWidget } from "./AegisDiskWidget"
 import { AegisMemoryWidget } from "./AegisMemoryWidget"
 import { AegisNetworkWidget } from "./AegisNetworkWidget"
 import { AegisBatteryWidget } from "./AegisBatteryWidget"
+import { AegisNetworkInfoWidget } from "./AegisNetworkInfoWidget"
 
 export type AegisWidgetConfig = {
   mode?: AegisMode
@@ -140,6 +141,8 @@ function renderContent(box: Gtk.Box, data: SysinfoModel | null, err: string | nu
           return buildSectionWithWidget("Memory", showTitles, AegisMemoryWidget())
         case "network":
           return buildSectionWithWidget("Network", showTitles, AegisNetworkWidget())
+        case "network-info":
+          return buildSectionWithWidget("Network Info", showTitles, AegisNetworkInfoWidget())
         case "power":
           return buildSectionWithWidget("Power", showTitles, AegisBatteryWidget())
       }
@@ -171,7 +174,7 @@ function renderContent(box: Gtk.Box, data: SysinfoModel | null, err: string | nu
     sizeGroup.add_widget(left)
     sizeGroup.add_widget(right)
 
-    const leftIds: SectionId[] = ["system", "hyprland", "status"]
+    const leftIds: SectionId[] = ["system", "hyprland", "status", "network-info"]
     const rightIds: SectionId[] = ["hardware", "memory", "storage", "network", "power"]
 
     for (const section of built) {

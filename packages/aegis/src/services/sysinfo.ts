@@ -1,8 +1,8 @@
 import { type Accessor, createState } from "ags"
 import Gio from "gi://Gio"
 import GLib from "gi://GLib"
-import type { AegisMode, BatteryInfo, DiskInfo, HyprlandMonitorInfo, MemoryInfo, NetworkInterfaceInfo, PhysicalDiskInfo, SysinfoModel } from "../types"
-import Network, { Wifi } from "gi://AstalNetwork"
+import type { AegisMode, BatteryInfo, DiskInfo, HyprlandMonitorInfo, MemoryInfo, NetworkInfo, NetworkInterfaceInfo, PhysicalDiskInfo, SysinfoModel } from "../types"
+import Network from "gi://AstalNetwork"
 
 export type SysinfoService = {
   data: Accessor<SysinfoModel | null>
@@ -10,6 +10,7 @@ export type SysinfoService = {
   mode: Accessor<AegisMode>
   refresh: () => Promise<void>
   setMode: (mode: AegisMode) => void
+  setActive: (id: string, active: boolean, opts?: { allowBackgroundRefresh?: boolean; refreshOnShow?: boolean }) => void
 }
 
 const REFRESH_MS = 15000
@@ -18,6 +19,8 @@ let cachedPackages: string | undefined
 let cachedTheme: { theme?: string; icons?: string } | null = null
 let lastMetaAt = 0
 const META_TTL_MS = 10 * 60 * 1000
+let refreshTimer: number | null = null
+const consumers = new Map<string, { active: boolean; allowBackgroundRefresh: boolean; refreshOnShow: boolean }>()
 
 function readFile(path: string): string | null {
   try {
@@ -289,12 +292,51 @@ function getDisks(): DiskInfo[] {
   return disks
 }
 
+function getDeviceTypeName(device: any): NetworkInterfaceInfo["type"] {
+  if (!device) return undefined
+  if (device.deviceType === 1) return "wifi"
+  if (device.deviceType === 2) return "ethernet"
+  return undefined
+}
+
+function findActiveNetworkDevice(network: any) {
+  const allDevices = network.client?.get_devices?.() || []
+  let activeDev = allDevices.find((d: any) =>
+    d.interface !== "lo" &&
+    d.state === 100 &&
+    d.ip4_config !== null
+  )
+  if (!activeDev) {
+    if (network.primary === "wifi") activeDev = network.wifi?.device
+    if (network.primary === "wired") activeDev = network.wired?.device
+  }
+  return activeDev ?? null
+}
+
 function parseNetDev(): NetworkInterfaceInfo[] {
   const raw = readFile("/proc/net/dev")
   if (!raw) return []
 
   // 1. Get the Astal Network instance
   const network = Network.get_default()
+  const devices = network.client?.get_devices?.() || []
+  const deviceTypes = new Map<string, NetworkInterfaceInfo["type"]>()
+  for (const device of devices) {
+    const type = getDeviceTypeName(device)
+    const iface = device?.interface
+    if (type && typeof iface === "string") deviceTypes.set(iface, type)
+  }
+  const wifiIface = network.wifi?.device.interface
+  if (wifiIface) deviceTypes.set(wifiIface, "wifi")
+  const wiredIface = network.wired?.device.interface
+  if (wiredIface) deviceTypes.set(wiredIface, "ethernet")
+  const activeDevice = findActiveNetworkDevice(network)
+  const primaryIface = activeDevice?.interface
+    ?? (network.primary === "wifi"
+      ? network.wifi?.device.interface
+      : network.primary === "wired"
+        ? network.wired?.device.interface
+        : undefined)
 
   const lines = raw.split("\n").slice(2)
   const interfaces: NetworkInterfaceInfo[] = []
@@ -321,7 +363,7 @@ function parseNetDev(): NetworkInterfaceInfo[] {
     }
 
     if (network.wired && network.wired.device.interface === name) {
-      ssid = network.wired.device.activeConnection?.id ?? "Eth"
+      ssid = network.wired.device.activeConnection?.id ?? "Ethernet"
       iconName = network.wired.iconName
     }
 
@@ -332,70 +374,41 @@ function parseNetDev(): NetworkInterfaceInfo[] {
       txBytes: Number.isFinite(tx) ? tx : undefined,
       ssid: ssid,
       icon: iconName,
+      type: deviceTypes.get(name),
+      primary: primaryIface === name,
     })
   }
   // console.log("Parsed network interfaces:", interfaces, getDetailedNetworkInfo())
   return interfaces
 }
 
-function getDetailedNetworkInfo() {
+function getDetailedNetworkInfo(): NetworkInfo {
   const network = Network.get_default()
   const hostname = GLib.get_host_name()
 
-  // 1. Get devices from the NMClient instance
-  const allDevices = network.client?.get_devices() || []
+  const activeDev = findActiveNetworkDevice(network)
+  const info: NetworkInfo = { hostname }
 
-  // 2. Find the REAL active device
-  // Criteria:
-  //  - State is ACTIVATED (100)
-  //  - Has IP Config
-  //  - IS NOT Loopback ("lo")
-  let activeDev = allDevices.find(d =>
-    d.interface !== "lo" &&
-    d.state === 100 &&
-    d.ip4_config !== null
-  )
+  if (!activeDev) return info
 
-  // Fallback: If no active physical device found, try the specific defaults
-  // (This helps if the state is transient/connecting)
-  if (!activeDev) {
-    if (network.primary === "wifi") activeDev = network.wifi?.device
-    if (network.primary === "wired") activeDev = network.wired?.device
+  info.iface = activeDev.interface
+
+  const ipConfig = activeDev.ip4_config
+  if (ipConfig) {
+    info.gateway = ipConfig.gateway || undefined
+    const addrs = ipConfig.get_addresses()
+    if (addrs && addrs.length > 0) {
+      info.ip = addrs[0].get_address()
+    }
   }
 
-  let info = {
-    hostname: hostname,
-    iface: "Disconnected",
-    ssid: "N/A",
-    ip: "N/A",
-    gateway: "N/A"
-  }
-
-  if (activeDev) {
-    info.iface = activeDev.interface
-
-    const ipConfig = activeDev.ip4_config
-    if (ipConfig) {
-      info.gateway = ipConfig.gateway || "N/A"
-      const addrs = ipConfig.get_addresses()
-      if (addrs && addrs.length > 0) {
-        info.ip = addrs[0].get_address()
-      }
-    }
-
-    // --- SSID / Name Logic ---
-    if (activeDev.deviceType === 2) { // ETHERNET
-      // Use the Connection ID (e.g. "Work", "Wired connection 1")
-      info.ssid = activeDev.activeConnection?.id || "Ethernet"
-    }
-    else if (activeDev.deviceType === 1) { // WIFI
-      // Try to get the SSID from the Astal wrapper if available
-      if (network.wifi && network.wifi.interface === activeDev.interface) {
-        info.ssid = network.wifi.ssid || "Unknown"
-      } else {
-        // Fallback to connection ID if wrapper doesn't match
-        info.ssid = activeDev.activeConnection?.id || "Wifi"
-      }
+  if (activeDev.deviceType === 2) {
+    info.ssid = activeDev.activeConnection?.id ?? "Ethernet"
+  } else if (activeDev.deviceType === 1) {
+    if (network.wifi && network.wifi.interface === activeDev.interface) {
+      info.ssid = network.wifi.ssid ?? undefined
+    } else {
+      info.ssid = activeDev.activeConnection?.id ?? undefined
     }
   }
 
@@ -626,7 +639,7 @@ export function getSysinfoService(): SysinfoService {
       const memory = parseMeminfo()
       const disks = getDisks()
       const physicalDisks = getPhysicalDisks()
-      const network = { interfaces: parseNetDev() }
+      const network = { interfaces: parseNetDev(), info: getDetailedNetworkInfo() }
       const power = { batteries: listBatteries() }
       const hyprland = probeHyprland()
 
@@ -652,12 +665,24 @@ export function getSysinfoService(): SysinfoService {
     }
   }
 
-  refresh().catch(err => console.error("aegis refresh error", err))
+  const updateTimer = (skipInitialRefresh: boolean) => {
+    const anyActive = Array.from(consumers.values()).some(c => c.active)
+    const allowBackground = Array.from(consumers.values()).some(c => c.allowBackgroundRefresh)
+    const shouldRun = anyActive || allowBackground
 
-  GLib.timeout_add(GLib.PRIORITY_DEFAULT, REFRESH_MS, () => {
-    refresh().catch(err => console.error("aegis refresh error", err))
-    return GLib.SOURCE_CONTINUE
-  })
+    if (shouldRun && refreshTimer === null) {
+      if (!skipInitialRefresh) {
+        refresh().catch(err => console.error("aegis refresh error", err))
+      }
+      refreshTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, REFRESH_MS, () => {
+        refresh().catch(err => console.error("aegis refresh error", err))
+        return GLib.SOURCE_CONTINUE
+      })
+    } else if (!shouldRun && refreshTimer !== null) {
+      GLib.source_remove(refreshTimer)
+      refreshTimer = null
+    }
+  }
 
   const setMode = (next: AegisMode) => {
     if (next === "minimal" || next === "summary" || next === "full") {
@@ -665,6 +690,22 @@ export function getSysinfoService(): SysinfoService {
     }
   }
 
-  singleton = { data, error, mode, refresh, setMode }
+  const setActive = (id: string, active: boolean, opts?: { allowBackgroundRefresh?: boolean; refreshOnShow?: boolean }) => {
+    const prev = consumers.get(id)
+    const next = {
+      active,
+      allowBackgroundRefresh: opts?.allowBackgroundRefresh ?? prev?.allowBackgroundRefresh ?? false,
+      refreshOnShow: opts?.refreshOnShow ?? prev?.refreshOnShow ?? true,
+    }
+    consumers.set(id, next)
+    let skipInitialRefresh = active && next.refreshOnShow === false
+    if (active && next.refreshOnShow && !prev?.active) {
+      refresh().catch(err => console.error("aegis refresh error", err))
+      skipInitialRefresh = true
+    }
+    updateTimer(skipInitialRefresh)
+  }
+
+  singleton = { data, error, mode, refresh, setMode, setActive }
   return singleton
 }

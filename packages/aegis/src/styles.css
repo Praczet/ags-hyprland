@@ -80,6 +80,10 @@
   padding: 2px 0;
 }
 
+.aegis-row-icon {
+  opacity: 0.8;
+}
+
 .aegis-footer {
   margin-top: 10px;
   opacity: 0.6;
@@ -201,4 +205,10 @@
 
 .aegis-network-down {
   opacity: 0.3;
+}
+
+.aegis-network-connector {
+  margin: 6px 0 8px;
+  min-height: 1px;
+  background-color: alpha(@outline, 0.25);
 }

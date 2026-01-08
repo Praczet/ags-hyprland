@@ -18,6 +18,10 @@ Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, T
 
 GUI-first system information suite with a standalone window and dashboard widgets (summary, disk, memory, network, battery, pies, CPU graph).
 
+## a-network
+
+NetworkManager UI with a Wi-Fi-first accordion layout, education mode, and sharing tools.
+
 
 ## expose
 
@@ -45,4 +49,3 @@ Power menu with confirmation dialogs for destructive actions.
 Pacman update checker overlay with list + details panes.
 
 <img width="1663" height="1440" alt="2025-12-30-164945_hyprshot" src="https://github.com/user-attachments/assets/1aa6d9b8-69e4-4f3f-9292-7c5fcd286750" />
-

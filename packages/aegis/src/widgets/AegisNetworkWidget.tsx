@@ -34,7 +34,8 @@ export function AegisNetworkWidget() {
     }
 
     for (const iface of data.network.interfaces) {
-      const label = iface.state === "up" ? `${iface.name} (up)` : iface.name
+      const primaryTag = iface.primary ? " (primary)" : ""
+      const label = iface.state === "up" ? `${iface.name} (up)${primaryTag}` : `${iface.name}${primaryTag}`
       const row: InfoRow = {
         label: `${label}${iface.ssid && iface.ssid !== "" ? ` [${iface.ssid}]` : ""}`,
         value: `${formatBytes(iface.rxBytes)} ↓ / ${formatBytes(iface.txBytes)} ↑`,

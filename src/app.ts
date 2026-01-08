@@ -17,11 +17,15 @@ import { DashboardWindow, css as dashboardCss } from "../packages/dashboard/src"
 import { dashboardHandleRequest } from "./dashboardHandleRequest"
 import { AegisWindow, css as aegisCss } from "../packages/aegis/src"
 import { aegisHandleRequest } from "./aegisHandleRequest"
+import { networkHandleRequest } from "./networkHandleRequest"
+import { NetworkWindow, css as networkCss } from "../packages/a-network/src"
 
 
 async function handleRequest(argv: string[]) {
   const aegis = await aegisHandleRequest(argv)
   if (aegis !== undefined) return aegis
+  const network = await networkHandleRequest(argv)
+  if (network !== undefined) return network
   const dash = await dashboardHandleRequest(argv)
   if (dash !== undefined) return dash
   const result = await exposeHandleRequest(argv)
@@ -32,7 +36,7 @@ async function handleRequest(argv: string[]) {
 
 app.start({
   instanceName: "adart",
-  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss + dashboardCss + aegisCss,
+  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss + dashboardCss + aegisCss + networkCss,
   requestHandler(argv, respond) {
     handleRequest(argv)
       .then(respond)
@@ -62,6 +66,9 @@ app.start({
 
     const aegisWin = AegisWindow(0)
     app.add_window(aegisWin)
+
+    const networkWin = NetworkWindow(0)
+    app.add_window(networkWin)
 
       ; (globalThis as any).toggleClipboard = () =>
         clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())

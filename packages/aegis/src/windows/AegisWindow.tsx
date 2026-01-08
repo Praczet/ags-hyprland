@@ -12,9 +12,19 @@ import { AegisDiskPieWidget } from "../widgets/DiskPieWidget"
 import { AegisCpuGraphWidget } from "../widgets/AegisCpuGraphWidget"
 import { getSysinfoService } from "../services/sysinfo"
 
-export function AegisWindow(monitor = 0) {
+export type AegisWindowConfig = {
+  allowBackgroundRefresh?: boolean
+  refreshOnShow?: boolean
+}
+
+export function AegisWindow(monitor = 0, cfg: AegisWindowConfig = {}) {
   const contentHost = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 12 })
   let currentDispose: (() => void) | null = null
+  const refreshConfig = {
+    allowBackgroundRefresh: cfg.allowBackgroundRefresh ?? false,
+    refreshOnShow: cfg.refreshOnShow ?? true,
+  }
+  getSysinfoService().setActive("aegis-window", false, refreshConfig)
   const mountContent = (factory: () => Gtk.Widget) => {
     let child = contentHost.get_first_child()
     while (child) {
@@ -51,7 +61,10 @@ export function AegisWindow(monitor = 0) {
       }
       monitor={monitor}
       onShow={() => {
-        getSysinfoService().refresh().catch(err => console.error("aegis refresh error", err))
+        getSysinfoService().setActive("aegis-window", true, refreshConfig)
+      }}
+      onHide={() => {
+        getSysinfoService().setActive("aegis-window", false)
       }}
     >
       <box

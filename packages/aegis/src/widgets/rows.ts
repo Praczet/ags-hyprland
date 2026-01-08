@@ -41,6 +41,13 @@ export function buildInfoRow(row: InfoRow) {
   const wrap = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
   wrap.add_css_class("aegis-row")
 
+  if (row.icon) {
+    const icon = new Gtk.Image({ pixel_size: 16 })
+    icon.set_from_icon_name(row.icon)
+    icon.add_css_class("aegis-row-icon")
+    wrap.append(icon)
+  }
+
   const label = new Gtk.Label({ label: row.label, xalign: 0 })
   label.add_css_class("aegis-label")
   label.set_hexpand(false)

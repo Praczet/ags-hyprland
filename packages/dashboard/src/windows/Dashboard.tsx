@@ -13,7 +13,7 @@ import { TickTickWidget, type TickTickConfig } from "../widgets/TickTick"
 import { StickyNotesWidget, StickyNoteWidget, loadStickyNote, type StickyNotesListConfig, type StickyNoteWidgetConfig } from "../widgets/StickyNotes"
 import { initTickTickState } from "../services/ticktickState"
 import { initWeatherState, type WeatherConfig } from "../services/weatherState"
-import { AegisWidget, AegisSummaryWidget, AegisDiskWidget, AegisMemoryWidget, AegisNetworkWidget, AegisBatteryWidget, AegisDiskPieWidget, AegisMemoryPieWidget, AegisCpuGraphWidget, type AegisMode, type SectionId } from "../../../aegis/src"
+import { AegisWidget, AegisSummaryWidget, AegisDiskWidget, AegisMemoryWidget, AegisNetworkWidget, AegisBatteryWidget, AegisDiskPieWidget, AegisMemoryPieWidget, AegisCpuGraphWidget, getSysinfoService, type AegisMode, type SectionId } from "../../../aegis/src"
 import { WidgetFrame } from "../widgets/WidgetFrame"
 
 type WidgetFactory = (cfg: DashboardWidgetConfig) => Gtk.Widget
@@ -166,7 +166,7 @@ function toAegisConfig(cfg: DashboardWidgetConfig): { title?: string; showTitle?
   const raw = isObject(cfg.config) ? cfg.config : {}
   const mode = typeof raw.mode === "string" ? raw.mode : undefined
   const sectionsRaw = Array.isArray(raw.sections) ? raw.sections.filter((s: unknown) => typeof s === "string") : undefined
-  const sections = sectionsRaw?.filter(s => ["system", "hardware", "memory", "storage", "network", "power", "hyprland", "status"].includes(s)) as SectionId[] | undefined
+  const sections = sectionsRaw?.filter(s => ["system", "hardware", "memory", "storage", "network", "power", "hyprland", "status", "network-info"].includes(s)) as SectionId[] | undefined
   return {
     title: typeof raw.title === "string" ? raw.title : undefined,
     showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
@@ -186,12 +186,21 @@ function toAegisConfig(cfg: DashboardWidgetConfig): { title?: string; showTitle?
 
 export default function DashboardWindow(monitor: number = 0, configPath?: string, windowName?: string) {
   const cfg = loadDashboardConfig(configPath)
+  const aegisWidgets = cfg.widgets.filter(w => w.type.startsWith("aegis"))
+  const aegisConfigs = aegisWidgets.map(w => (isObject(w.config) ? w.config : {}))
+  const allowBackgroundRefresh = aegisConfigs.some(c => c.allowBackgroundRefresh === true)
+  const refreshOnShow = aegisConfigs.some(c => c.refreshOnShow === false) ? false : true
   const cfgStickynotes = cfg.stickynotes
   const usesGoogle = cfg.widgets.some(w => w.type === "tasks" || (isObject(w.config) && (w.config as any).useGoogle === true))
   const usesTickTick = cfg.widgets.some(w => w.type === "ticktick")
   const google = usesGoogle ? initGoogleCalendarState() : null
   const ticktick = usesTickTick ? initTickTickState() : null
   let animateOut = () => { }
+  const setAegisActive = (active: boolean) => {
+    if (!aegisWidgets.length) return
+    getSysinfoService().setActive("dashboard", active, { allowBackgroundRefresh, refreshOnShow })
+  }
+  setAegisActive(false)
   const registry: Record<DashboardWidgetType, WidgetFactory> = {
     clock: (cfg) => ClockWidget(toClockConfig(cfg)),
     "analog-clock": (cfg) => AnalogClockWidget(toTitleConfig(cfg) as AnalogClockConfig),
@@ -381,6 +390,8 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
         Astal.WindowAnchor.RIGHT
       }
       monitor={monitor}
+      onShow={() => setAegisActive(true)}
+      onHide={() => setAegisActive(false)}
       $={(self: Astal.Window) => {
         const keys = new Gtk.EventControllerKey()
         keys.connect(
