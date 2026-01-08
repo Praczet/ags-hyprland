@@ -36,11 +36,16 @@ export function AegisNetworkWidget() {
     for (const iface of data.network.interfaces) {
       const label = iface.state === "up" ? `${iface.name} (up)` : iface.name
       const row: InfoRow = {
-        label,
+        label: `${label}${iface.ssid && iface.ssid !== "" ? ` [${iface.ssid}]` : ""}`,
         value: `${formatBytes(iface.rxBytes)} ↓ / ${formatBytes(iface.txBytes)} ↑`,
         minMode: "minimal",
+        icon: iface.icon,
       }
-      list.append(buildInfoRow(row))
+      const boxRow = buildInfoRow(row)
+      if (iface.state === "down") {
+        boxRow.add_css_class("aegis-network-down")
+      }
+      list.append(boxRow)
     }
   }, { immediate: true })
 

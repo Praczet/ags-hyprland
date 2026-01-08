@@ -6,6 +6,7 @@ export type InfoRow = {
   label: string
   value: string
   copyValue?: string
+  icon?: string
   minMode: AegisMode
 }
 
@@ -143,7 +144,7 @@ export function buildSections(data: SysinfoModel, mode: AegisMode, sectionFilter
     id: "network",
     title: "Network",
     rows: [
-      { label: "Interfaces", value: networkSummary(data.network.interfaces), minMode: "summary" },
+      { label: "Iterfaces", value: networkSummary(data.network.interfaces), minMode: "summary" },
       ...data.network.interfaces.map(n => ({
         label: n.name,
         value: `${formatBytes(n.rxBytes)} ↓ / ${formatBytes(n.txBytes)} ↑`,

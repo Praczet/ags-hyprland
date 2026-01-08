@@ -34,6 +34,8 @@ export type NetworkInterfaceInfo = {
   state?: "up" | "down"
   rxBytes?: number
   txBytes?: number
+  icon?: string
+  ssid?: string
 }
 
 export type BatteryInfo = {

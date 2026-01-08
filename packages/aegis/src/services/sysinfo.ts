@@ -2,6 +2,7 @@ import { type Accessor, createState } from "ags"
 import Gio from "gi://Gio"
 import GLib from "gi://GLib"
 import type { AegisMode, BatteryInfo, DiskInfo, HyprlandMonitorInfo, MemoryInfo, NetworkInterfaceInfo, PhysicalDiskInfo, SysinfoModel } from "../types"
+import Network, { Wifi } from "gi://AstalNetwork"
 
 export type SysinfoService = {
   data: Accessor<SysinfoModel | null>
@@ -291,27 +292,117 @@ function getDisks(): DiskInfo[] {
 function parseNetDev(): NetworkInterfaceInfo[] {
   const raw = readFile("/proc/net/dev")
   if (!raw) return []
+
+  // 1. Get the Astal Network instance
+  const network = Network.get_default()
+
   const lines = raw.split("\n").slice(2)
   const interfaces: NetworkInterfaceInfo[] = []
+
   for (const line of lines) {
     if (!line.trim()) continue
     const [namePart, dataPart] = line.split(":")
     if (!dataPart) continue
+
     const name = namePart.trim()
+
+    // ... (Your existing parsing logic for bytes)
     const cols = dataPart.trim().split(/\s+/)
     const rx = Number(cols[0])
     const tx = Number(cols[8])
     const stateRaw = readFile(`/sys/class/net/${name}/operstate`)?.trim()
     const state = stateRaw === "up" ? "up" : "down"
+
+    let ssid = undefined
+    let iconName = undefined
+    if (network.wifi && network.wifi.device.interface === name) {
+      ssid = network.wifi.ssid
+      iconName = network.wifi.iconName
+    }
+
+    if (network.wired && network.wired.device.interface === name) {
+      ssid = network.wired.device.activeConnection?.id ?? "Eth"
+      iconName = network.wired.iconName
+    }
+
     interfaces.push({
       name,
       state,
       rxBytes: Number.isFinite(rx) ? rx : undefined,
       txBytes: Number.isFinite(tx) ? tx : undefined,
+      ssid: ssid,
+      icon: iconName,
     })
   }
+  // console.log("Parsed network interfaces:", interfaces, getDetailedNetworkInfo())
   return interfaces
 }
+
+function getDetailedNetworkInfo() {
+  const network = Network.get_default()
+  const hostname = GLib.get_host_name()
+
+  // 1. Get devices from the NMClient instance
+  const allDevices = network.client?.get_devices() || []
+
+  // 2. Find the REAL active device
+  // Criteria:
+  //  - State is ACTIVATED (100)
+  //  - Has IP Config
+  //  - IS NOT Loopback ("lo")
+  let activeDev = allDevices.find(d =>
+    d.interface !== "lo" &&
+    d.state === 100 &&
+    d.ip4_config !== null
+  )
+
+  // Fallback: If no active physical device found, try the specific defaults
+  // (This helps if the state is transient/connecting)
+  if (!activeDev) {
+    if (network.primary === "wifi") activeDev = network.wifi?.device
+    if (network.primary === "wired") activeDev = network.wired?.device
+  }
+
+  let info = {
+    hostname: hostname,
+    iface: "Disconnected",
+    ssid: "N/A",
+    ip: "N/A",
+    gateway: "N/A"
+  }
+
+  if (activeDev) {
+    info.iface = activeDev.interface
+
+    const ipConfig = activeDev.ip4_config
+    if (ipConfig) {
+      info.gateway = ipConfig.gateway || "N/A"
+      const addrs = ipConfig.get_addresses()
+      if (addrs && addrs.length > 0) {
+        info.ip = addrs[0].get_address()
+      }
+    }
+
+    // --- SSID / Name Logic ---
+    if (activeDev.deviceType === 2) { // ETHERNET
+      // Use the Connection ID (e.g. "Work", "Wired connection 1")
+      info.ssid = activeDev.activeConnection?.id || "Ethernet"
+    }
+    else if (activeDev.deviceType === 1) { // WIFI
+      // Try to get the SSID from the Astal wrapper if available
+      if (network.wifi && network.wifi.interface === activeDev.interface) {
+        info.ssid = network.wifi.ssid || "Unknown"
+      } else {
+        // Fallback to connection ID if wrapper doesn't match
+        info.ssid = activeDev.activeConnection?.id || "Wifi"
+      }
+    }
+  }
+
+  return info
+}
+
+
 
 function readNumber(path: string): number | undefined {
   const raw = readFile(path)

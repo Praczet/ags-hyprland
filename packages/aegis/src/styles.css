@@ -198,3 +198,7 @@
 .aegis-error {
   color: @error;
 }
+
+.aegis-network-down {
+  opacity: 0.3;
+}
