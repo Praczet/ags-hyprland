@@ -71,14 +71,18 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   footer.add_css_class("a-network-education")
   const footerLabel = new Gtk.Label({ label: "Education mode", xalign: 0 })
   footerLabel.add_css_class("a-network-education-label")
-  footerLabel.max_width_chars = 52
-  footerLabel.width_chars = 52
   footerLabel.wrap = true
 
   const footerHistory = new Gtk.Revealer({ reveal_child: false })
   const footerHistoryBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
   footerHistoryBox.add_css_class("a-network-history")
-  footerHistory.set_child(footerHistoryBox)
+  const footerHistoryScroll = new Gtk.ScrolledWindow()
+  footerHistoryScroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+  footerHistoryScroll.set_propagate_natural_height(true)
+  footerHistoryScroll.set_min_content_width(500)
+  footerHistoryScroll.set_max_content_height(180)
+  footerHistoryScroll.set_child(footerHistoryBox)
+  footerHistory.set_child(footerHistoryScroll)
   footer.append(footerLabel)
   footer.append(footerHistory)
 
@@ -108,10 +112,14 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   const lastFooterLabel = new Gtk.Label({ label: "Last: --", xalign: 1, halign: Gtk.Align.CENTER, hexpand: true })
   lastFooterLabel.wrap = true
   lastFooterLabel.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
-  lastFooterLabel.max_width_chars = 52
-  lastFooterLabel.width_chars = 52
   lastFooterLabel.add_css_class("a-network-footer-label")
-  lastFooter.append(lastFooterLabel)
+  const lastFooterScroll = new Gtk.ScrolledWindow()
+  lastFooterScroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+  lastFooterScroll.set_propagate_natural_height(true)
+  lastFooterScroll.set_min_content_width(500)
+  lastFooterScroll.set_max_content_height(48)
+  lastFooterScroll.set_child(lastFooterLabel)
+  lastFooter.append(lastFooterScroll)
 
   if (cfg.educationModeOn && cfg.educationModeDetail === "panel") {
     root.append(panel)
