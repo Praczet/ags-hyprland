@@ -1,5 +1,4 @@
 .a-network-root {
-  padding: 12px 0;
   font-size: 1rem;
 }
 
@@ -12,14 +11,13 @@
 }
 
 .a-network-section-title {
-  font-size: 1.1rem;
+  font-size: 1.25rem;
 }
 
 .a-network-section-pill {
   padding: 8px 12px;
   border-radius: 999px;
-  background: alpha(@secondary, 0.18);
-  border: 1px solid alpha(@outline, 0.2);
+  background-color: alpha(@secondary, 0.18);
 }
 
 .a-network-section-header {
@@ -30,14 +28,14 @@
   margin: 6px 10px 2px;
   padding: 12px 10px 10px;
   border-radius: 12px;
-  background: alpha(@background, 0.22);
+  background-color: alpha(@background, 0.22);
 }
 
 .a-network-windowless .a-network-section-body,
 .a-network-windowless-inner .a-network-section-body {
   margin: 0;
   padding: 12px;
-  background-color: alpha(@background, 0.9);
+  background-color: alpha(@background, 0.99);
   border-radius: 2px;
 }
 
@@ -47,12 +45,16 @@
   margin: 0;
 }
 
-.a-network-windowless .a-network-section-body,
-.a-network-windowless-inner .a-network-section-body {
+.a-network-windowless .a-network-section-last .a-network-section-body {
+  border-radius: 2px 2px 20px 20px;
 }
 
 .a-network-windowless .a-network-section-pill,
 .a-network-windowless-inner .a-network-section-pill {
+  background-color: alpha(
+    color-mix(in srgb, @secondary 25%, @background 75%),
+    0.95
+  );
   border-radius: 2px;
 }
 
@@ -64,6 +66,12 @@
 .a-network-windowless .a-network-pill-last,
 .a-network-windowless-inner .a-network-pill-last {
   border-radius: 2px 2px 20px 20px;
+  transition: border-radius 0.2s ease;
+}
+
+.a-network-windowless .a-network-pill-last.a-network-section-expanded,
+.a-network-windowless-inner .a-network-pill-last.a-network-section-expanded {
+  border-radius: 2px 2px 2px 2px;
 }
 
 .a-network-windowless .a-network-root,
@@ -76,7 +84,7 @@
   font-weight: 600;
   padding: 6px 8px;
   border-radius: 8px;
-  background: alpha(@background, 0.4);
+  background-color: alpha(@background, 0.4);
 }
 
 .a-network-subtitle {
@@ -91,7 +99,7 @@
 }
 
 .a-network-row:hover {
-  background: alpha(@outline, 0.15);
+  background-color: alpha(@outline, 0.15);
 }
 
 .a-network-muted {
@@ -116,32 +124,29 @@
 
 .a-network-action {
   padding: 4px 10px;
-  background: alpha(@secondary, 0.22);
+  background-color: alpha(@secondary, 0.22);
   border: 1px solid alpha(@outline, 0.25);
   color: @primary;
 }
 
 .a-network-action:hover {
-  background: alpha(@secondary, 0.32);
+  background-color: alpha(@secondary, 0.32);
 }
 
 .a-network-action:active {
-  background: alpha(@secondary, 0.42);
+  background-color: alpha(@secondary, 0.42);
 }
 
-.a-network-icon-button {
+.a-network-action.a-network-icon-button {
   padding: 4px 6px;
   background: transparent;
+  background-color: transparent;
   border: 1px solid transparent;
   box-shadow: none;
 }
 
 .a-network-icon-button:hover {
-  background: alpha(@outline, 0.15);
-}
-
-.a-network-icon-button:active {
-  background: alpha(@outline, 0.25);
+  background-color: alpha(@outline, 0.15);
 }
 
 .a-network-switch {
@@ -149,7 +154,7 @@
 }
 
 .a-network-switch {
-  background: alpha(@secondary, 0.25);
+  background-color: alpha(@secondary, 0.25);
   border: 1px solid alpha(@outline, 0.3);
 }
 
@@ -159,8 +164,9 @@
 }
 
 .a-network-switch:checked {
-  background: alpha(@secondary, 0.45);
+  background-color: alpha(@secondary, 0.45);
 }
+
 .a-network-active {
   font-weight: 600;
 }
@@ -223,8 +229,14 @@
 
 .a-network-footer {
   margin-top: 6px;
-  padding-top: 6px;
+  padding: 6px;
   border-top: 1px solid alpha(@outline, 0.25);
+  background-color: alpha(@background, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+.a-network-footer:hover {
+  background-color: alpha(@background, 0.9);
 }
 
 .a-network-footer-label {
@@ -233,13 +245,13 @@
 }
 
 .a-network-window {
-  background: transparent;
+  background-color: transparent;
 }
 
 .a-network-window-inner {
   padding: 24px 28px;
   border-radius: 18px;
-  background: alpha(@background, 0.96);
+  background-color: alpha(@background, 0.96);
   color: @primary;
   border: 1px solid alpha(@outline, 0.4);
   box-shadow: 0 18px 50px alpha(@shadow, 0.55);
@@ -247,19 +259,11 @@
 }
 
 .a-network-windowless-window {
-  background: transparent;
+  background-color: transparent;
 }
 
 .a-network-windowless-inner {
-  background: transparent;
+  background-color: transparent;
   border: none;
   box-shadow: none;
-}
-
-.a-network-windowless .a-network-section-pill,
-.a-network-windowless-inner .a-network-section-pill {
-  background-color: alpha(
-    color-mix(in srgb, @secondary 0.75, @background 0.25),
-    0.95
-  );
 }

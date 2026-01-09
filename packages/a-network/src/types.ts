@@ -59,3 +59,8 @@ export type NetworkState = {
   hotspot?: HotspotInfo
   refreshedAt?: number
 }
+
+export type ShareNetworkResult = {
+  value: string
+  type: "png" | "ansi" | "error"
+}

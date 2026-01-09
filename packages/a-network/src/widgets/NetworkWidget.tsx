@@ -43,12 +43,17 @@ function buildSection(
   const wrapper = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 0 })
   wrapper.add_css_class("a-network-section")
   wrapper.set_hexpand(true)
+  if (pillClass && pillClass.match(/last/)) wrapper.add_css_class("a-network-section-last")
+
 
   const header = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 })
   header.add_css_class("a-network-section-header")
   header.add_css_class("a-network-section-pill")
+  header.height_request = 56;
   if (pillClass) header.add_css_class(pillClass)
+
   header.set_hexpand(true)
+
   const label = new Gtk.Label({ label: title, xalign: 0 })
   label.add_css_class("a-network-section-title")
   label.set_hexpand(true)
@@ -71,6 +76,13 @@ function buildSection(
       const next = !reveal.get_reveal_child()
       reveal.set_reveal_child(next)
       chevron.set_label(next ? "▾" : "▸")
+      if (next) {
+        header.remove_css_class("a-network-section-collapsed")
+        header.add_css_class("a-network-section-expanded")
+      } else {
+        header.remove_css_class("a-network-section-expanded")
+        header.add_css_class("a-network-section-collapsed")
+      }
     })
     header.add_controller(click)
   }
@@ -408,7 +420,7 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
 
   const lastFooter = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   lastFooter.add_css_class("a-network-footer")
-  const lastFooterLabel = new Gtk.Label({ label: "Last: --", xalign: 0 })
+  const lastFooterLabel = new Gtk.Label({ label: "Last: --", xalign: 1, halign: Gtk.Align.CENTER, hexpand: true })
   lastFooterLabel.add_css_class("a-network-footer-label")
   lastFooter.append(lastFooterLabel)
 
@@ -518,10 +530,11 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
           },
           () => service.forgetConnection(saved.name).catch(err => console.error("a-network forget error", err)),
           async () => {
+            console.log("a-network share", saved.name)
             shareBox.set_visible(true)
             shareLabel.set_label(`Share: ${saved.name}`)
             sharePassword.set_label("")
-            shareImage.set_visible(false)
+            shareImage.set_visible(true)
             const pass = await service.getWifiPassword(saved.name)
             if (cfg.showPlainTextPassword && pass) {
               sharePassword.set_label(pass)
@@ -530,6 +543,7 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
             }
             if (cfg.showQRPassword && pass) {
               const qrPath = buildWifiQr(saved.name, pass)
+              console.log(saved.name, pass)
               if (qrPath) {
                 shareImage.set_from_file(qrPath)
                 shareImage.set_visible(true)

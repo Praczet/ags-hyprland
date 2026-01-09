@@ -67,7 +67,9 @@ app.start({
     const aegisWin = AegisWindow(0)
     app.add_window(aegisWin)
 
-    const networkWin = NetworkWindow(0)
+    const networkWin = NetworkWindow(0, {
+      showPlainTextPassword: true, showQRPassword: true
+    })
     app.add_window(networkWin)
 
       ; (globalThis as any).toggleClipboard = () =>

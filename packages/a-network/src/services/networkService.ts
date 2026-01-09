@@ -17,6 +17,7 @@ export type NetworkService = {
   disconnectConnection: (name: string) => Promise<void>
   forgetConnection: (name: string) => Promise<void>
   getWifiPassword: (name: string) => Promise<string | null>
+
 }
 
 const DEFAULT_REFRESH_MS = 15000
