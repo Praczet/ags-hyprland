@@ -1,14 +1,31 @@
 export type NetworkEducationModeDetail = "tooltip" | "footer" | "panel"
 
+export type NetworkSectionName = "wifi" | "wired" | "vpn" | "hotspot"
+
+export type NetworkSectionConfig = {
+  section: NetworkSectionName
+  visible?: boolean
+  order?: number
+}
+
+export type NetworkLayoutConfig = {
+  anchor?: string
+  margin?: string
+}
+
 export type NetworkWidgetConfig = {
   refreshMs?: number
   educationModeOn?: boolean
   educationModeDetail?: NetworkEducationModeDetail
   showQRPassword?: boolean
   showPlainTextPassword?: boolean
+  wiredNoInternetByIp?: boolean
+  sections?: NetworkSectionConfig[]
+  layout?: NetworkLayoutConfig
   allowBackgroundRefresh?: boolean
   refreshOnShow?: boolean
   windowLess?: boolean
+  windowless?: boolean
 }
 
 export type WifiNetwork = {
@@ -60,7 +77,9 @@ export type NetworkState = {
   savedWifi: SavedConnection[]
   activeWifi?: WifiNetwork
   activeWifiConnectionName?: string
+  activeWiredConnectionName?: string
   wired?: WiredInfo
+  connectivity?: "none" | "portal" | "limited" | "full"
   vpn: VpnInfo[]
   hotspot?: HotspotInfo
   refreshedAt?: number

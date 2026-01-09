@@ -11,6 +11,7 @@ export type NetworkService = {
   refresh: () => Promise<void>
   setActive: (id: string, active: boolean, opts?: { allowBackgroundRefresh?: boolean; refreshOnShow?: boolean; refreshMs?: number }) => void
   setWifiEnabled: (enabled: boolean) => Promise<void>
+  setWiredEnabled: (enabled: boolean) => Promise<void>
   scanWifi: () => Promise<void>
   connectWifi: (ssid: string, password?: string) => Promise<void>
   connectSaved: (name: string) => Promise<void>
@@ -191,6 +192,14 @@ function getHotspotInfo() {
   return {}
 }
 
+function getConnectivity() {
+  const out = runCommand("nmcli networking connectivity")
+  if (!out) return undefined
+  const value = out.trim().toLowerCase()
+  if (value === "none" || value === "portal" || value === "limited" || value === "full") return value
+  return undefined
+}
+
 export function getNetworkService(): NetworkService {
   if (singleton) return singleton
 
@@ -224,7 +233,11 @@ export function getNetworkService(): NetworkService {
       const activeWifiConnectionName = activeConnectionsRaw
         ? parseConnections(activeConnectionsRaw).find(c => c.type === "wifi")?.name
         : undefined
+      const activeWiredConnectionName = activeConnectionsRaw
+        ? parseConnections(activeConnectionsRaw).find(c => c.type === "ethernet" || c.type === "802-3-ethernet")?.name
+        : undefined
       const wired = getWiredInfo()
+      const connectivity = getConnectivity()
       const vpn = getVpnInfo()
       const hotspot = getHotspotInfo()
 
@@ -234,7 +247,9 @@ export function getNetworkService(): NetworkService {
         savedWifi,
         activeWifi,
         activeWifiConnectionName,
+        activeWiredConnectionName,
         wired,
+        connectivity,
         vpn,
         hotspot,
         refreshedAt: Date.now(),
@@ -283,7 +298,10 @@ export function getNetworkService(): NetworkService {
     consumers.set(id, next)
     let skipInitialRefresh = active && next.refreshOnShow === false
     if (active && next.refreshOnShow && !prev?.active) {
-      refresh().catch(err => console.error("a-network refresh error", err))
+      GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
+        refresh().catch(err => console.error("a-network refresh error", err))
+        return GLib.SOURCE_REMOVE
+      })
       skipInitialRefresh = true
     }
     updateTimer(skipInitialRefresh)
@@ -299,6 +317,17 @@ export function getNetworkService(): NetworkService {
     } finally {
       setWifiBusy(false)
     }
+  }
+
+  const setWiredEnabled = async (enabled: boolean) => {
+    const current = data()
+    const device = current?.wired?.device
+    if (!device) return
+    const safeDevice = device.replace(/"/g, "\\\"")
+    const cmd = enabled ? `nmcli dev connect "${safeDevice}"` : `nmcli dev disconnect "${safeDevice}"`
+    logAction("Toggle wired", cmd)
+    runCommand(cmd)
+    await refresh()
   }
 
   const scanWifi = async () => {
@@ -392,6 +421,7 @@ export function getNetworkService(): NetworkService {
     refresh,
     setActive,
     setWifiEnabled,
+    setWiredEnabled,
     scanWifi,
     connectWifi,
     connectSaved,

@@ -104,6 +104,13 @@ function createInfoColumn() {
   }
 }
 
+type SectionController = {
+  wrapper: Gtk.Box
+  setExpanded: (expanded: boolean) => void
+  getExpanded: () => boolean
+  setPillClass: (pillClass?: string | string[]) => void
+}
+
 function buildSection(
   title: string,
   headerRight: Gtk.Widget | null,
@@ -112,11 +119,11 @@ function buildSection(
   infoIcon?: Gtk.Widget,
   collapsible = true,
   pillClass?: string,
-) {
+  collapsedInfo?: Gtk.Widget,
+): SectionController {
   const wrapper = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 0 })
   wrapper.add_css_class("a-network-section")
   wrapper.set_hexpand(true)
-  if (pillClass && pillClass.match(/last/)) wrapper.add_css_class("a-network-section-last")
 
 
   const header = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 })
@@ -135,6 +142,7 @@ function buildSection(
   chevron.add_css_class("a-network-chevron")
 
   header.append(label)
+  if (collapsedInfo) header.append(collapsedInfo)
   if (infoIcon) header.append(infoIcon)
   if (headerRight) header.append(headerRight)
   header.append(chevron)
@@ -143,26 +151,51 @@ function buildSection(
   reveal.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
   reveal.set_child(body)
 
+  let isExpanded = expanded
+  const knownPillClasses = ["a-network-pill-first", "a-network-pill-middle", "a-network-pill-last"]
+  const setPillClass = (next?: string | string[]) => {
+    for (const cls of knownPillClasses) header.remove_css_class(cls)
+    const list = Array.isArray(next) ? next : next ? [next] : []
+    for (const cls of list) header.add_css_class(cls)
+    if (list.includes("a-network-pill-last")) {
+      wrapper.add_css_class("a-network-section-last")
+    } else {
+      wrapper.remove_css_class("a-network-section-last")
+    }
+  }
+  const applyExpanded = (next: boolean) => {
+    isExpanded = next
+    reveal.set_reveal_child(next)
+    chevron.set_label(next ? "▾" : "▸")
+    if (next) {
+      header.remove_css_class("a-network-section-collapsed")
+      header.add_css_class("a-network-section-expanded")
+    } else {
+      header.remove_css_class("a-network-section-expanded")
+      header.add_css_class("a-network-section-collapsed")
+    }
+    if (collapsedInfo) collapsedInfo.set_visible(!next)
+  }
+
+  applyExpanded(expanded)
+  setPillClass(pillClass)
+
   if (collapsible) {
     const click = new Gtk.GestureClick()
     click.connect("released", () => {
-      const next = !reveal.get_reveal_child()
-      reveal.set_reveal_child(next)
-      chevron.set_label(next ? "▾" : "▸")
-      if (next) {
-        header.remove_css_class("a-network-section-collapsed")
-        header.add_css_class("a-network-section-expanded")
-      } else {
-        header.remove_css_class("a-network-section-expanded")
-        header.add_css_class("a-network-section-collapsed")
-      }
+      applyExpanded(!isExpanded)
     })
     header.add_controller(click)
   }
 
   wrapper.append(header)
   wrapper.append(reveal)
-  return wrapper
+  return {
+    wrapper,
+    setExpanded: applyExpanded,
+    getExpanded: () => isExpanded,
+    setPillClass,
+  }
 }
 
 function clearBox(box: Gtk.Box) {
@@ -772,8 +805,9 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   const service = getNetworkService()
   const root = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 1 })
   root.add_css_class("a-network-root")
-  if (cfg.windowLess) root.add_css_class("a-network-windowless")
+  if (cfg.windowLess ?? cfg.windowless) root.add_css_class("a-network-windowless")
   let activeConnectionName: string | undefined
+  let wifiWasEnabled: boolean | null = null
 
   const wifiSwitch = new Gtk.Switch()
   wifiSwitch.add_css_class("a-network-switch")
@@ -812,6 +846,14 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   wifiHeaderRight.append(wifiOff)
   wifiHeaderRight.append(scanBtn)
   wifiHeaderRight.append(wifiSwitch)
+  const wifiCollapsedInfo = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
+  wifiCollapsedInfo.add_css_class("a-network-section-collapsed-info")
+  const wifiCollapsedIcon = new Gtk.Image({ pixel_size: 16 })
+  wifiCollapsedIcon.add_css_class("a-network-section-collapsed-icon")
+  const wifiCollapsedLabel = new Gtk.Label({ label: "No connection", xalign: 0 })
+  wifiCollapsedLabel.add_css_class("a-network-section-collapsed-text")
+  wifiCollapsedInfo.append(wifiCollapsedIcon)
+  wifiCollapsedInfo.append(wifiCollapsedLabel)
 
   const wifiBody = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 10 })
   wifiBody.add_css_class("a-network-section-body")
@@ -1027,14 +1069,95 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   const firstPill = "a-network-pill-first"
   const middlePill = "a-network-pill-middle"
   const lastPill = "a-network-pill-last"
-  const wifiSection = buildSection("Wi-Fi", wifiHeaderRight, wifiReveal, true, wifiInfoIcon, true, firstPill)
+  const wifiSection = buildSection("Wi-Fi", wifiHeaderRight, wifiReveal, false, wifiInfoIcon, true, firstPill, wifiCollapsedInfo)
 
   const wiredBody = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
   wiredBody.add_css_class("a-network-section-body")
-  const wiredStatus = new Gtk.Label({ label: "No wired connection", xalign: 0 })
-  wiredBody.append(wiredStatus)
+  const wiredRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
+  wiredRow.add_css_class("a-network-row")
+  const wiredIcon = new Gtk.Image({ pixel_size: 16 })
+  const wiredName = new Gtk.Label({ label: "No connection", xalign: 0 })
+  wiredName.set_hexpand(true)
+  const wiredRight = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 })
+  wiredRight.set_halign(Gtk.Align.END)
+  const wiredInterface = new Gtk.Label({ label: "--", xalign: 1 })
+  wiredInterface.add_css_class("a-network-row-meta")
+  const wiredDetailsBtn = new Gtk.Button({ label: "Details" })
+  wiredDetailsBtn.add_css_class("a-network-action")
+  wiredRight.append(wiredInterface)
+  wiredRight.append(wiredDetailsBtn)
+  wiredRow.append(wiredIcon)
+  wiredRow.append(wiredName)
+  wiredRow.append(wiredRight)
+  wiredBody.append(wiredRow)
+  const wiredDetailsReveal = new Gtk.Revealer({ reveal_child: false })
+  const wiredDetailsBox = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
+  wiredDetailsBox.add_css_class("a-network-details")
+  const wiredConnRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
+  const wiredConnLabel = new Gtk.Label({ label: "Connection", xalign: 0 })
+  wiredConnLabel.add_css_class("a-network-details-label")
+  const wiredConnValue = new Gtk.Label({ label: "--", xalign: 0 })
+  wiredConnValue.add_css_class("a-network-details-value")
+  wiredConnRow.append(wiredConnLabel)
+  wiredConnRow.append(wiredConnValue)
+  const wiredIfaceRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
+  const wiredIfaceLabel = new Gtk.Label({ label: "Interface", xalign: 0 })
+  wiredIfaceLabel.add_css_class("a-network-details-label")
+  const wiredIfaceValue = new Gtk.Label({ label: "--", xalign: 0 })
+  wiredIfaceValue.add_css_class("a-network-details-value")
+  wiredIfaceRow.append(wiredIfaceLabel)
+  wiredIfaceRow.append(wiredIfaceValue)
+  const wiredIpRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
+  const wiredIpLabel = new Gtk.Label({ label: "IP address", xalign: 0 })
+  wiredIpLabel.add_css_class("a-network-details-label")
+  const wiredIpValue = new Gtk.Label({ label: "--", xalign: 0 })
+  wiredIpValue.add_css_class("a-network-details-value")
+  wiredIpRow.append(wiredIpLabel)
+  wiredIpRow.append(wiredIpValue)
+  wiredDetailsBox.append(wiredConnRow)
+  wiredDetailsBox.append(wiredIfaceRow)
+  wiredDetailsBox.append(wiredIpRow)
+  wiredDetailsReveal.set_child(wiredDetailsBox)
+  wiredBody.append(wiredDetailsReveal)
+  const wiredCollapsedInfo = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
+  wiredCollapsedInfo.add_css_class("a-network-section-collapsed-info")
+  const wiredCollapsedIcon = new Gtk.Image({ pixel_size: 16 })
+  wiredCollapsedIcon.add_css_class("a-network-section-collapsed-icon")
+  const wiredCollapsedLabel = new Gtk.Label({ label: "No connection", xalign: 0 })
+  wiredCollapsedLabel.add_css_class("a-network-section-collapsed-text")
+  wiredCollapsedInfo.append(wiredCollapsedIcon)
+  wiredCollapsedInfo.append(wiredCollapsedLabel)
+  const wiredSwitch = new Gtk.Switch()
+  wiredSwitch.add_css_class("a-network-switch")
+  wiredSwitch.set_hexpand(false)
+  wiredSwitch.set_halign(Gtk.Align.END)
+  wiredSwitch.set_valign(Gtk.Align.CENTER)
+  wiredSwitch.set_vexpand(false)
+  wiredSwitch.connect("notify::active", () => {
+    service.setWiredEnabled(wiredSwitch.get_active()).catch(err => console.error("a-network wired toggle error", err))
+  })
+  const wiredRefreshBtn = new Gtk.Button()
+  wiredRefreshBtn.add_css_class("a-network-action")
+  wiredRefreshBtn.add_css_class("a-network-icon-button")
+  const wiredRefreshIcon = new Gtk.Image({ pixel_size: 16 })
+  wiredRefreshIcon.set_from_icon_name("view-refresh-symbolic")
+  const wiredRefreshSpinner = new Gtk.Spinner()
+  wiredRefreshSpinner.set_spinning(false)
+  const wiredRefreshStack = new Gtk.Stack()
+  wiredRefreshStack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+  wiredRefreshStack.set_transition_duration(120)
+  wiredRefreshStack.add_named(wiredRefreshIcon, "icon")
+  wiredRefreshStack.add_named(wiredRefreshSpinner, "spin")
+  wiredRefreshStack.set_visible_child_name("icon")
+  wiredRefreshBtn.set_child(wiredRefreshStack)
+  wiredRefreshBtn.set_valign(Gtk.Align.CENTER)
+  wiredRefreshBtn.set_vexpand(false)
+  const wiredHeaderRight = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 })
+  wiredHeaderRight.set_halign(Gtk.Align.END)
+  wiredHeaderRight.append(wiredRefreshBtn)
+  wiredHeaderRight.append(wiredSwitch)
   const wiredInfoIcon = cfg.educationModeOn && cfg.educationModeDetail === "tooltip" ? createInfoIcon() : undefined
-  const wiredSection = buildSection("Wired", null, wiredBody, false, wiredInfoIcon, true, middlePill)
+  const wiredSection = buildSection("Wired", wiredHeaderRight, wiredBody, false, wiredInfoIcon, true, middlePill, wiredCollapsedInfo)
 
   const vpnBody = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
   vpnBody.add_css_class("a-network-section-body")
@@ -1112,10 +1235,46 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   let connectedLastConnected: number | null = null
   let connectedKey: string | undefined
 
-  root.append(wifiSection)
-  root.append(wiredSection)
-  root.append(vpnSection)
-  root.append(hotspotSection)
+  const sectionEntries = [
+    { id: "wifi", controller: wifiSection },
+    { id: "wired", controller: wiredSection },
+    { id: "vpn", controller: vpnSection },
+    { id: "hotspot", controller: hotspotSection },
+  ] as const
+
+  const sectionConfig = new Map<string, { visible?: boolean; order?: number }>()
+  if (cfg.sections) {
+    for (const entry of cfg.sections) {
+      sectionConfig.set(entry.section, { visible: entry.visible, order: entry.order })
+    }
+  }
+
+  const resolvedSections = sectionEntries
+    .map((entry, index) => {
+      const pref = sectionConfig.get(entry.id)
+      return {
+        ...entry,
+        visible: pref?.visible !== false,
+        order: Number.isFinite(pref?.order) ? Number(pref?.order) : index,
+        index,
+      }
+    })
+    .filter(entry => entry.visible)
+    .sort((a, b) => a.order - b.order || a.index - b.index)
+
+  const totalSections = resolvedSections.length
+  for (const [idx, entry] of resolvedSections.entries()) {
+    if (totalSections === 1) {
+      entry.controller.setPillClass(["a-network-pill-first", "a-network-pill-last"])
+    } else if (idx === 0) {
+      entry.controller.setPillClass("a-network-pill-first")
+    } else if (idx === totalSections - 1) {
+      entry.controller.setPillClass("a-network-pill-last")
+    } else {
+      entry.controller.setPillClass("a-network-pill-middle")
+    }
+    root.append(entry.controller.wrapper)
+  }
 
   if (cfg.educationModeOn && cfg.educationModeDetail === "panel") {
     root.append(panel)
@@ -1126,17 +1285,42 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
 
   createEffect(() => {
     const data = service.data()
-    if (!data) return
+    if (!data) {
+      wifiSwitch.set_sensitive(false)
+      scanBtn.set_sensitive(false)
+      wifiCollapsedIcon.set_visible(false)
+      wifiCollapsedLabel.set_label("Loading...")
+      wiredSwitch.set_sensitive(false)
+      wiredRefreshBtn.set_sensitive(false)
+      wiredCollapsedIcon.set_visible(false)
+      wiredCollapsedLabel.set_label("Loading...")
+      wiredName.set_label("Loading...")
+      wiredInterface.set_label("--")
+      wiredConnValue.set_label("--")
+      wiredIfaceValue.set_label("--")
+      wiredIpValue.set_label("--")
+      clearBox(vpnList)
+      vpnList.append(new Gtk.Label({ label: "Loading...", xalign: 0 }))
+      hotspotStatus.set_label("Loading...")
+      return
+    }
 
     const wifiEnabled = Boolean(data.wifiEnabled)
+    wifiSwitch.set_sensitive(true)
+    scanBtn.set_sensitive(true)
     wifiSwitch.set_active(wifiEnabled)
     scanBtn.set_visible(wifiEnabled)
-    wifiReveal.set_reveal_child(wifiEnabled)
     wifiOff.set_visible(!wifiEnabled)
     if (!wifiEnabled) {
       const busy = service.wifiBusy()
       wifiOff.set_label(busy && wifiSwitch.get_active() ? "Turning Wi-Fi on..." : "Wi-Fi is off")
+      wifiSection.setExpanded(false)
+    } else if (wifiWasEnabled === false) {
+      wifiSection.setExpanded(true)
     }
+    wifiWasEnabled = wifiEnabled
+    const connectivity = data.connectivity
+    const wifiNoInternet = connectivity !== undefined && connectivity !== "full"
     if (data.activeWifi) {
       activeConnectionName = data.activeWifiConnectionName ?? data.activeWifi.ssid
       if (connectedKey !== activeConnectionName) {
@@ -1151,7 +1335,7 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
       wifiConnectedTitle.set_visible(true)
       connectedRow.set_visible(true)
       connectedDetailsReveal.set_visible(true)
-      connectedIcon.set_from_icon_name(signalIcon(data.activeWifi.signal))
+      connectedIcon.set_from_icon_name(wifiNoInternet ? "network-error-symbolic" : signalIcon(data.activeWifi.signal))
       connectedLabel.set_label(data.activeWifi.ssid)
       connectedMeta.set_label(`${formatSignal(data.activeWifi.signal)} ${data.activeWifi.security ?? "--"}`)
       connectedInfo.setInfo({
@@ -1176,6 +1360,19 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
       connectedDetailsReveal.set_visible(false)
       connectedDetailsReveal.set_reveal_child(false)
       connectedDetailsExpanded = false
+    }
+    if (!wifiEnabled) {
+      wifiCollapsedIcon.set_visible(false)
+      wifiCollapsedLabel.set_label("")
+    } else if (data.activeWifi) {
+      wifiCollapsedIcon.set_visible(true)
+      wifiCollapsedIcon.set_from_icon_name(wifiNoInternet ? "network-error-symbolic" : signalIcon(data.activeWifi.signal))
+      wifiCollapsedLabel.set_label(
+        data.activeWifi.ssid ? `Connected: ${data.activeWifi.ssid}` : "Connected",
+      )
+    } else {
+      wifiCollapsedIcon.set_visible(false)
+      wifiCollapsedLabel.set_label("No connection")
     }
 
     const available = data.wifi.filter(iface => !iface.inUse)
@@ -1345,12 +1542,37 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
     }
 
     const wired = data.wired
-    if (wired?.device) {
-      const state = wired.state ?? "unknown"
-      const ip = wired.ip ? ` (${wired.ip})` : ""
-      wiredStatus.set_label(`${wired.device} ${state}${ip}`)
+    const wiredConnected = wired?.state === "connected"
+    wiredSwitch.set_active(Boolean(wiredConnected))
+    wiredSwitch.set_sensitive(Boolean(wired?.device))
+    wiredRefreshBtn.set_sensitive(true)
+    const showNoInternetByIp = cfg.wiredNoInternetByIp ?? false
+    const hasIp = Boolean(wired?.ip)
+    const noInternetByConnectivity = connectivity !== undefined && connectivity !== "full"
+    if (wiredConnected && (noInternetByConnectivity || (showNoInternetByIp && !hasIp))) {
+      wiredIcon.set_from_icon_name("network-error-symbolic")
+      wiredCollapsedIcon.set_visible(true)
+      wiredCollapsedIcon.set_from_icon_name("network-error-symbolic")
+    } else if (wiredConnected) {
+      wiredIcon.set_from_icon_name("network-wired-symbolic")
+      wiredCollapsedIcon.set_visible(true)
+      wiredCollapsedIcon.set_from_icon_name("network-wired-symbolic")
     } else {
-      wiredStatus.set_label("No wired connection")
+      wiredIcon.set_from_icon_name("network-wired-disconnected-symbolic")
+      wiredCollapsedIcon.set_visible(false)
+    }
+    const wiredConnName = data.activeWiredConnectionName ?? (wiredConnected ? "Wired" : "No connection")
+    wiredName.set_label(wiredConnName)
+    wiredInterface.set_label(wired?.device ?? "--")
+    wiredConnValue.set_label(wiredConnName)
+    wiredIfaceValue.set_label(wired?.device ?? "--")
+    wiredIpValue.set_label(wired?.ip ?? "--")
+    if (data.activeWiredConnectionName) {
+      wiredCollapsedLabel.set_label(data.activeWiredConnectionName)
+    } else if (wired?.device) {
+      wiredCollapsedLabel.set_label(wired.device)
+    } else {
+      wiredCollapsedLabel.set_label("No connection")
     }
 
     clearBox(vpnList)
@@ -1390,6 +1612,45 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
 
   scanBtn.connect("clicked", () => {
     startSpin(900)
+  })
+
+  let wiredSpinTimer: number | null = null
+  let wiredSpinUntil = 0
+  const stopWiredSpin = () => {
+    wiredRefreshSpinner.stop()
+    wiredRefreshStack.set_visible_child_name("icon")
+    if (wiredSpinTimer) {
+      GLib.source_remove(wiredSpinTimer)
+      wiredSpinTimer = null
+    }
+  }
+
+  const startWiredSpin = (minMs: number) => {
+    wiredSpinUntil = Date.now() + minMs
+    wiredRefreshStack.set_visible_child_name("spin")
+    wiredRefreshSpinner.start()
+  }
+
+  wiredRefreshBtn.connect("clicked", () => {
+    startWiredSpin(700)
+    service.refresh()
+      .catch(err => console.error("a-network refresh error", err))
+      .finally(() => {
+        const remaining = Math.max(0, wiredSpinUntil - Date.now())
+        if (remaining > 0) {
+          if (wiredSpinTimer) GLib.source_remove(wiredSpinTimer)
+          wiredSpinTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, remaining, () => {
+            stopWiredSpin()
+            return GLib.SOURCE_REMOVE
+          })
+          return
+        }
+        stopWiredSpin()
+      })
+  })
+
+  wiredDetailsBtn.connect("clicked", () => {
+    wiredDetailsReveal.set_reveal_child(!wiredDetailsReveal.get_reveal_child())
   })
 
   createEffect(() => {
