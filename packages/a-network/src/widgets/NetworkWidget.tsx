@@ -28,7 +28,22 @@ function isSecure(security?: string) {
 
 function formatLastConnected(ts?: number) {
   if (!ts || !Number.isFinite(ts)) return "--"
-  return new Date(ts * 1000).toLocaleString()
+
+  const d = new Date(ts * 1000)
+
+  const pad2 = (n: number) => String(n).padStart(2, "0")
+  const pad3 = (n: number) => String(n).padStart(3, "0")
+
+  const yyyy = d.getFullYear()
+  const mm = pad2(d.getMonth() + 1)
+  const dd = pad2(d.getDate())
+
+  const HH = pad2(d.getHours())
+  const MM = pad2(d.getMinutes())
+  const ss = pad2(d.getSeconds())
+  const sss = pad3(d.getMilliseconds())
+
+  return `${yyyy}-${mm}-${dd} ${HH}:${MM}:${ss}`
 }
 
 function createInfoIcon() {
@@ -55,14 +70,14 @@ function createInfoColumn() {
 
   const makeRow = (labelText: string) => {
     const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
-    const label = new Gtk.Label({ label: labelText, xalign: 0 })
+    const label = new Gtk.Label({ label: labelText })
     label.add_css_class("a-network-details-label")
-    const value = new Gtk.Label({ label: "--", xalign: 0 })
+    const value = new Gtk.Label({ label: "--" })
     value.add_css_class("a-network-details-value")
-    value.set_hexpand(true)
-    value.set_width_chars(24)
-    value.set_ellipsize(Pango.EllipsizeMode.END)
-    value.set_max_width_chars(24)
+    // value.set_hexpand(true)
+    // value.set_width_chars(24)
+    // value.set_ellipsize(Pango.EllipsizeMode.END)
+    // value.set_max_width_chars(24)
     row.append(label)
     row.append(value)
     return { row, value }
@@ -253,13 +268,11 @@ function buildSavedRow(
   detailsBox.add_css_class("a-network-details")
   detailsBox.set_hexpand(true)
   detailsBox.set_halign(Gtk.Align.FILL)
-  detailsBox.set_hexpand(true)
-  detailsBox.set_halign(Gtk.Align.FILL)
 
   const infoCol = createInfoColumn()
   infoCol.box.set_hexpand(true)
-  infoCol.box.set_hexpand(true)
-
+  // infoCol.box.set_hexpand(true)
+  //
   const passwordCol = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
   passwordCol.add_css_class("a-network-details-col")
   passwordCol.set_size_request(128, -1)
@@ -276,17 +289,18 @@ function buildSavedRow(
   const passwordValue = new Gtk.Label({ label: "Hidden", xalign: 0.5 })
   passwordValue.add_css_class("a-network-details-value")
   passwordValue.set_halign(Gtk.Align.CENTER)
-  passwordValue.set_hexpand(true)
-  passwordValue.set_width_chars(24)
+  // passwordValue.set_hexpand(true)
+  // passwordValue.set_width_chars(24)
   passwordValue.set_ellipsize(Pango.EllipsizeMode.END)
   passwordValue.set_max_width_chars(24)
   const qrImage = new Gtk.Picture()
-  qrImage.set_visible(true)
-  qrImage.set_size_request(128, -1)
-  qrImage.set_can_shrink(true)
+  qrImage.set_visible(false)
+  qrImage.set_size_request(128, 128)
+  // qrImage.set_can_shrink(true)
   qrImage.set_content_fit(Gtk.ContentFit.CONTAIN)
   qrImage.set_halign(Gtk.Align.CENTER)
-  qrImage.set_opacity(0)
+  // qrImage.set_opacity(0)
+
   const qrSlot = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
   qrSlot.set_halign(Gtk.Align.CENTER)
   qrSlot.set_size_request(128, -1)
@@ -313,6 +327,15 @@ function buildSavedRow(
 
   let detailsLoaded = false
   let loadingDetails = false
+
+  const updateQrState = (path: string | null) => {
+    if (path) {
+      qrImage.set_filename(path)
+      qrImage.set_visible(true) // Show it only when we have a path
+    } else {
+      qrImage.set_visible(false) // Hide it completely from layout
+    }
+  }
 
   const loadDetails = async () => {
     if (loadingDetails) return
@@ -367,17 +390,20 @@ function buildSavedRow(
       if (!passwordToggle.get_active()) {
         state.passwordVisible = false
         passwordValue.set_label("Hidden")
-        qrImage.set_opacity(0)
+        updateQrState(null)
+        qrSlot.set_visible(false) // CHANGE 4: Keep space even if no QR
         return
       }
       state.passwordVisible = true
       if (state.passwordFetched) {
         passwordValue.set_label(state.passwordValueCache || "Unavailable")
+        // CHANGE 3: Update logic here
         if (state.qrPath && state.passwordValueCache) {
-          qrImage.set_filename(state.qrPath)
-          qrImage.set_opacity(1)
+          updateQrState(state.qrPath)
+          qrSlot.set_visible(true) // CHANGE 4: Keep space even if no QR
         } else {
-          qrImage.set_opacity(0)
+          updateQrState(null)
+          qrSlot.set_visible(false) // CHANGE 4: Keep space even if no QR
         }
         return
       }
@@ -391,16 +417,15 @@ function buildSavedRow(
           state.qrPath = buildWifiQr(currentName, pass)
         }
         if (state.qrPath && pass) {
-          qrImage.set_filename(state.qrPath)
-          qrImage.set_opacity(1)
+          updateQrState(state.qrPath)
         } else {
-          qrImage.set_opacity(0)
+          updateQrState(null)
         }
       } catch (err) {
         console.error("a-network password error", err)
         state.passwordFetched = true
         passwordValue.set_label("Unavailable")
-        qrImage.set_opacity(0)
+        updateQrState(null) // CHANGE 5: Hide on error
       }
     })
 
@@ -410,11 +435,11 @@ function buildSavedRow(
       ignorePasswordToggle = false
       if (state.passwordFetched) {
         passwordValue.set_label(state.passwordValueCache || "Unavailable")
+        // CHANGE 6: Update logic here
         if (state.qrPath && state.passwordValueCache) {
-          qrImage.set_filename(state.qrPath)
-          qrImage.set_opacity(1)
+          updateQrState(state.qrPath)
         } else {
-          qrImage.set_opacity(0)
+          updateQrState(null)
         }
       } else {
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
@@ -540,16 +565,15 @@ function buildWifiRow(
   savedValue.add_css_class("a-network-details-value")
   savedValue.set_halign(Gtk.Align.CENTER)
   savedValue.set_hexpand(true)
-  savedValue.set_width_chars(24)
+  // savedValue.set_width_chars(24)
   savedValue.set_ellipsize(Pango.EllipsizeMode.END)
   savedValue.set_max_width_chars(24)
   const savedQr = new Gtk.Picture()
-  savedQr.set_visible(true)
-  savedQr.set_size_request(128, -1)
+  savedQr.set_visible(false)
+  savedQr.set_size_request(128, 128)
   savedQr.set_can_shrink(true)
   savedQr.set_content_fit(Gtk.ContentFit.SCALE_DOWN)
   savedQr.set_halign(Gtk.Align.CENTER)
-  savedQr.set_opacity(0)
   savedBox.append(savedRow)
   savedBox.append(savedValue)
   const savedQrSlot = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
@@ -1066,6 +1090,8 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   const lastFooter = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   lastFooter.add_css_class("a-network-footer")
   const lastFooterLabel = new Gtk.Label({ label: "Last: --", xalign: 1, halign: Gtk.Align.CENTER, hexpand: true })
+  lastFooterLabel.max_width_chars = 48
+  lastFooterLabel.wrap = true
   lastFooterLabel.add_css_class("a-network-footer-label")
   lastFooter.append(lastFooterLabel)
 
@@ -1406,7 +1432,7 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   createEffect(() => {
     const history = service.history()
     const latest = history[0]
-    const cmd = latest?.command ? ` • ${latest.command}` : ""
+    const cmd = latest?.command ? ` > ${latest.command}` : ""
     lastFooterLabel.set_label(latest ? `Last: ${latest.action}${cmd}` : "Last: --")
   }, { immediate: true })
 
