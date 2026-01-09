@@ -36,7 +36,7 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
     return { valign, halign }
   }
 
-  let hideWindow = () => {}
+  let hideWindow = () => { }
   let innerRef: Gtk.Widget | null = null
   const buildInner = (next: NetworkWidgetConfig) => {
     const innerClass = next.windowLess ? "a-network-window-inner a-network-windowless-inner" : "a-network-window-inner"
