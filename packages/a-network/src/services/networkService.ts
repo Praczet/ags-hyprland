@@ -1,6 +1,6 @@
 import { type Accessor, createState } from "ags"
 import GLib from "gi://GLib"
-import type { NetworkAction, NetworkState } from "../types"
+import type { ConnectionDetails, NetworkAction, NetworkState } from "../types"
 
 export type NetworkService = {
   data: Accessor<NetworkState | null>
@@ -17,6 +17,7 @@ export type NetworkService = {
   disconnectConnection: (name: string) => Promise<void>
   forgetConnection: (name: string) => Promise<void>
   getWifiPassword: (name: string) => Promise<string | null>
+  getConnectionDetails: (name: string) => Promise<ConnectionDetails>
 
 }
 
@@ -364,6 +365,24 @@ export function getNetworkService(): NetworkService {
     return out?.trim() || null
   }
 
+  const getConnectionDetails = async (name: string) => {
+    const safeName = name.replace(/"/g, "\\\"")
+    const cmd = "nmcli -t -g 802-11-wireless.ssid,802-11-wireless-security.key-mgmt,connection.timestamp connection show"
+    logAction("Fetch connection details", `${cmd} "${safeName}"`)
+    const out = runCommand(`${cmd} "${safeName}"`)
+    if (!out) return {}
+    const trimmed = out.trim()
+    const lines = trimmed.split("\n").map(line => line.trim()).filter(Boolean)
+    const parts = lines.length >= 2 ? lines : splitNmcliLine(trimmed)
+    const [ssidRaw, securityRaw, tsRaw] = parts
+    const ts = Number(tsRaw)
+    return {
+      ssid: ssidRaw || undefined,
+      security: securityRaw || undefined,
+      lastConnected: Number.isFinite(ts) && ts > 0 ? ts : undefined,
+    }
+  }
+
   singleton = {
     data,
     error,
@@ -379,6 +398,7 @@ export function getNetworkService(): NetworkService {
     disconnectConnection,
     forgetConnection,
     getWifiPassword,
+    getConnectionDetails,
   }
 
   return singleton

@@ -48,6 +48,12 @@ export type NetworkAction = {
   command?: string
 }
 
+export type ConnectionDetails = {
+  ssid?: string
+  security?: string
+  lastConnected?: number
+}
+
 export type NetworkState = {
   wifiEnabled?: boolean
   wifi: WifiNetwork[]

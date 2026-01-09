@@ -215,10 +215,6 @@
   border-top: 1px solid alpha(@outline, 0.25);
 }
 
-.a-network-share {
-  padding: 6px 0;
-}
-
 .a-network-saved-scroll {
   margin-top: 2px;
 }
@@ -241,6 +237,20 @@
 
 .a-network-footer-label {
   opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.a-network-details {
+  margin-left: 18px;
+  padding: 6px 0;
+}
+
+.a-network-details-col {
+  min-width: 180px;
+}
+
+.a-network-details-label {
+  opacity: 0.6;
   font-size: 0.9rem;
 }
 

@@ -15,8 +15,7 @@ A compact NetworkManager UI for AGS with a Wi-Fi first accordion layout.
 - `refreshMs`: refresh interval (ms, default 15000)
 - `educationModeOn`: `boolean`
 - `educationModeDetail`: `tooltip | footer | panel`
-- `showQRPassword`: `boolean`
-- `showPlainTextPassword`: `boolean`
+- `showPlainTextPassword`: `boolean` (allow password reveal in details)
 - `allowBackgroundRefresh`: `boolean`
 - `refreshOnShow`: `boolean`
 - `windowLess`: `boolean` (edge-to-edge section headers, minimal window chrome)
@@ -24,7 +23,6 @@ A compact NetworkManager UI for AGS with a Wi-Fi first accordion layout.
 ## Notes
 
 - Uses `nmcli` (NetworkManager).
-- QR generation uses `qrencode` if available.
 
 ## Request handler
 
