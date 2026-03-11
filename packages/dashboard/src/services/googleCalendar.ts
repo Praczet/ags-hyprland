@@ -53,6 +53,7 @@ export async function fetchCalendarEvents(
   timeMax: string,
   maxResults = 250,
 ): Promise<CalendarEvent[]> {
+
   const token = await getAccessToken()
   const headers = { Authorization: `Bearer ${token}` }
 

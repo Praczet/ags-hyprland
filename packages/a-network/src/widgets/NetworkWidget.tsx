@@ -4,7 +4,9 @@ import Pango from "gi://Pango"
 import { getNetworkService } from "../services/networkService"
 import type { NetworkWidgetConfig } from "../types"
 import { createHotspotSection } from "./sections/HotspotSection"
+import { createBluetoothSection } from "./sections/BluetoothSection"
 import { createVpnSection } from "./sections/VpnSection"
+import { createUtilitiesSection } from "./sections/UtilitiesSection"
 import { createWiredSection } from "./sections/WiredSection"
 import { createWifiSection } from "./sections/WifiSection"
 import type { SectionController } from "./sections/sectionUtils"
@@ -25,12 +27,16 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   const wiredSection = createWiredSection(cfg, service)
   const vpnSection = createVpnSection(cfg, service)
   const hotspotSection = createHotspotSection(cfg, service)
+  const bluetoothSection = createBluetoothSection(cfg, service)
+  const utilitiesSection = createUtilitiesSection(cfg, service)
 
   const sectionEntries: Array<{ id: string; section: SectionInstance }> = [
     { id: "wifi", section: wifiSection },
     { id: "wired", section: wiredSection },
     { id: "vpn", section: vpnSection },
     { id: "hotspot", section: hotspotSection },
+    { id: "bluetooth", section: bluetoothSection },
+    { id: "utilities", section: utilitiesSection },
   ]
 
   const sectionConfig = new Map<string, { visible?: boolean; order?: number }>()
@@ -126,7 +132,9 @@ export function NetworkWidget(cfg: NetworkWidgetConfig = {}) {
   } else if (cfg.educationModeOn && cfg.educationModeDetail === "footer") {
     root.append(footer)
   }
-  root.append(lastFooter)
+  if (cfg.educationModeOn) {
+    root.append(lastFooter)
+  }
 
   createEffect(() => {
     const history = service.history()

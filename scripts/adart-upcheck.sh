@@ -3,6 +3,6 @@
 set -euo pipefail
 
 REPO_DIR="${REPO_DIR:-$HOME/Development/Hyprland/ags}"
-
-ags-ensure.sh adart "$REPO_DIR/src/app.ts"
+"$HOME/.local/bin/ags-ensure.sh" adart "$REPO_DIR/src/app.ts"
+# ags-ensure.sh adart "$REPO_DIR/src/app.ts"
 ags toggle upcheck --instance adart

@@ -69,6 +69,9 @@ async function refreshAccessToken(creds: Credentials, refreshToken: string): Pro
   })
   if (!res.ok) {
     const txt = await res.text()
+    if (res.status === 400) {
+
+    }
     throw new Error(`Token refresh failed: ${res.status} ${txt}`)
   }
   const json = await res.json() as TokenData

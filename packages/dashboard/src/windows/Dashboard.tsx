@@ -381,7 +381,7 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
       class="dashboard"
       visible={false}
       layer={Astal.Layer.OVERLAY}
-      keymode={Astal.Keymode.ON_DEMAND}
+      keymode={Astal.Keymode.EXCLUSIVE}
       exclusivity={Astal.Exclusivity.IGNORE}
       anchor={
         Astal.WindowAnchor.TOP |

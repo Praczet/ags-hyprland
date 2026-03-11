@@ -1,10 +1,10 @@
 import GLib from "gi://GLib"
 import type { NetworkSectionConfig, NetworkSectionName, NetworkWidgetConfig } from "./types"
 
-const SECTION_NAMES: NetworkSectionName[] = ["wifi", "wired", "vpn", "hotspot"]
+const SECTION_NAMES: NetworkSectionName[] = ["wifi", "wired", "vpn", "hotspot", "bluetooth", "utilities"]
 
 export function getNetworkConfigPath() {
-  return `${GLib.get_home_dir()}/.config/ags/a-networkmanager.json`
+  return `${GLib.get_user_config_dir()}/ags/a-networkmanager.json`
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {
@@ -41,6 +41,23 @@ function parseSections(v: unknown): NetworkSectionConfig[] | undefined {
   return result.length ? result : undefined
 }
 
+function parseButtons(v: unknown) {
+  if (!Array.isArray(v)) return undefined
+  const result = []
+  for (const entry of v) {
+    if (!isObject(entry)) continue
+    const command = toString(entry.command)
+    if (!command) continue
+    result.push({
+      order: toInt(entry.order),
+      label: toString(entry.label),
+      icon: toString(entry.icon),
+      command,
+    })
+  }
+  return result.length ? result : undefined
+}
+
 export function loadNetworkConfig(): NetworkWidgetConfig {
   const path = getNetworkConfigPath()
   let user: unknown = null
@@ -67,6 +84,8 @@ export function loadNetworkConfig(): NetworkWidgetConfig {
 
   const sections = parseSections(u.sections)
   if (sections) cfg.sections = sections
+  const buttons = parseButtons(u.buttons)
+  if (buttons) cfg.buttons = buttons
 
   if (isObject(u.layout)) {
     const anchor = toString(u.layout.anchor)
@@ -78,6 +97,37 @@ export function loadNetworkConfig(): NetworkWidgetConfig {
   }
 
   return cfg
+}
+
+type NetworkConfigListener = () => void
+const configListeners = new Set<NetworkConfigListener>()
+
+export function onNetworkConfigChange(listener: NetworkConfigListener) {
+  configListeners.add(listener)
+  return () => configListeners.delete(listener)
+}
+
+function notifyNetworkConfigChange() {
+  for (const listener of configListeners) listener()
+}
+
+export function updateNetworkConfig(updates: Record<string, unknown>) {
+  const path = getNetworkConfigPath()
+  let user: unknown = null
+  try {
+    const txt = GLib.file_get_contents(path)?.[1]
+    if (txt) user = JSON.parse(new TextDecoder().decode(txt))
+  } catch {
+    user = null
+  }
+  const base = isObject(user) ? user : {}
+  const next = { ...base, ...updates }
+  try {
+    GLib.file_set_contents(path, JSON.stringify(next, null, 2))
+    notifyNetworkConfigChange()
+  } catch (err) {
+    console.error("a-network config write error", err)
+  }
 }
 
 export function resolveNetworkConfig(override: NetworkWidgetConfig = {}): NetworkWidgetConfig {

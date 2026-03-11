@@ -1,6 +1,6 @@
 export type NetworkEducationModeDetail = "tooltip" | "footer" | "panel"
 
-export type NetworkSectionName = "wifi" | "wired" | "vpn" | "hotspot"
+export type NetworkSectionName = "wifi" | "wired" | "vpn" | "hotspot" | "bluetooth" | "utilities"
 
 export type NetworkSectionConfig = {
   section: NetworkSectionName
@@ -13,6 +13,13 @@ export type NetworkLayoutConfig = {
   margin?: string
 }
 
+export type ExternalAppButton = {
+  order?: number
+  label?: string
+  icon?: string
+  command?: string
+}
+
 export type NetworkWidgetConfig = {
   refreshMs?: number
   educationModeOn?: boolean
@@ -21,6 +28,7 @@ export type NetworkWidgetConfig = {
   showPlainTextPassword?: boolean
   wiredNoInternetByIp?: boolean
   sections?: NetworkSectionConfig[]
+  buttons?: ExternalAppButton[]
   layout?: NetworkLayoutConfig
   allowBackgroundRefresh?: boolean
   refreshOnShow?: boolean
@@ -59,6 +67,24 @@ export type HotspotInfo = {
   active?: boolean
 }
 
+export type BluetoothDevice = {
+  id: string
+  name?: string
+  connected?: boolean
+  paired?: boolean
+  trusted?: boolean
+  battery?: number
+}
+
+export type BluetoothInfo = {
+  powered?: boolean
+  name?: string
+  address?: string
+  discoverable?: boolean
+  paired: BluetoothDevice[]
+  devices: BluetoothDevice[]
+}
+
 export type NetworkAction = {
   ts: number
   action: string
@@ -82,6 +108,7 @@ export type NetworkState = {
   connectivity?: "none" | "portal" | "limited" | "full"
   vpn: VpnInfo[]
   hotspot?: HotspotInfo
+  bluetooth?: BluetoothInfo
   refreshedAt?: number
 }
 

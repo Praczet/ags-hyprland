@@ -105,6 +105,7 @@ type SavedRowState = {
 
 type WifiRowState = {
   expanded: boolean
+  joinExpanded: boolean
   passwordText: string
   passwordVisible: boolean
   passwordValueCache: string | null
@@ -332,7 +333,8 @@ function buildWifiRow(
   iface: WifiNetwork,
   isKnown: boolean,
   savedName: string | undefined,
-  onConnect: (ssid: string, known: boolean, savedName?: string, password?: string) => void,
+  connectSaved: (name: string) => Promise<void>,
+  connectWifi: (ssid: string, password?: string) => Promise<void>,
   fetchDetails: (name: string) => Promise<ConnectionDetails>,
   fetchPassword: (name: string) => Promise<string | null>,
   allowPlainText: boolean,
@@ -349,7 +351,7 @@ function buildWifiRow(
   meta.add_css_class("a-network-row-meta")
   const actions = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   actions.set_halign(Gtk.Align.END)
-  const connectBtn = new Gtk.Button({ label: isKnown ? "Connect" : "Join" })
+  const connectBtn = new Gtk.Button({ label: "Connect" })
   connectBtn.add_css_class("a-network-action")
   const detailsBtn = new Gtk.Button({ label: "Details" })
   detailsBtn.add_css_class("a-network-action")
@@ -480,7 +482,8 @@ function buildWifiRow(
     } else {
       label.remove_css_class("a-network-active")
     }
-    connectBtn.set_label(currentIsKnown ? "Connect" : "Join")
+    const labelText = state.joinExpanded || currentIsKnown ? "Connect" : "Join"
+    connectBtn.set_label(labelText)
   }
 
   savedToggle.connect("notify::active", async () => {
@@ -523,12 +526,7 @@ function buildWifiRow(
     }
   })
 
-  connectBtn.connect("clicked", () => {
-    onConnect(currentSsid, currentIsKnown, currentSavedName, state.passwordText)
-  })
-
   if (!isSecure(iface.security)) {
-    connectBtn.set_label("Join")
     state.passwordText = ""
   }
 
@@ -560,8 +558,46 @@ function buildWifiRow(
   passwordRow.append(showToggle)
   const passwordContainer = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
   passwordContainer.append(passwordRow)
-  passwordContainer.set_visible(!currentIsKnown && isSecure(iface.security))
   passwordContainer.add_css_class("a-network-row-details")
+  const passwordReveal = new Gtk.Revealer({ reveal_child: false })
+  passwordReveal.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+  passwordReveal.set_child(passwordContainer)
+
+  const updatePasswordContainerVisibility = (secure: boolean) => {
+    const next = state.joinExpanded && secure
+    passwordReveal.set_reveal_child(next)
+  }
+
+  const revealJoinPrompt = () => {
+    state.joinExpanded = true
+    updatePasswordContainerVisibility(isSecure(currentSecurity))
+    applyFlags()
+    passwordEntry.grab_focus()
+  }
+
+  connectBtn.connect("clicked", () => {
+    const secure = isSecure(currentSecurity)
+    if (currentIsKnown && !state.joinExpanded) {
+      connectSaved(currentSavedName ?? currentSsid).catch(err => {
+        console.error("a-network connect error", err)
+        revealJoinPrompt()
+      })
+      return
+    }
+    if (!secure) {
+      connectWifi(currentSsid).catch(err => console.error("a-network connect error", err))
+      return
+    }
+    if (!state.joinExpanded) {
+      revealJoinPrompt()
+      return
+    }
+    if (!state.passwordText) {
+      passwordEntry.grab_focus()
+      return
+    }
+    connectWifi(currentSsid, state.passwordText).catch(err => console.error("a-network connect error", err))
+  })
 
   const update = (nextIface: WifiNetwork, nextKnown: boolean, nextSavedName?: string) => {
     const prevSavedName = currentSavedName
@@ -572,6 +608,9 @@ function buildWifiRow(
     currentSavedName = nextSavedName
     if (prevSavedName !== nextSavedName) {
       detailsLoaded = false
+    }
+    if (!isSecure(nextIface.security)) {
+      state.joinExpanded = false
     }
     if (!currentIsKnown) {
       state.lastConnected = null
@@ -585,12 +624,12 @@ function buildWifiRow(
       lastConnected: state.lastConnected ?? undefined,
       signal: currentSignal,
     })
-    passwordContainer.set_visible(!currentIsKnown && isSecure(nextIface.security))
+    updatePasswordContainerVisibility(isSecure(nextIface.security))
     applyFlags()
   }
 
   container.append(row)
-  container.append(passwordContainer)
+  container.append(passwordReveal)
   container.append(detailsReveal)
 
   update(iface, isKnown, savedName)
@@ -1039,6 +1078,7 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
         if (!entry) {
           const state = nearbyRowState.get(rowKey) ?? {
             expanded: false,
+            joinExpanded: false,
             passwordText: "",
             passwordVisible: false,
             passwordValueCache: null,
@@ -1051,13 +1091,8 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
             iface,
             isKnown,
             savedName,
-            (ssid, knownNow, savedNow, password) => {
-              if (knownNow) {
-                service.connectSaved(savedNow ?? ssid).catch(err => console.error("a-network connect error", err))
-                return
-              }
-              service.connectWifi(ssid, password).catch(err => console.error("a-network connect error", err))
-            },
+            (name) => service.connectSaved(name),
+            (ssid, password) => service.connectWifi(ssid, password),
             (name) => service.getConnectionDetails(name),
             (name) => service.getWifiPassword(name),
             cfg.showPlainTextPassword ?? true,

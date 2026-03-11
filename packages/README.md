@@ -20,7 +20,7 @@ GUI-first system information suite with a standalone window and dashboard widget
 
 ## a-network
 
-NetworkManager UI with a Wi-Fi-first accordion layout, education mode, and sharing tools.
+NetworkManager UI with Wi-Fi-first accordion layout, Bluetooth support, and a Utilities section for quick toggles/tools.
 
 
 ## expose

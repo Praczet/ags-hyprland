@@ -1,6 +1,6 @@
 import { type Accessor, createState } from "ags"
 import GLib from "gi://GLib"
-import type { ConnectionDetails, NetworkAction, NetworkState } from "../types"
+import type { BluetoothDevice, BluetoothInfo, ConnectionDetails, NetworkAction, NetworkState } from "../types"
 
 export type NetworkService = {
   data: Accessor<NetworkState | null>
@@ -8,11 +8,18 @@ export type NetworkService = {
   history: Accessor<NetworkAction[]>
   scanning: Accessor<boolean>
   wifiBusy: Accessor<boolean>
+  bluetoothScanning: Accessor<boolean>
   refresh: () => Promise<void>
   setActive: (id: string, active: boolean, opts?: { allowBackgroundRefresh?: boolean; refreshOnShow?: boolean; refreshMs?: number }) => void
   setWifiEnabled: (enabled: boolean) => Promise<void>
   setWiredEnabled: (enabled: boolean) => Promise<void>
   scanWifi: () => Promise<void>
+  setBluetoothEnabled: (enabled: boolean) => Promise<void>
+  scanBluetooth: () => Promise<void>
+  pairBluetooth: (id: string) => Promise<void>
+  connectBluetooth: (id: string) => Promise<void>
+  disconnectBluetooth: (id: string) => Promise<void>
+  removeBluetooth: (id: string) => Promise<void>
   connectWifi: (ssid: string, password?: string) => Promise<void>
   connectSaved: (name: string) => Promise<void>
   disconnectConnection: (name: string) => Promise<void>
@@ -40,6 +47,14 @@ function runCommand(cmd: string) {
     console.error("a-network command failed", cmd, err)
     return null
   }
+}
+
+function runCommandChecked(cmd: string) {
+  const out = runCommand(cmd)
+  if (out === null) {
+    throw new Error(`Command failed (null): ${cmd}`)
+  }
+  return out
 }
 
 function splitNmcliLine(line: string) {
@@ -200,6 +215,102 @@ function getConnectivity() {
   return undefined
 }
 
+function parseBluetoothShow(out: string): Omit<BluetoothInfo, "paired" | "devices"> {
+  const result: Omit<BluetoothInfo, "paired" | "devices"> = {}
+  const lines = out.split("\n").map(line => line.trim()).filter(Boolean)
+  for (const line of lines) {
+    if (line.startsWith("Controller ")) {
+      const parts = line.split(/\s+/)
+      result.address = parts[1]
+      continue
+    }
+    const idx = line.indexOf(":")
+    if (idx === -1) continue
+    const key = line.slice(0, idx).trim()
+    const value = line.slice(idx + 1).trim()
+    if (key === "Name" || key === "Alias") {
+      if (!result.name) result.name = value
+    } else if (key === "Powered") {
+      result.powered = value.toLowerCase() === "yes"
+    } else if (key === "Discoverable") {
+      result.discoverable = value.toLowerCase() === "yes"
+    }
+  }
+  return result
+}
+
+function parseBluetoothDevices(out: string) {
+  const lines = out.split("\n").map(line => line.trim()).filter(Boolean)
+  const devices: BluetoothDevice[] = []
+  for (const line of lines) {
+    const parts = line.split(/\s+/)
+    if (parts[0] !== "Device" || parts.length < 2) continue
+    const id = parts[1]
+    const name = parts.slice(2).join(" ").trim()
+    devices.push({ id, name: name || undefined })
+  }
+  return devices
+}
+
+function parseBluetoothInfo(out: string): Partial<BluetoothDevice> {
+  const result: Partial<BluetoothDevice> = {}
+  const lines = out.split("\n").map(line => line.trim()).filter(Boolean)
+  for (const line of lines) {
+    const idx = line.indexOf(":")
+    if (idx === -1) continue
+    const key = line.slice(0, idx).trim()
+    const value = line.slice(idx + 1).trim()
+    if (key === "Name" || key === "Alias") {
+      if (!result.name) result.name = value
+    } else if (key === "Connected") {
+      result.connected = value.toLowerCase() === "yes"
+    } else if (key === "Paired") {
+      result.paired = value.toLowerCase() === "yes"
+    } else if (key === "Trusted") {
+      result.trusted = value.toLowerCase() === "yes"
+    } else if (key === "Battery Percentage") {
+      const hexMatch = value.match(/0x([0-9a-fA-F]+)/)
+      if (hexMatch) {
+        result.battery = parseInt(hexMatch[1], 16)
+      } else {
+        const match = value.match(/(\d+)\s*%?/)
+        if (match) result.battery = Number(match[1])
+      }
+    }
+  }
+  return result
+}
+
+function getBluetoothInfo(): BluetoothInfo | null {
+  const showOut = runCommand("bluetoothctl show")
+  if (!showOut) return null
+  const base = parseBluetoothShow(showOut)
+  const devicesOut = runCommand("bluetoothctl devices") ?? ""
+  const pairedOut = runCommand("bluetoothctl devices Paired") ?? ""
+  const connectedOut = runCommand("bluetoothctl devices Connected") ?? ""
+  const connected = new Set(parseBluetoothDevices(connectedOut).map(d => d.id))
+  const paired = parseBluetoothDevices(pairedOut)
+  const pairedIds = new Set(paired.map(p => p.id))
+  for (const id of connected) {
+    if (!pairedIds.has(id)) {
+      paired.push({ id })
+      pairedIds.add(id)
+    }
+  }
+  const devices = parseBluetoothDevices(devicesOut).filter(d => !pairedIds.has(d.id))
+  const detailedPaired = paired.map(device => {
+    const infoOut = runCommand(`bluetoothctl info ${device.id}`)
+    const info = infoOut ? parseBluetoothInfo(infoOut) : {}
+    const name = device.name ?? (info as BluetoothDevice).name
+    return { ...device, ...info, name, paired: true, connected: connected.has(device.id) || info.connected }
+  })
+  return {
+    ...base,
+    paired: detailedPaired,
+    devices,
+  }
+}
+
 export function getNetworkService(): NetworkService {
   if (singleton) return singleton
 
@@ -208,6 +319,7 @@ export function getNetworkService(): NetworkService {
   const [history, setHistory] = createState<NetworkAction[]>([])
   const [scanning, setScanning] = createState(false)
   const [wifiBusy, setWifiBusy] = createState(false)
+  const [bluetoothScanning, setBluetoothScanning] = createState(false)
 
   const logAction = (action: string, command?: string) => {
     const next = [{ ts: Date.now(), action, command }, ...history()].slice(0, 50)
@@ -240,6 +352,7 @@ export function getNetworkService(): NetworkService {
       const connectivity = getConnectivity()
       const vpn = getVpnInfo()
       const hotspot = getHotspotInfo()
+      const bluetooth = getBluetoothInfo()
 
       setData({
         wifiEnabled,
@@ -252,6 +365,7 @@ export function getNetworkService(): NetworkService {
         connectivity,
         vpn,
         hotspot,
+        bluetooth: bluetooth ?? undefined,
         refreshedAt: Date.now(),
       })
       setError(null)
@@ -330,6 +444,65 @@ export function getNetworkService(): NetworkService {
     await refresh()
   }
 
+  const setBluetoothEnabled = async (enabled: boolean) => {
+    const cmd = enabled ? "bluetoothctl power on" : "bluetoothctl power off"
+    logAction("Toggle Bluetooth", cmd)
+    runCommand(cmd)
+    await refresh()
+  }
+
+  const scanBluetooth = async () => {
+    const cmd = "bluetoothctl scan on"
+    logAction("Scan Bluetooth", cmd)
+    setBluetoothScanning(true)
+    try {
+      GLib.spawn_command_line_async(cmd)
+    } catch (err) {
+      console.error("a-network bluetooth scan error", err)
+      setBluetoothScanning(false)
+      return
+    }
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
+      refresh().catch(err => console.error("a-network refresh error", err))
+      return GLib.SOURCE_REMOVE
+    })
+    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 5200, () => {
+      runCommand("bluetoothctl scan off")
+      refresh().catch(err => console.error("a-network refresh error", err))
+      setBluetoothScanning(false)
+      return GLib.SOURCE_REMOVE
+    })
+  }
+
+  const pairBluetooth = async (id: string) => {
+    const cmd = `bluetoothctl pair ${id}`
+    logAction("Pair Bluetooth device", cmd)
+    runCommand(cmd)
+    runCommand(`bluetoothctl connect ${id}`)
+    await refresh()
+  }
+
+  const connectBluetooth = async (id: string) => {
+    const cmd = `bluetoothctl connect ${id}`
+    logAction("Connect Bluetooth device", cmd)
+    runCommand(cmd)
+    await refresh()
+  }
+
+  const disconnectBluetooth = async (id: string) => {
+    const cmd = `bluetoothctl disconnect ${id}`
+    logAction("Disconnect Bluetooth device", cmd)
+    runCommand(cmd)
+    await refresh()
+  }
+
+  const removeBluetooth = async (id: string) => {
+    const cmd = `bluetoothctl remove ${id}`
+    logAction("Forget Bluetooth device", cmd)
+    runCommand(cmd)
+    await refresh()
+  }
+
   const scanWifi = async () => {
     const cmd = "nmcli dev wifi rescan"
     logAction("Scan Wi-Fi", cmd)
@@ -357,8 +530,10 @@ export function getNetworkService(): NetworkService {
     const cmd = password
       ? `nmcli dev wifi connect "${safeSsid}" password "${password.replace(/"/g, "\\\"")}"`
       : `nmcli dev wifi connect "${safeSsid}"`
-    logAction("Connect Wi-Fi", cmd)
-    runCommand(cmd)
+    // replace passsword to **** for logging
+    const logCmd = password ? `nmcli dev wifi connect "${safeSsid}" password "****"` : cmd
+    logAction("Connect Wi-Fi", logCmd)
+    runCommandChecked(cmd)
     await refresh()
   }
 
@@ -366,7 +541,7 @@ export function getNetworkService(): NetworkService {
     const safeName = name.replace(/"/g, "\\\"")
     const cmd = `nmcli connection up "${safeName}"`
     logAction("Connect saved", cmd)
-    runCommand(cmd)
+    runCommandChecked(cmd)
     await refresh()
   }
 
@@ -418,11 +593,18 @@ export function getNetworkService(): NetworkService {
     history,
     scanning,
     wifiBusy,
+    bluetoothScanning,
     refresh,
     setActive,
     setWifiEnabled,
     setWiredEnabled,
     scanWifi,
+    setBluetoothEnabled,
+    scanBluetooth,
+    pairBluetooth,
+    connectBluetooth,
+    disconnectBluetooth,
+    removeBluetooth,
     connectWifi,
     connectSaved,
     disconnectConnection,
