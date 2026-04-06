@@ -3,6 +3,7 @@ import { Gtk } from "ags/gtk4"
 import type { CalendarEvent } from "../services/googleCalendar"
 import { WidgetFrame } from "./WidgetFrame"
 import { renderEventList } from "./eventList"
+import { makeAuthErrorView, type AuthErrorKind } from "./authError"
 
 export type NextEventConfig = {
   title?: string
@@ -11,30 +12,49 @@ export type NextEventConfig = {
   events?: Accessor<CalendarEvent[]>
   maxItems?: number
   useGoogle?: boolean
+  authError?: Accessor<AuthErrorKind | null>
 }
 
 export function NextEventWidget(cfg: NextEventConfig = {}) {
   const title = cfg.showTitle === false ? undefined : (cfg.title ?? "Next Event")
 
+  const container = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
   const list = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
 
   const maxItems = Number.isFinite(cfg.maxItems) ? Math.max(1, Math.floor(cfg.maxItems as number)) : 20
 
-  if (typeof cfg.events === "function") {
+  const clearContainer = () => {
+    let child = container.get_first_child()
+    while (child) { container.remove(child); child = container.get_first_child() }
+  }
+
+  if (typeof cfg.events === "function" || typeof cfg.authError === "function") {
     createEffect(() => {
-      const items = cfg.events?.() ?? []
-      renderEventList(list, items, maxItems)
+      const err = cfg.authError?.() ?? null
+      clearContainer()
+      if (err) {
+        container.append(makeAuthErrorView("google", err))
+      } else {
+        renderEventList(list, cfg.events?.() ?? [], maxItems)
+        container.append(list)
+      }
     }, { immediate: true })
   } else if (typeof cfg.event === "function") {
     createEffect(() => {
-      const ev = cfg.event?.() ?? null
-      renderEventList(list, ev ? [ev] : [], maxItems)
+      const err = cfg.authError?.() ?? null
+      clearContainer()
+      if (err) {
+        container.append(makeAuthErrorView("google", err))
+      } else {
+        const ev = cfg.event?.() ?? null
+        renderEventList(list, ev ? [ev] : [], maxItems)
+        container.append(list)
+      }
     }, { immediate: true })
   } else {
     renderEventList(list, [], maxItems)
+    container.append(list)
   }
 
-  const body = list as Gtk.Box
-
-  return WidgetFrame(title, body)
+  return WidgetFrame(title, container)
 }

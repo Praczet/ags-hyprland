@@ -22,8 +22,16 @@
   opacity: 0;
 }
 
+.dashboard-widget-no-title {
+  padding-top: 20px;
+}
+
 .dashboard-widget-no-bg {
   background: transparent;
+}
+
+.dashboard-widget-no-bg.dashboard-widget-no-border.dashboard-widget-no-shadow {
+  padding: 0;
 }
 
 .dashboard-widget-no-border {
@@ -176,6 +184,33 @@
 .dashboard-widget-error {
   border: 1px solid alpha(@error, 0.85);
   background: alpha(@error, 0.22);
+}
+
+.dashboard-auth-error {
+  padding: 16px;
+}
+
+.dashboard-auth-error-icon {
+  font-size: 2.4rem;
+  opacity: 0.6;
+}
+
+.dashboard-auth-error-message {
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+
+.dashboard-auth-renew-btn {
+  margin-top: 4px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  background: alpha(@primary, 0.15);
+  color: @primary;
+  border: 1px solid alpha(@primary, 0.35);
+}
+
+.dashboard-auth-renew-btn:hover {
+  background: alpha(@primary, 0.28);
 }
 
 .dashboard-event-row {

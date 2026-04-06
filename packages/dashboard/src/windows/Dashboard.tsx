@@ -213,13 +213,19 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
       const cal = toCalendarConfig(cfg)
       if (cal.useGoogle && google) {
         cal.markedDates = google.markedDates
-        if (cal.showEvents !== false) cal.events = google.events
+        if (cal.showEvents !== false) {
+          cal.events = google.events
+          cal.authError = google.authError
+        }
       }
       return CalendarWidget(cal)
     },
     "next-event": (cfg) => {
       const ne = toNextEventConfig(cfg)
-      if (ne.useGoogle && google) ne.events = google.events
+      if (ne.useGoogle && google) {
+        ne.events = google.events
+        ne.authError = google.authError
+      }
       return NextEventWidget(ne)
     },
     tasks: (cfg) => {
@@ -227,12 +233,16 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
       if (tcfg.useGoogle !== false && google) {
         tcfg.tasks = google.tasks
         tcfg.listTitle = google.taskListTitle
+        tcfg.authError = google.authError
       }
       return TasksWidget(tcfg)
     },
     ticktick: (cfg) => {
       const tcfg = toTickTickConfig(cfg)
-      if (ticktick) tcfg.tasks = ticktick.tasks
+      if (ticktick) {
+        tcfg.tasks = ticktick.tasks
+        tcfg.authError = ticktick.authError
+      }
       return TickTickWidget(tcfg)
     },
     "sticky-notes": (cfg) => StickyNotesWidget({ ...toStickyNotesConfig(cfg, cfgStickynotes), onOpenNote: () => animateOut() }),
@@ -340,6 +350,8 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
     if (w.showBackground === false) wrapper.add_css_class("dashboard-widget-no-bg")
     if (w.showBorder === false) wrapper.add_css_class("dashboard-widget-no-border")
     if (w.showShadow === false) wrapper.add_css_class("dashboard-widget-no-shadow")
+    const widgetCfg = isObject(w.config) ? w.config : {}
+    if (widgetCfg.showTitle === false) wrapper.add_css_class("dashboard-widget-no-title")
 
     let content: Gtk.Widget
     if (w.type === "custom") {
@@ -446,6 +458,9 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
       return GLib.SOURCE_REMOVE
     })
   }
+
+    ; (win as any).refreshGoogle = () => google?.refresh()
+    ; (win as any).refreshTickTick = () => ticktick?.refresh()
 
     ; (win as any).showDashboard = () => {
       if (typeof win.present === "function") {

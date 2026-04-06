@@ -2,6 +2,7 @@ import { type Accessor, createEffect } from "ags"
 import { Gtk } from "ags/gtk4"
 import { WidgetFrame } from "./WidgetFrame"
 import type { TaskItem } from "../services/googleTasks"
+import { makeAuthErrorView, type AuthErrorKind } from "./authError"
 
 export type TasksConfig = {
   title?: string
@@ -10,6 +11,7 @@ export type TasksConfig = {
   listTitle?: Accessor<string | null>
   maxItems?: number
   useGoogle?: boolean
+  authError?: Accessor<AuthErrorKind | null>
 }
 
 function formatDue(due?: string) {
@@ -105,11 +107,18 @@ export function TasksWidget(cfg: TasksConfig = {}) {
 
   if (cfg.useGoogle === false) {
     renderList([], null)
-  } else if (typeof cfg.tasks === "function") {
+  } else if (typeof cfg.tasks === "function" || typeof cfg.authError === "function") {
     createEffect(() => {
-      const items = cfg.tasks?.() ?? []
-      const listTitle = typeof cfg.listTitle === "function" ? cfg.listTitle() : null
-      renderList(items.slice(0, maxItems), listTitle)
+      const err = cfg.authError?.() ?? null
+      if (err) {
+        let child = list.get_first_child()
+        while (child) { list.remove(child); child = list.get_first_child() }
+        list.append(makeAuthErrorView("google", err))
+      } else {
+        const items = cfg.tasks?.() ?? []
+        const listTitle = typeof cfg.listTitle === "function" ? cfg.listTitle() : null
+        renderList(items.slice(0, maxItems), listTitle)
+      }
     }, { immediate: true })
   } else {
     renderList([], null)

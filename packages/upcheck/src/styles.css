@@ -57,3 +57,20 @@ button.upcheck-row:hover {
   padding: 10px;
   border-radius: 12px;
 }
+
+button.btn-check {
+  background-image: none;
+  background-color: @primary;
+  color: @on_primary;
+}
+
+button.btn-update {
+  background-image: none;
+  background-color: @primary;
+  color: @on_primary;
+}
+
+button.btn-check:hover ,
+button.btn-update:hover {
+  filter: brightness(1.5);
+}

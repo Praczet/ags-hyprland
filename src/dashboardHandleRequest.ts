@@ -62,6 +62,10 @@ function toggleDashboard(configPath?: string) {
   w.showDashboard?.()
 }
 
+function refreshAllDashboards(method: "refreshGoogle" | "refreshTickTick") {
+  dashboardWindows.forEach((w) => { try { w[method]?.() } catch { } })
+}
+
 export async function dashboardHandleRequest(argv: string[]) {
   const [cmd, configPath] = argv
   if (!cmd) return undefined
@@ -69,6 +73,14 @@ export async function dashboardHandleRequest(argv: string[]) {
     case "toggledashboard":
     case "dashboardtoggle": {
       toggleDashboard(configPath)
+      return "ok"
+    }
+    case "google-refresh": {
+      refreshAllDashboards("refreshGoogle")
+      return "ok"
+    }
+    case "ticktick-refresh": {
+      refreshAllDashboards("refreshTickTick")
       return "ok"
     }
   }

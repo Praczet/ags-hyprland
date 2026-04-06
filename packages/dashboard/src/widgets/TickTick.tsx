@@ -2,6 +2,7 @@ import { type Accessor, createEffect } from "ags"
 import { Gdk, Gtk } from "ags/gtk4"
 import { WidgetFrame } from "./WidgetFrame"
 import type { TickTickTaskItem } from "../services/ticktick"
+import { makeAuthErrorView, type AuthErrorKind } from "./authError"
 
 export type TickTickMode = "tasks" | "projects"
 
@@ -11,6 +12,7 @@ export type TickTickConfig = {
   tasks?: Accessor<TickTickTaskItem[]>
   mode?: TickTickMode
   maxItems?: number
+  authError?: Accessor<AuthErrorKind | null>
 }
 
 function formatDue(due?: string) {
@@ -146,10 +148,16 @@ export function TickTickWidget(cfg: TickTickConfig = {}) {
     }
   }
 
-  if (typeof cfg.tasks === "function") {
+  if (typeof cfg.tasks === "function" || typeof cfg.authError === "function") {
     createEffect(() => {
-      const items = cfg.tasks?.() ?? []
-      renderList(items)
+      const err = cfg.authError?.() ?? null
+      if (err) {
+        let child = list.get_first_child()
+        while (child) { list.remove(child); child = list.get_first_child() }
+        list.append(makeAuthErrorView("ticktick", err))
+      } else {
+        renderList(cfg.tasks?.() ?? [])
+      }
     }, { immediate: true })
   } else {
     renderList([])

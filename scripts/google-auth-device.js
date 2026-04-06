@@ -5,6 +5,19 @@
 const fs = require("fs")
 const os = require("os")
 const path = require("path")
+const { execFileSync } = require("child_process")
+
+function storeInKeyring(value) {
+  try {
+    execFileSync("secret-tool", ["store", "--label", "AGS google token", "service", "google"], {
+      input: value,
+      stdio: ["pipe", "inherit", "inherit"],
+    })
+    console.log("Tokens stored in keyring (org.adart.Tokens / service=google)")
+  } catch (err) {
+    console.warn("Could not store tokens in keyring (secret-tool failed):", err.message)
+  }
+}
 
 function expandHome(p) {
   if (!p) return p
@@ -97,8 +110,10 @@ async function main() {
 
   const now = Math.floor(Date.now() / 1000)
   tokenJson.expires_at = now + (tokenJson.expires_in || 3500)
-  fs.writeFileSync(tokensPath, JSON.stringify(tokenJson, null, 2))
-  console.log(`Tokens saved to ${tokensPath}`)
+  const tokenStr = JSON.stringify(tokenJson, null, 2)
+  storeInKeyring(tokenStr)
+  fs.writeFileSync(tokensPath, tokenStr)
+  console.log(`Tokens saved to ${tokensPath} and keyring`)
 }
 
 main().catch(err => {

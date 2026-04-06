@@ -1,5 +1,13 @@
 import { fetch, URL } from "ags/fetch"
 
+export class TickTickAuthError extends Error {
+  readonly needsReauth = true
+  constructor(message: string) {
+    super(message)
+    this.name = "TickTickAuthError"
+  }
+}
+
 export type TickTickProject = {
   id?: string
   name?: string
@@ -40,6 +48,7 @@ export async function fetchProjects(token: string): Promise<TickTickProject[]> {
   const res = await fetch(url, { method: "GET", headers: authHeaders(token) })
   if (!res.ok) {
     const txt = await res.text()
+    if (res.status === 401) throw new TickTickAuthError(`TickTick token expired: ${txt}`)
     throw new Error(`TickTick projects failed: ${res.status} ${txt}`)
   }
   const json = await res.json() as TickTickProject[]
@@ -51,6 +60,7 @@ export async function fetchProjectData(token: string, projectId: string): Promis
   const res = await fetch(url, { method: "GET", headers: authHeaders(token) })
   if (!res.ok) {
     const txt = await res.text()
+    if (res.status === 401) throw new TickTickAuthError(`TickTick token expired: ${txt}`)
     throw new Error(`TickTick project data failed: ${projectId}: ${res.status} ${txt}`)
   }
   const text = await res.text()

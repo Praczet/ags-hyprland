@@ -3,6 +3,20 @@
 // Usage: node scripts/ticktick-auth.js <clientId> <clientSecret>
 
 const http = require("http")
+const { execFileSync } = require("child_process")
+
+function storeInKeyring(token) {
+  try {
+    execFileSync("secret-tool", ["store", "--label", "AGS ticktick token", "service", "ticktick"], {
+      input: token,
+      stdio: ["pipe", "inherit", "inherit"],
+    })
+    console.log("Token stored in keyring (org.adart.Tokens / service=ticktick)")
+  } catch (err) {
+    console.warn("Could not store token in keyring (secret-tool failed):", err.message)
+    console.log("Set accessToken manually in dashboard.json:", token)
+  }
+}
 
 async function main() {
   const clientId = process.argv[2]
@@ -69,6 +83,13 @@ async function main() {
     process.exit(1)
   }
 
+  let accessToken = text
+  try {
+    const json = JSON.parse(text)
+    accessToken = json.access_token ?? text
+  } catch { /* not JSON, use raw */ }
+
+  storeInKeyring(accessToken)
   console.log("TickTick token response:")
   console.log(text)
 }

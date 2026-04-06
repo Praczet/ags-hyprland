@@ -21,7 +21,14 @@ export default function Upcheck(defaultMonitor = 0) {
 
       $={(_self: Astal.Window) => {
         refreshUpdates()
+
+        _self.connect("notify::visible", () => {
+          if (_self.visible) {
+            refreshUpdates();
+          }
+        });
       }}
+
     >
       <MainView />
     </window >

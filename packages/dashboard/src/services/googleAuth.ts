@@ -1,6 +1,15 @@
 import GLib from "gi://GLib"
 import { fetch, URL } from "ags/fetch"
 import { loadDashboardConfig } from "../config"
+import { lookupSecret, storeSecret } from "../../../../shared/utils/secrets"
+
+export class AuthExpiredError extends Error {
+  readonly needsReauth = true
+  constructor(message: string) {
+    super(message)
+    this.name = "AuthExpiredError"
+  }
+}
 
 type TokenData = {
   access_token: string
@@ -50,6 +59,22 @@ function loadTokens(path: string): TokenData | null {
   return obj
 }
 
+async function loadTokensFromKeyring(): Promise<TokenData | null> {
+  const raw = await lookupSecret("google")
+  if (!raw) return null
+  try {
+    const obj = JSON.parse(raw) as TokenData
+    if (!obj.access_token && !obj.refresh_token) return null
+    return obj
+  } catch {
+    return null
+  }
+}
+
+async function saveTokensToKeyring(data: TokenData): Promise<void> {
+  await storeSecret("google", JSON.stringify(data))
+}
+
 async function refreshAccessToken(creds: Credentials, refreshToken: string): Promise<TokenData> {
   const url = new URL("https://oauth2.googleapis.com/token")
   const form: Record<string, string> = {
@@ -70,7 +95,7 @@ async function refreshAccessToken(creds: Credentials, refreshToken: string): Pro
   if (!res.ok) {
     const txt = await res.text()
     if (res.status === 400) {
-
+      throw new AuthExpiredError(`Google refresh token revoked: ${txt}`)
     }
     throw new Error(`Token refresh failed: ${res.status} ${txt}`)
   }
@@ -84,8 +109,9 @@ export async function getAccessToken(): Promise<string> {
   const creds = loadCredentials(cfg.credentialsPath)
   if (!creds) throw new Error(`Invalid credentials file: ${cfg.credentialsPath}`)
 
-  const tokenData = loadTokens(cfg.tokensPath)
-  if (!tokenData) throw new Error(`Missing tokens file: ${cfg.tokensPath}`)
+  // Keyring-first with JSON fallback for migration
+  const tokenData = await loadTokensFromKeyring() ?? loadTokens(cfg.tokensPath)
+  if (!tokenData) throw new AuthExpiredError("No Google tokens found. Run scripts/google-auth-device.js to authorize.")
 
   const now = Math.floor(Date.now() / 1000)
   if (tokenData.access_token && tokenData.expires_at && tokenData.expires_at > now + 60) {
@@ -93,7 +119,7 @@ export async function getAccessToken(): Promise<string> {
   }
 
   if (!tokenData.refresh_token) {
-    throw new Error("Missing refresh token. Run scripts/google-auth-device.js to authorize.")
+    throw new AuthExpiredError("Missing refresh token. Run scripts/google-auth-device.js to authorize.")
   }
 
   const refreshed = await refreshAccessToken(creds, tokenData.refresh_token)
@@ -104,6 +130,6 @@ export async function getAccessToken(): Promise<string> {
     refresh_token: tokenData.refresh_token,
     expires_at: expiresAt,
   }
-  writeJson(cfg.tokensPath, merged)
+  await saveTokensToKeyring(merged)
   return merged.access_token
 }

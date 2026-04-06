@@ -4,6 +4,7 @@ import GLib from "gi://GLib"
 import type { CalendarEvent } from "../services/googleCalendar"
 import { WidgetFrame } from "./WidgetFrame"
 import { renderEventList } from "./eventList"
+import { makeAuthErrorView, type AuthErrorKind } from "./authError"
 
 export type CalendarConfig = {
   title?: string
@@ -13,6 +14,7 @@ export type CalendarConfig = {
   events?: Accessor<CalendarEvent[]>
   showEvents?: boolean
   noEvents?: number
+  authError?: Accessor<AuthErrorKind | null>
 }
 
 type Mark = {
@@ -82,13 +84,21 @@ export function CalendarWidget(cfg: CalendarConfig = {}) {
   content.append(calendar)
 
   const showEvents = cfg.showEvents !== false
-  if (showEvents && typeof cfg.events === "function") {
-    const list = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
+  if (showEvents && (typeof cfg.events === "function" || typeof cfg.authError === "function")) {
     const maxItems = Number.isFinite(cfg.noEvents) ? Math.max(1, Math.floor(cfg.noEvents as number)) : 20
-    content.append(list)
+    const container = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
+    const list = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
+    content.append(container)
     createEffect(() => {
-      const items = cfg.events?.() ?? []
-      renderEventList(list, items, maxItems)
+      const err = cfg.authError?.() ?? null
+      let child = container.get_first_child()
+      while (child) { container.remove(child); child = container.get_first_child() }
+      if (err) {
+        container.append(makeAuthErrorView("google", err))
+      } else {
+        renderEventList(list, cfg.events?.() ?? [], maxItems)
+        container.append(list)
+      }
     }, { immediate: true })
   }
 
