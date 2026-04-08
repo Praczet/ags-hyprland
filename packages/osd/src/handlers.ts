@@ -2,8 +2,7 @@ import { showBrightnessOSD, showGenericOSD, showMicOSD, showVolumeOSD } from "./
 import { readDefaultSink, readDefaultSource } from "./services/audio"
 import { readBrightnessPercent } from "./services/brightness"
 import { getActiveMonitor } from "./services/hypr"
-import { PlayerCtlAction, PlayerTriggerData, TriggerOptions, TriggerType } from "./types"
-import { execAsync } from "ags/process"
+import type { PlayerCtlAction, PlayerTriggerData, TriggerOptions, TriggerType } from "./types"
 import { readMeta, readMetaFresh } from "./services/player"
 
 async function resolveMonitor(): Promise<number> {
@@ -54,25 +53,19 @@ export async function triggerCustom(icon: string, label: string, value?: string 
 export async function triggerPlayerCtl(action: PlayerCtlAction) {
   try {
     const before = await readMeta()
-    // 1. Perform action
-    // await playerCtl(action)
 
-    // 2. Always re-read metadata AFTER the action
     const meta =
       action === "next" || action === "prev"
         ? await readMetaFresh(before, 10, 90)
         : await readMeta()
 
-    // 3. Prepare semantic payload
     const data: PlayerTriggerData = {
       action,
       meta,
     }
 
-    // 4. (Optional but recommended) show OSD
     const monitor = await getActiveMonitor()
-    let icon = "media-playback-start-symbolic";
-
+    let icon = "media-playback-start-symbolic"
 
     if (meta) {
       switch (action) {
@@ -82,20 +75,19 @@ export async function triggerPlayerCtl(action: PlayerCtlAction) {
           icon = meta.playbackStatus === "Playing"
             ? "media-playback-start-symbolic"
             : "media-playback-pause-symbolic"
-          break;
+          break
         }
         case "next": {
           icon = "media-skip-forward-symbolic"
-          break;
+          break
         }
         case "prev": {
           icon = "media-skip-backward-symbolic"
-          break;
+          break
         }
-
       }
       showGenericOSD({
-        icon: icon,
+        icon,
         label: `${meta.title}`,
         value: meta.artist,
         monitor,

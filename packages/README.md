@@ -18,7 +18,7 @@ Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, T
 
 GUI-first system information suite with a standalone window and dashboard widgets (summary, disk, memory, network, battery, pies, CPU graph).
 
-## a-network
+## network
 
 NetworkManager UI with Wi-Fi-first accordion layout, Bluetooth support, and a Utilities section for quick toggles/tools.
 

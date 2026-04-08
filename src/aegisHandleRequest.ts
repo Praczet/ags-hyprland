@@ -1,28 +1,23 @@
-import app from "ags/gtk4/app"
-import { getSysinfoService, type AegisMode } from "../packages/aegis/src"
+import { getSysinfoService, type AegisMode, type AegisViewId } from "../packages/aegis/src"
+import { hideAppWindow, showAppWindow, toggleAppWindow, withWindow } from "./windowControl"
+import { type AegisAppWindow, type RequestResponse, WINDOW_NAME } from "./windowTypes"
 
 function toggleAegis() {
-  const w = app.get_window("aegis") as any
-  if (!w) return
-  w.visible ? w.hide() : w.show()
+  toggleAppWindow<AegisAppWindow>(WINDOW_NAME.aegis)
 }
 
-function setAegisView(view: string) {
-  const w = app.get_window("aegis") as any
-  if (!w) return
-  w.setAegisView?.(view)
+function setAegisView(view: AegisViewId) {
+  withWindow<AegisAppWindow>(WINDOW_NAME.aegis, window => {
+    window.setAegisView(view)
+  })
 }
 
 function showAegis() {
-  const w = app.get_window("aegis") as any
-  if (!w) return
-  w.show()
+  showAppWindow<AegisAppWindow>(WINDOW_NAME.aegis)
 }
 
 function hideAegis() {
-  const w = app.get_window("aegis") as any
-  if (!w) return
-  w.hide()
+  hideAppWindow<AegisAppWindow>(WINDOW_NAME.aegis)
 }
 
 function parseMode(raw?: string): AegisMode | null {
@@ -32,7 +27,7 @@ function parseMode(raw?: string): AegisMode | null {
   return null
 }
 
-function parseView(raw?: string): string | null {
+function parseView(raw?: string): AegisViewId | null {
   if (!raw) return null
   const v = raw.toLowerCase()
   switch (v) {
@@ -52,7 +47,7 @@ function parseView(raw?: string): string | null {
   return null
 }
 
-export async function aegisHandleRequest(argv: string[]) {
+export async function aegisHandleRequest(argv: string[]): Promise<RequestResponse> {
   const [cmd, arg] = argv
   if (!cmd) return undefined
   switch (cmd.toLowerCase()) {

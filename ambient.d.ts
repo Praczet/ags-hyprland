@@ -15,6 +15,9 @@ declare module "gi://AstalNetwork" {
   }
 
   export class Client extends GObject {
+    readonly wirelessEnabled: boolean;
+    readonly connectivity: number;
+    readonly primaryConnection: ActiveConnection | null;
     get_devices(): Array<Device>;
   }
 

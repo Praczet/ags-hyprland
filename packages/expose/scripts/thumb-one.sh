@@ -1,8 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+for cmd in hyprctl jq grim mkdir; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Missing required command: $cmd" >&2
+    exit 127
+  fi
+done
+
 addr="${1:?window address required}"
 out="${2:?output file required}"
+out_dir="$(dirname -- "$out")"
+
+mkdir -p "$out_dir"
 
 geom="$(
   hyprctl -j clients |

@@ -135,6 +135,12 @@ Dashboard toggle script:
 scripts/adart-dashboard.sh
 ```
 
+Network toggle script:
+
+```bash
+scripts/adart-network.sh
+```
+
 ## Dashboard Configuration
 
 Dashboard config lives at `~/.config/ags/dashboard.json`. The widget list is flexible; add or remove widgets and control layout with `col`, `row`, and spans.

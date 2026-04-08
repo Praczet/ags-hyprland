@@ -9,7 +9,7 @@ export type WotdMeta = {
 }
 
 export type WotdCardData = {
-  kind: "wotd-card" | "mdj-card"
+  kind: "wotd-card"
   date: string
   title: string
 
@@ -94,6 +94,5 @@ export type WotdDefinitionOnlyOptions = {
 }
 
 export type WotdPopupShowOptions = {
-  cardType?: "card" | "compact" | "definition"
+  cardType?: "card" | "compact" | "definition-only"
 }
-

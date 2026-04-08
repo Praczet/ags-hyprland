@@ -1,4 +1,5 @@
-import DashboardWindow from "./windows/Dashboard"
 import css from "./styles.css"
 
-export { DashboardWindow, css }
+export { DashboardWindow } from "./windows/Dashboard"
+export { css }
+export type { DashboardWindowHandle } from "./windows/Dashboard"

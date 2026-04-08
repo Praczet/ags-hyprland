@@ -1,9 +1,9 @@
-import { Gtk } from "ags/gtk4";
-import { selectItem } from "../services/pacman";
-import { updates } from "../store";
-import { For } from "ags";
+import { For } from "ags"
+import { Gtk } from "ags/gtk4"
+import { selectItem } from "../services/pacman"
+import { updates } from "../store"
 
-export default function UpdatesList() {
+export function UpdatesList() {
   return (
     <box
       class="updates-list"
@@ -30,6 +30,5 @@ function UpdateRow({ item }: { item: UpItem }) {
         <label class="ver new" xalign={1} label={item.newVer} />
       </box>
     </button>
-  ) as Gtk.Button;
+  ) as Gtk.Button
 }
-

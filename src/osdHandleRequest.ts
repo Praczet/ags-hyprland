@@ -1,6 +1,7 @@
 import { triggerBrightness, triggerCustom, triggerMic, triggerVolume } from "../packages/osd/src"
 import { triggerPlayerCtl } from "../packages/osd/src/handlers"
 import { PlayerCtlAction } from "../packages/osd/src/types"
+import type { RequestResponse } from "./windowTypes"
 
 export function parseNumber(value?: string) {
   if (value === undefined) return undefined
@@ -8,7 +9,7 @@ export function parseNumber(value?: string) {
   return Number.isFinite(num) ? num : undefined
 }
 
-export async function osdHandleRequest(argv: string[]): Promise<string> {
+export async function osdHandleRequest(argv: string[]): Promise<RequestResponse> {
   const [cmd, ...rest] = argv
   if (!cmd) return "missing command"
   try {

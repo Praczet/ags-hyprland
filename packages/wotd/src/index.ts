@@ -12,6 +12,7 @@ export * from "./widgets/card"
 export * from "./widgets/compact"
 
 export {
+  WOTD_POPUP_WINDOW_NAME,
   createWotdPopupWindow,
   getWotdPopup,
   showWotdPopup,

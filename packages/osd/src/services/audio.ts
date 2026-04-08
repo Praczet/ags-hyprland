@@ -1,4 +1,4 @@
-import { execAsync } from "ags/process"
+import { logProcessError, runCommand } from "../../../../shared/utils/process"
 
 export type ParsedLevel = {
   value: number | null
@@ -58,10 +58,10 @@ export function parseStatus(output: string): ParsedStatus {
 
 export async function readAudioStatus(): Promise<ParsedStatus> {
   try {
-    const output = await execAsync(STATUS_CMD)
+    const output = await runCommand(STATUS_CMD)
     return parseStatus(output)
   } catch (error) {
-    console.error("OSD readAudioStatus error", error)
+    logProcessError("OSD readAudioStatus error", error)
     return { sink: null, source: null }
   }
 }

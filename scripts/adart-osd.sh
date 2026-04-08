@@ -8,12 +8,14 @@ if [ "$#" -eq 0 ]; then
   exit 1
 fi
 
-REPO_DIR="${REPO_DIR:-$HOME/Development/Hyprland/ags}"
-INSTANCE="adart"
-APP="$REPO_DIR/src/app.ts"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="${REPO_DIR:-$(cd -- "$SCRIPT_DIR/.." && pwd)}"
+ENSURE_SCRIPT="${AGS_ENSURE_SCRIPT:-$SCRIPT_DIR/ags-ensure.sh}"
+INSTANCE="${AGS_INSTANCE:-adart}"
+APP_PATH="${AGS_APP:-$REPO_DIR/src/app.ts}"
 
 # Ensure AGS instance is running
-ags-ensure.sh "$INSTANCE" "$APP"
+"$ENSURE_SCRIPT" "$INSTANCE" "$APP_PATH"
 
 # Forward the subcommand and arguments as an AGS request
-ags request --instance "$INSTANCE" "$@"
+ags request -i "$INSTANCE" "$@"

@@ -44,11 +44,16 @@ export function resolveWotdCardPath(path?: string): string {
 export function resolveWotdConfig(user?: WotdConfig): Required<WotdConfig> {
   const u = user ?? {}
 
+  const cardType =
+    u.cardType === "compact" || u.cardType === "definition-only"
+      ? u.cardType
+      : "card"
+
   return {
     cardPath: resolveWotdCardPath(u.cardPath),
     popupDurationMs: toInt(u.popupDurationMs, DEFAULTS.popupDurationMs),
     popupWidth: toInt(u.popupWidth, DEFAULTS.popupWidth, 100),
-    cardType: u.cardType === "compact" ? "compact" : "card",
+    cardType,
     popupMarginTop: toInt(u.popupMarginTop, DEFAULTS.popupMarginTop),
     maxMeanings: toInt(u.maxMeanings, DEFAULTS.maxMeanings),
     showTranslations:

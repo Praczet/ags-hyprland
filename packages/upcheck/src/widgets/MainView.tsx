@@ -1,10 +1,10 @@
-import { Gtk } from "ags/gtk4";
-import DetailsPane from "./DetailsPane";
-import ListPane from "./ListPane";
-import ButtonsPane from "./ButtonsPane";
-import { updates } from "../store";
+import { Gtk } from "ags/gtk4"
+import { ButtonsPane } from "./ButtonsPane"
+import { DetailsPane } from "./DetailsPane"
+import { ListPane } from "./ListPane"
+import { updates } from "../store"
 
-export default function MainView() {
+export function MainView() {
   return (
     <box
       class="main-view"
@@ -29,6 +29,6 @@ export default function MainView() {
         <DetailsPane />
       </box>
       <ButtonsPane />
-    </box >
+    </box>
   )
 }

@@ -11,14 +11,14 @@ Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, T
 Default config:
 
 ```
-ags --instance adart request toggleDashboard
+ags request -i adart toggleDashboard
 ```
 
 Custom config (relative paths resolve from `~/.config/ags/`):
 
 ```
-ags --instance adart request toggleDashboard custom.json
-ags --instance adart request toggleDashboard /full/path/custom.json
+ags request -i adart toggleDashboard custom.json
+ags request -i adart toggleDashboard /full/path/custom.json
 ```
 
 ## Themes

@@ -1,23 +1,17 @@
 import { loadExposeConfig } from "../config"
 import { Astal, Gdk, Gtk } from "ags/gtk4"
 import GLib from "gi://GLib"
-import { execAsync } from "ags/process"
 
 import { cfg, type ExposeClient } from "../store"
+import { activeWorkspaceId, focusWindow, listClients, prepareWorkspace, restoreWorkspace, withScratchWorkspace } from "../services/hyprland"
 import { captureThumb } from "../thumbs"
 import { WorkspaceCardGtk } from "../widgets/WorkspaceCard"
 import { WindowCardGtk } from "../widgets/WindowCard"
 import { WindowCardOverlayedGtk } from "../widgets/WindowCardOverlayed"
 
 const ecfg = loadExposeConfig()
-let focusButtons: Gtk.Button[] = []
-let focusIndex = 0
-const thumbCache = new Map<string, string>()
-let exposeVisible = false
 
-const MAGIC_WORKSPACE_ID = -98
-const FLOAT_SCRATCH_NAME = "expose-float"
-const FLOAT_SCRATCH_TARGET = `special:${FLOAT_SCRATCH_NAME}`
+export const EXPOSE_WINDOW_NAME = "expose"
 
 function clamp(n: number, a: number, b: number) {
   return Math.max(a, Math.min(b, n))
@@ -34,38 +28,32 @@ function computeColumnsByMinWidth(monitorW: number) {
   return clamp(cols, 3, 7)
 }
 
-async function listClients(): Promise<ExposeClient[]> {
-  const out = await execAsync(["hyprctl", "-j", "clients"])
-  const raw = JSON.parse(out) as any[]
-  return raw
-    .filter(c => !!c.address && (c.mapped ?? true)) // keep mapped windows; tweak later if needed
-    .map(c => ({
-      address: c.address as string,
-      title: (c.title ?? "") as string,
-      class: (c.class ?? "") as string,
-      workspaceId: (c.workspace?.id ?? -1) as number,
-      pid: (c.pid ?? -1) as number,
-      at: [c.at?.[0] ?? 0, c.at?.[1] ?? 0],
-      size: [c.size?.[0] ?? 0, c.size?.[1] ?? 0],
-      floating: Boolean(c.floating),
-      thumb: undefined,
-    }))
+type ThumbCard = {
+  widget: Gtk.Button
+  setThumb?: (path: string) => void
 }
 
-async function focusWindow(address: string) {
-  await execAsync(["hyprctl", "dispatch", "focuswindow", `address:${address}`])
+type MonitorGeometry = {
+  width?: number
 }
 
-async function moveWindowToWorkspace(address: string, workspace: string) {
-  await execAsync(["hyprctl", "dispatch", "movetoworkspacesilent", workspace, `address:${address}`])
+type GdkMonitorLike = {
+  get_geometry?: () => MonitorGeometry | null
+} | null
+
+export type ExposeWindowHandle = Astal.Window & {
+  openWindow(): void
+  closeWindow(): void
+  showExpose(): void
+  hideExpose(): void
 }
 
-async function toggleSpecialWorkspace(name: string) {
-  await execAsync(["hyprctl", "dispatch", "togglespecialworkspace", name])
-}
-
-export default function ExposeWindow(monitor: number = 0) {
+export function ExposeWindow(monitor: number = 0) {
+  let focusButtons: Gtk.Button[] = []
+  let focusIndex = 0
   let clients: ExposeClient[] = []
+  const thumbCache = new Map<string, string>()
+  let exposeVisible = false
   let refreshTimer: number | null = null
   let refreshing = false
 
@@ -98,83 +86,6 @@ export default function ExposeWindow(monitor: number = 0) {
     while (child) {
       flow.remove(child)
       child = flow.get_first_child()
-    }
-  }
-
-  async function activeWorkspaceId(): Promise<number> {
-    const out = await execAsync(["hyprctl", "-j", "activeworkspace"])
-    return (JSON.parse(out)?.id ?? -1) as number
-  }
-
-  type FloaterSnapshot = {
-    address: string
-    workspaceId: number
-  }
-
-  type WorkspacePrepContext = {
-    clients: ExposeClient[]
-    magicWasActive: boolean
-    floaters: FloaterSnapshot[]
-  }
-
-  async function prepareWorkspace(): Promise<WorkspacePrepContext> {
-    let activeId = await activeWorkspaceId()
-    let magicWasActive = false
-    if (activeId === MAGIC_WORKSPACE_ID) {
-      try {
-        await toggleSpecialWorkspace("magic")
-        magicWasActive = true
-        await sleep(120)
-      } catch (error) {
-        console.error("toggle magic workspace error", error)
-      }
-      activeId = await activeWorkspaceId()
-    }
-
-    const snapshot = await listClients()
-    const floaters = snapshot.filter(c => c.workspaceId === activeId && c.floating)
-
-    for (const floater of floaters) {
-      try {
-        await moveWindowToWorkspace(floater.address, FLOAT_SCRATCH_TARGET)
-      } catch (error) {
-        console.error("move floater to scratch", error)
-      }
-    }
-
-    return {
-      clients: snapshot,
-      magicWasActive,
-      floaters: floaters.map(f => ({ address: f.address, workspaceId: f.workspaceId })),
-    }
-  }
-
-  async function restoreWorkspace(ctx: WorkspacePrepContext | null) {
-    if (!ctx) return
-    for (const floater of ctx.floaters) {
-      try {
-        await moveWindowToWorkspace(floater.address, `${floater.workspaceId}`)
-      } catch (error) {
-        console.error("restore floater", { address: floater.address, error })
-      }
-    }
-    if (ctx.magicWasActive) {
-      try {
-        await toggleSpecialWorkspace("magic")
-      } catch (error) {
-        console.error("restore magic workspace", error)
-      }
-    }
-  }
-
-  async function withScratchWorkspace<T>(fn: () => Promise<T>) {
-    await toggleSpecialWorkspace(FLOAT_SCRATCH_NAME)
-    await sleep(80)
-    try {
-      return await fn()
-    } finally {
-      await toggleSpecialWorkspace(FLOAT_SCRATCH_NAME)
-      await sleep(40)
     }
   }
 
@@ -211,7 +122,7 @@ export default function ExposeWindow(monitor: number = 0) {
     focusIndex = 0
 
     const display = Gdk.Display.get_default()
-    const mon = display?.get_monitors()?.get_item(monitor) as any
+    const mon = display?.get_monitors()?.get_item(monitor) as GdkMonitorLike
     const geo = mon?.get_geometry?.()
     const monitorW = geo?.width ?? 2560
 
@@ -223,7 +134,7 @@ export default function ExposeWindow(monitor: number = 0) {
 
     const onActivate = async (addr: string) => {
       await focusWindow(addr)
-      hide()
+      win.closeWindow()
     }
 
     // helper: remove the “extra” tab-stop (FlowBoxChild wrapper)
@@ -299,8 +210,8 @@ export default function ExposeWindow(monitor: number = 0) {
     const thumbSetters = new Map<string, (p: string) => void>()
 
     for (const c of active) {
-      const card = makeCard(c, onActivate) as any
-      const btn: Gtk.Button = card.widget ?? card // support older makeCard returning Gtk.Widget
+      const card = makeCard(c, onActivate) as ThumbCard | Gtk.Button
+      const btn: Gtk.Button = "widget" in card ? card.widget : card
 
       flow.append(btn)
 
@@ -309,7 +220,7 @@ export default function ExposeWindow(monitor: number = 0) {
 
       if (!firstActiveButton) firstActiveButton = btn
 
-      if (card.setThumb) {
+      if ("setThumb" in card && card.setThumb) {
         thumbSetters.set(c.address, card.setThumb)
         const cached = thumbCache.get(c.address)
         if (cached) card.setThumb(cached)
@@ -342,7 +253,7 @@ export default function ExposeWindow(monitor: number = 0) {
       await captureClientThumbs(tiledActive, thumbSetters)
 
       if (floatingActive.length) {
-        await withScratchWorkspace(async () => {
+        await withScratchWorkspace(sleep, async () => {
           await captureClientThumbs(floatingActive, thumbSetters)
         })
       }
@@ -402,8 +313,9 @@ export default function ExposeWindow(monitor: number = 0) {
   }
 
   async function show() {
+    exposeVisible = true
     win.visible = false
-    const prep = await prepareWorkspace()
+    const prep = await prepareWorkspace(sleep)
     try {
       await renderClients(true, prep.clients)
     } finally {
@@ -417,6 +329,7 @@ export default function ExposeWindow(monitor: number = 0) {
 
 
   function hide() {
+    exposeVisible = false
     win.visible = false
     stopRefresh()
   }
@@ -430,7 +343,7 @@ export default function ExposeWindow(monitor: number = 0) {
 
   const win = (
     <window
-      name="expose"
+      name={EXPOSE_WINDOW_NAME}
       namespace="adart-expose"
       class="expose"
       visible={false}
@@ -451,7 +364,7 @@ export default function ExposeWindow(monitor: number = 0) {
           "key-pressed",
           (_ctrl: Gtk.EventControllerKey, keyval: number, state: number) => {
             if (keyval === Gdk.KEY_Escape) {
-              hide()
+              win.closeWindow()
               return true
             }
             if (keyval === Gdk.KEY_Tab || keyval === Gdk.KEY_ISO_Left_Tab) {
@@ -472,10 +385,12 @@ export default function ExposeWindow(monitor: number = 0) {
     >
       {scroller}
     </window>
-  ) as Astal.Window
+  ) as ExposeWindowHandle
 
-    ; (win as any).showExpose = show
-    ; (win as any).hideExpose = hide
-  init();
+  win.openWindow = show
+  win.closeWindow = hide
+  win.showExpose = win.openWindow
+  win.hideExpose = win.closeWindow
+  init()
   return win
 }

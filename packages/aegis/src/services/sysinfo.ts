@@ -22,6 +22,61 @@ const META_TTL_MS = 10 * 60 * 1000
 let refreshTimer: number | null = null
 const consumers = new Map<string, { active: boolean; allowBackgroundRefresh: boolean; refreshOnShow: boolean }>()
 
+type AstalDevice = {
+  interface?: string | null
+  deviceType?: number | null
+  state?: number | null
+  ip4_config?: {
+    gateway?: string | null
+    get_addresses?: () => Array<{ get_address(): string | null }> | null
+  } | null
+  activeConnection?: {
+    id?: string | null
+  } | null
+}
+
+type AstalNetworkState = {
+  client?: {
+    get_devices?: () => AstalDevice[]
+  } | null
+  wifi?: {
+    interface?: string | null
+    ssid?: string | null
+    iconName?: string | null
+    device: AstalDevice
+  } | null
+  wired?: {
+    iconName?: string | null
+    device: AstalDevice
+  } | null
+  primary?: string | null
+}
+
+type HyprlandVersionInfo = {
+  version?: string
+  tag?: string
+  branch?: string
+  commit?: string
+}
+
+type HyprlandActiveWorkspace = {
+  name?: string
+}
+
+type HyprlandMonitorRecord = {
+  name?: string
+  description?: string
+  make?: string
+  model?: string
+  serial?: string
+  width?: number | string
+  height?: number | string
+  refreshRate?: number | string
+  scale?: number | string
+  activeWorkspace?: HyprlandActiveWorkspace
+  focused?: boolean
+}
+
 function readFile(path: string): string | null {
   try {
     const bytes = GLib.file_get_contents(path)?.[1]
@@ -292,16 +347,16 @@ function getDisks(): DiskInfo[] {
   return disks
 }
 
-function getDeviceTypeName(device: any): NetworkInterfaceInfo["type"] {
+function getDeviceTypeName(device: AstalDevice | null | undefined): NetworkInterfaceInfo["type"] {
   if (!device) return undefined
   if (device.deviceType === 1) return "wifi"
   if (device.deviceType === 2) return "ethernet"
   return undefined
 }
 
-function findActiveNetworkDevice(network: any) {
+function findActiveNetworkDevice(network: AstalNetworkState) {
   const allDevices = network.client?.get_devices?.() || []
-  let activeDev = allDevices.find((d: any) =>
+  let activeDev = allDevices.find((d) =>
     d.interface !== "lo" &&
     d.state === 100 &&
     d.ip4_config !== null
@@ -317,8 +372,7 @@ function parseNetDev(): NetworkInterfaceInfo[] {
   const raw = readFile("/proc/net/dev")
   if (!raw) return []
 
-  // 1. Get the Astal Network instance
-  const network = Network.get_default()
+  const network = Network.get_default() as unknown as AstalNetworkState
   const devices = network.client?.get_devices?.() || []
   const deviceTypes = new Map<string, NetworkInterfaceInfo["type"]>()
   for (const device of devices) {
@@ -348,7 +402,6 @@ function parseNetDev(): NetworkInterfaceInfo[] {
 
     const name = namePart.trim()
 
-    // ... (Your existing parsing logic for bytes)
     const cols = dataPart.trim().split(/\s+/)
     const rx = Number(cols[0])
     const tx = Number(cols[8])
@@ -378,12 +431,11 @@ function parseNetDev(): NetworkInterfaceInfo[] {
       primary: primaryIface === name,
     })
   }
-  // console.log("Parsed network interfaces:", interfaces, getDetailedNetworkInfo())
   return interfaces
 }
 
 function getDetailedNetworkInfo(): NetworkInfo {
-  const network = Network.get_default()
+  const network = Network.get_default() as unknown as AstalNetworkState
   const hostname = GLib.get_host_name()
 
   const activeDev = findActiveNetworkDevice(network)
@@ -578,8 +630,8 @@ function runCommandJson(cmd: string): unknown | null {
 }
 
 function probeHyprland() {
-  const versionInfo = runCommandJson("hyprctl -j version") as Record<string, unknown> | null
-  const monitorsInfo = runCommandJson("hyprctl -j monitors") as Array<Record<string, unknown>> | null
+  const versionInfo = runCommandJson("hyprctl -j version") as HyprlandVersionInfo | null
+  const monitorsInfo = runCommandJson("hyprctl -j monitors") as HyprlandMonitorRecord[] | null
 
   const monitors: HyprlandMonitorInfo[] | undefined = Array.isArray(monitorsInfo)
     ? monitorsInfo.map(m => ({
@@ -592,7 +644,7 @@ function probeHyprland() {
       height: Number.isFinite(Number(m.height)) ? Number(m.height) : undefined,
       refresh: Number.isFinite(Number(m.refreshRate)) ? Number(m.refreshRate) : undefined,
       scale: Number.isFinite(Number(m.scale)) ? Number(m.scale) : undefined,
-      activeWorkspace: typeof (m.activeWorkspace as any)?.name === "string" ? (m.activeWorkspace as any).name : undefined,
+      activeWorkspace: typeof m.activeWorkspace?.name === "string" ? m.activeWorkspace.name : undefined,
       focused: typeof m.focused === "boolean" ? m.focused : undefined,
     }))
     : undefined

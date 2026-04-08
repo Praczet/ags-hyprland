@@ -2,6 +2,10 @@ import GLib from "gi://GLib"
 import { resolveWotdConfig } from "./config"
 import type { WotdCardData, WotdConfig, WotdMeaning, WotdMeta } from "./types"
 
+function logWotdError(err: unknown, message: string) {
+  logError(err instanceof Error ? err : new Error(String(err)), message)
+}
+
 function isObject(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x)
 }
@@ -131,7 +135,7 @@ export function loadWotdCard(config?: WotdConfig): WotdCardData | null {
 
     return parseWotdCard(raw)
   } catch (err) {
-    logError(err as Error, `[wotd] failed to load card from ${resolved.cardPath}`)
+    logWotdError(err, `[wotd] failed to load card from ${resolved.cardPath}`)
     return null
   }
 }

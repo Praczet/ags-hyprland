@@ -2,7 +2,11 @@
 # Toggle the clipboard history popup in the "adart" AGS instance.
 set -euo pipefail
 
-REPO_DIR="${REPO_DIR:-$HOME/Development/Hyprland/ags}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="${REPO_DIR:-$(cd -- "$SCRIPT_DIR/.." && pwd)}"
+ENSURE_SCRIPT="${AGS_ENSURE_SCRIPT:-$SCRIPT_DIR/ags-ensure.sh}"
+INSTANCE="${AGS_INSTANCE:-adart}"
+APP_PATH="${AGS_APP:-$REPO_DIR/src/app.ts}"
 
-ags-ensure.sh adart "$REPO_DIR/src/app.ts"
-ags toggle clipboard --instance adart
+"$ENSURE_SCRIPT" "$INSTANCE" "$APP_PATH"
+ags toggle -i "$INSTANCE" clipboard

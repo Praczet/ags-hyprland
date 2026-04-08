@@ -1,5 +1,16 @@
 export type AegisMode = "minimal" | "summary" | "full"
 
+export type AegisViewId =
+  | "aegis"
+  | "aegis-summary"
+  | "aegis-disk"
+  | "aegis-memory"
+  | "aegis-network"
+  | "aegis-battery"
+  | "aegis-disk-pie"
+  | "aegis-memory-pie"
+  | "aegis-cpu-graph"
+
 export type MemoryInfo = {
   totalBytes?: number
   availableBytes?: number

@@ -1,8 +1,7 @@
-// store.ts
 import { createState } from "ags"
+import { timeout } from "ags/time"
 import { brightnessIcon, micIcon, volumeIcon } from "./icons"
 import type { OSDState, ShowOSDPayload } from "./types"
-import { timeout } from "ags/time"
 
 const HIDE_DELAY_MS = 1500
 
@@ -16,15 +15,18 @@ const defaultState: OSDState = {
   showProgress: true,
 }
 
-// Accessor + setter
 export const [osdState, setOSDState] = createState<OSDState>(defaultState)
 
-// Timer handle (type depends on AGS; keep it flexible)
-let hideTimer: any = null
+type TimerHandle = {
+  cancel?(): void
+  stop?(): void
+  destroy?(): void
+}
+
+let hideTimer: TimerHandle | null = null
 
 function cancelHide() {
   if (!hideTimer) return
-  // be defensive across possible Timer implementations
   hideTimer.cancel?.()
   hideTimer.stop?.()
   hideTimer.destroy?.()
@@ -98,4 +100,3 @@ export function showGenericOSD(payload: {
     showProgress: payload.showProgress,
   })
 }
-

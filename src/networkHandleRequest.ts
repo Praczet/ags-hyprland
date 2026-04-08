@@ -1,32 +1,31 @@
-import app from "ags/gtk4/app"
+import { hideAppWindow, showAppWindow, toggleAppWindow } from "./windowControl"
+import { type NetworkAppWindow, type RequestResponse, WINDOW_NAME } from "./windowTypes"
 
 function toggleNetwork() {
-  const w = app.get_window("a-network") as any
-  if (!w) return
-  w.visible ? w.hide() : w.show()
+  toggleAppWindow<NetworkAppWindow>(WINDOW_NAME.network)
 }
 
 function showNetwork(windowLess?: boolean) {
-  const w = app.get_window("a-network") as any
-  if (!w) return
-  if (typeof windowLess === "boolean") {
-    w.setWindowLess?.(windowLess)
-  }
-  w.show()
+  showAppWindow<NetworkAppWindow>(
+    WINDOW_NAME.network,
+    typeof windowLess === "boolean"
+      ? window => {
+        window.setWindowLess(windowLess)
+      }
+      : undefined,
+  )
 }
 
 function hideNetwork() {
-  const w = app.get_window("a-network") as any
-  if (!w) return
-  w.hide()
+  hideAppWindow<NetworkAppWindow>(WINDOW_NAME.network)
 }
 
-export async function networkHandleRequest(argv: string[]) {
+export async function networkHandleRequest(argv: string[]): Promise<RequestResponse> {
   const [cmd, arg] = argv
   if (!cmd) return undefined
   switch (cmd.toLowerCase()) {
-    case "a-network":
     case "network":
+    case "a-network":
     case "networkopen":
     case "networkshow": {
       const windowLess = typeof arg === "string" ? arg.toLowerCase() === "windowless" : undefined

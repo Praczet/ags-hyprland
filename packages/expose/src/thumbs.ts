@@ -1,7 +1,8 @@
 import GLib from "gi://GLib"
 import { execAsync } from "ags/process"
 
-const PKG_DIR = `${GLib.get_home_dir()}/Development/Hyprland/ags/packages/expose`
+const REPO_DIR = GLib.getenv("AGS_REPO_DIR") || `${GLib.get_home_dir()}/Development/Hyprland/ags`
+const PKG_DIR = `${REPO_DIR}/packages/expose`
 const THUMB_SCRIPT = `${PKG_DIR}/scripts/thumb-one.sh`
 
 export function thumbPath(address: string) {
@@ -17,4 +18,3 @@ export async function captureThumb(address: string): Promise<string | null> {
     return null
   }
 }
-

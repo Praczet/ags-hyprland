@@ -3,12 +3,36 @@
 # Usage: ags-ensure.sh [instance-name] [app-path]
 set -euo pipefail
 
-export GI_TYPELIB_PATH="/usr/local/lib/girepository-1.0:${GI_TYPELIB_PATH:-}"
-export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH:-}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-REPO_DIR="${REPO_DIR:-$HOME/Development/Hyprland/ags}"
 INSTANCE="${1:-adart}"
+DEFAULT_REPO_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+REPO_DIR="${REPO_DIR:-$DEFAULT_REPO_DIR}"
 APP_PATH="${2:-$REPO_DIR/src/app.ts}"
+APP_DIR="$(cd -- "$(dirname -- "$APP_PATH")" && pwd)"
+REPO_DIR="$(cd -- "$APP_DIR/.." && pwd)"
+
+append_env_path_if_dir() {
+  local var_name="$1"
+  local dir_path="$2"
+  local current_value
+
+  [[ -d "$dir_path" ]] || return 0
+
+  current_value="${!var_name:-}"
+  if [[ -n "$current_value" ]]; then
+    export "$var_name"="$dir_path:$current_value"
+  else
+    export "$var_name"="$dir_path"
+  fi
+}
+
+append_env_path_if_dir GI_TYPELIB_PATH "/usr/local/lib/girepository-1.0"
+append_env_path_if_dir LD_LIBRARY_PATH "/usr/local/lib"
+
+export REPO_DIR
+export AGS_REPO_DIR="$REPO_DIR"
+export AGS_APP="$APP_PATH"
 
 # 1. Start if not running
 # We use -x (line match) to avoid partial matches on names
@@ -22,7 +46,7 @@ fi
 MAX_RETRIES=40 # 4 seconds max
 for ((i = 0; i < MAX_RETRIES; i++)); do
   # Capture Output/Error. '|| true' prevents crash on error code.
-  OUTPUT=$(ags request "true" --instance "$INSTANCE" 2>&1 || true)
+  OUTPUT=$(ags request -i "$INSTANCE" "true" 2>&1 || true)
 
   # Success conditions:
   # - "true": AGS evaluated the JS successfully.

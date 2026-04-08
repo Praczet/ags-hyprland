@@ -1,10 +1,10 @@
-import { Gtk } from "ags/gtk4";
-import ClipList from "./ClipList";
-import { ClipEntry } from "../types";
-import ClipSearcher from "./ClipSearcher";
-import { Accessor } from "ags";
+import type { Accessor } from "ags"
+import { Gtk } from "ags/gtk4"
+import ClipList from "./ClipList"
+import ClipSearcher from "./ClipSearcher"
+import type { ClipEntry } from "../types"
 
-export default function ClipPicker(props: { clipboardItems: Accessor<ClipEntry[]>; }) {
+export function ClipPicker(props: { clipboardItems: Accessor<ClipEntry[]> }) {
   return (
     <box
       orientation={Gtk.Orientation.VERTICAL}

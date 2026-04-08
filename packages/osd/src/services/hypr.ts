@@ -1,12 +1,12 @@
-import { execAsync } from "ags/process"
+import { logProcessError, runCommand } from "../../../../shared/utils/process"
 
 export async function getActiveMonitor(): Promise<number> {
   try {
-    const raw = await execAsync(["hyprctl", "-j", "activeworkspace"])
+    const raw = await runCommand(["hyprctl", "-j", "activeworkspace"])
     const parsed = JSON.parse(raw)
     if (typeof parsed?.monitorID === "number") return parsed.monitorID
   } catch (error) {
-    console.error("getActiveMonitor error", error)
+    logProcessError("getActiveMonitor error", error)
   }
   return 0
 }

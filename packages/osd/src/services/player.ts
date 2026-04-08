@@ -1,31 +1,21 @@
-import { execAsync } from "ags/process"
-import { PlayerMetadata } from "../types";
-import { timeout } from "ags/time";
+import { timeout } from "ags/time"
+import type { PlayerMetadata } from "../types"
+import { logProcessError, runCommand } from "../../../../shared/utils/process"
 
 const CMD_STATUS = ["playerctl", "status"]
 const CMD_META = ["playerctl", "metadata"]
 
 export function parseStatus(output: string): number | null {
   const status = output.trim()
-  if (status === "Playing") return 1;
-  if (status === "Paused") return 0;
-  return null;
+  if (status === "Playing") return 1
+  if (status === "Paused") return 0
+  return null
 }
-
-let defaultMetadata: PlayerMetadata = {
-  title: "",
-  artist: "",
-  playbackDevice: "",
-  playbackStatus: "Stopped"
-};
-
-
 
 export function parseMetadata(output: string): PlayerMetadata | null {
   const lines = output.split("\n").map(l => l.trim()).filter(Boolean)
   if (lines.length === 0) return null
 
-  // Start with defaults
   const meta: PlayerMetadata = {
     playbackDevice: "",
     title: "",
@@ -36,20 +26,17 @@ export function parseMetadata(output: string): PlayerMetadata | null {
   let playerName: string | null = null
 
   for (const line of lines) {
-    // Split only into 3 parts: player, key, value
     const match = line.match(/^(\S+)\s+(\S+)\s+(.*)$/)
     if (!match) continue
 
     const [, player, key, rawValue] = match
     const value = rawValue.trim()
 
-    // Use first seen player as playbackDevice
     if (!playerName) {
       playerName = player
       meta.playbackDevice = player
     }
 
-    // Ignore metadata from other players (if any)
     if (player !== playerName) continue
 
     switch (key) {
@@ -58,7 +45,6 @@ export function parseMetadata(output: string): PlayerMetadata | null {
         break
 
       case "xesam:artist":
-        // Can be "Artist" or "['Artist']" depending on backend
         meta.artist = normalizeArtist(value)
         break
 
@@ -71,12 +57,10 @@ export function parseMetadata(output: string): PlayerMetadata | null {
         break
 
       default:
-        // ignore unknown keys
         break
     }
   }
 
-  // If we got no meaningful data, treat as no metadata
   if (!meta.title && !meta.artist && !meta.artworkUrl) {
     return null
   }
@@ -85,34 +69,29 @@ export function parseMetadata(output: string): PlayerMetadata | null {
 }
 
 function normalizeArtist(value: string): string {
-  // Already plain
-  if (!value.startsWith("["))
-    return value
+  if (!value.startsWith("[")) return value
 
-  // Try to parse array-like string: ['Artist'] or ["Artist"]
   try {
     const parsed = JSON.parse(
-      value
-        .replace(/'/g, '"') // single → double quotes
+      value.replace(/'/g, '"')
     )
 
     if (Array.isArray(parsed)) {
       return parsed.join(", ")
     }
   } catch {
-    // fall through
+    return value
   }
 
   return value
 }
 
-
 export async function readPlayingStatus(): Promise<number | null> {
   try {
-    const output = await execAsync(CMD_STATUS)
+    const output = await runCommand(CMD_STATUS)
     return parseStatus(output)
   } catch (error) {
-    console.error("OSD readPlayingStatus error", error)
+    logProcessError("OSD readPlayingStatus error", error)
     return null
   }
 }
@@ -144,7 +123,6 @@ export async function readMetaFresh(
     await sleep(delayMs)
   }
 
-  // fallback: return whatever we have after retries
   return await readMeta()
 }
 
@@ -154,14 +132,14 @@ export async function readMeta(): Promise<PlayerMetadata | null> {
     if (status === null) {
       return null
     }
-    const output = await execAsync(CMD_META)
+    const output = await runCommand(CMD_META)
     const metadata = parseMetadata(output)
     if (metadata) {
       metadata.playbackStatus = status === 1 ? "Playing" : status === 0 ? "Paused" : "Stopped"
     }
     return metadata
   } catch (error) {
-    console.error("OSD readPlayingStatus error", error)
+    logProcessError("OSD readMeta error", error)
     return null
   }
 }

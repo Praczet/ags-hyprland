@@ -1,6 +1,8 @@
-# a-network
+# network
 
 A compact NetworkManager UI for AGS with a Wi-Fi first accordion layout.
+
+Package directory remains `packages/a-network/` for now; the app-facing window/command name is `network`.
 
 ## Features
 
@@ -53,4 +55,16 @@ ags request -i adart networkshow
 ags request -i adart networkhide
 ags request -i adart networktoggle
 ags request -i adart networkshow windowless
+```
+
+Wrapper script:
+
+```bash
+scripts/adart-network.sh
+```
+
+Legacy compatibility wrapper:
+
+```bash
+scripts/adart-a-network.sh
 ```

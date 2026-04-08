@@ -1,17 +1,28 @@
 import { Astal, Gtk } from "ags/gtk4"
 import { createComputed, createEffect } from "ags"
-import { osdState } from "../store" // your createState store
 import { timeout } from "ags/time"
 import Pango from "gi://Pango"
+import { osdState } from "../store"
 
+export const OSD_WINDOW_NAME = "osd"
+
+type TimerHandle = {
+  cancel?(): void
+  stop?(): void
+  destroy?(): void
+}
+
+export type OSDWindowHandle = Astal.Window & {
+  openWindow(): void
+  closeWindow(): void
+}
 
 const FADE_MS = 200
 
 export function OSDWindow(defaultMonitor = 0) {
-  // Derived accessors (reactive)
   const monitor = createComputed(() => osdState().monitor ?? defaultMonitor)
   let winRef: Astal.Window | null = null
-  let hideTimer: any = null
+  let hideTimer: TimerHandle | null = null
 
   const cardClass = createComputed(() => {
     const s = osdState()
@@ -47,25 +58,21 @@ export function OSDWindow(defaultMonitor = 0) {
     const v = osdState().value
     return typeof v === "number" ? v : 0
   })
-  // This is the "visible -> mapped" bridge.
+
   createEffect(() => {
-    const s = osdState() // reactive dependency
+    const s = osdState()
     if (!winRef) return
 
-    // Always keep monitor updated while visible
     winRef.monitor = s.monitor ?? defaultMonitor
 
-    // Cancel pending hide if we get shown again quickly
     hideTimer?.cancel?.()
     hideTimer?.stop?.()
     hideTimer?.destroy?.()
     hideTimer = null
 
     if (s.visible) {
-      // Map immediately so CSS can fade in
       winRef.visible = true
     } else {
-      // Let CSS fade out, then unmap
       hideTimer = timeout(FADE_MS, () => {
         if (winRef) winRef.visible = false
         hideTimer = null
@@ -73,22 +80,22 @@ export function OSDWindow(defaultMonitor = 0) {
     }
   })
 
-  return (
+  const win = (
     <window
-      name="osd"
+      name={OSD_WINDOW_NAME}
       namespace="adart-osd"
       class="osd-window"
       layer={Astal.Layer.OVERLAY}
       exclusivity={Astal.Exclusivity.IGNORE}
       keymode={Astal.Keymode.NONE}
       focusable={false}
-      // Start unmapped; we map when state.visible becomes true
       visible={false}
       anchor={Astal.WindowAnchor.BOTTOM}
       monitor={monitor}
       $={(self: Astal.Window) => {
         winRef = self
-      }}    >
+      }}
+    >
       <box
         class={cardClass}
         orientation={Gtk.Orientation.VERTICAL}
@@ -127,5 +134,15 @@ export function OSDWindow(defaultMonitor = 0) {
         />
       </box>
     </window>
-  ) as Astal.Window
+  ) as OSDWindowHandle
+
+  win.openWindow = () => {
+    win.visible = true
+  }
+
+  win.closeWindow = () => {
+    win.visible = false
+  }
+
+  return win
 }

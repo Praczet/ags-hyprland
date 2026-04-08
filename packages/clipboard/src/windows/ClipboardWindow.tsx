@@ -1,11 +1,18 @@
 import { Astal, Gdk, Gtk } from "ags/gtk4"
-import ClipPicker from "../widgets/ClipPicker"
+import { ClipPicker } from "../widgets/ClipPicker"
 import { filteredItems, refreshClipboard } from "../store"
+
+export const CLIPBOARD_WINDOW_NAME = "clipboard"
+
+export type ClipboardWindowHandle = Astal.Window & {
+  openWindow(): void
+  closeWindow(): void
+}
 
 export function ClipboardWindow(monitor = 0) {
   const win = (
     <window
-      name="clipboard"
+      name={CLIPBOARD_WINDOW_NAME}
       namespace="adart-clipboard"
       visible={false}
       class="clipboard-window"
@@ -16,13 +23,13 @@ export function ClipboardWindow(monitor = 0) {
     >
       <ClipPicker clipboardItems={filteredItems} />
     </window>
-  ) as unknown as Gtk.Window
+  ) as ClipboardWindowHandle
 
   // ESC hides
   const key = new Gtk.EventControllerKey()
   key.connect("key-pressed", (_, keyval) => {
     if (keyval === Gdk.KEY_Escape) {
-      win.hide()
+      win.closeWindow()
       return true
     }
     return false
@@ -32,9 +39,20 @@ export function ClipboardWindow(monitor = 0) {
   // focus-leave hides
   const focus = new Gtk.EventControllerFocus()
   focus.connect("leave", () => {
-    if (win.visible) win.hide()
+    if (win.visible) win.closeWindow()
   })
   win.add_controller(focus)
+
+  win.openWindow = () => {
+    if (typeof win.present === "function") {
+      win.present()
+    } else {
+      win.visible = true
+    }
+  }
+  win.closeWindow = () => {
+    win.visible = false
+  }
 
   return win
 }

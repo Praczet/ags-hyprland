@@ -125,6 +125,292 @@ type SavedRowEntry = {
   setMuted: (muted: boolean) => void
 }
 
+type ConnectedDetailsController = {
+  reveal: Gtk.Revealer
+  handleToggle: () => void
+  reset: () => void
+  setActiveConnection: (name: string | undefined) => void
+  setConnectedInfo: (info: { ssid?: string; security?: string; signal?: number; lastConnected?: number }) => void
+}
+
+type RowContainerEntry = {
+  container: Gtk.Box
+}
+
+function createSavedRowState(): SavedRowState {
+  return {
+    expanded: false,
+    passwordVisible: false,
+    passwordValueCache: null,
+    passwordFetched: false,
+    qrPath: null,
+  }
+}
+
+function createWifiRowState(): WifiRowState {
+  return {
+    expanded: false,
+    joinExpanded: false,
+    passwordText: "",
+    passwordVisible: false,
+    passwordValueCache: null,
+    passwordFetched: false,
+    qrPath: null,
+    lastConnected: null,
+  }
+}
+
+function createKnownNetworkMap(savedWifi: SavedConnection[]) {
+  return new Map(
+    savedWifi.flatMap(entry => {
+      const pairs: Array<[string, string]> = []
+      const ssid = entry.ssid ?? entry.name
+      if (ssid) {
+        pairs.push([ssid, entry.name])
+        pairs.push([ssid.toLowerCase(), entry.name])
+      }
+      if (entry.name) {
+        pairs.push([entry.name, entry.name])
+        pairs.push([entry.name.toLowerCase(), entry.name])
+      }
+      return pairs
+    }),
+  )
+}
+
+function restoreScrollPosition(adjustment: Gtk.Adjustment | null, previousValue: number) {
+  if (!adjustment) return
+  GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+    const upper = adjustment.get_upper()
+    const page = adjustment.get_page_size()
+    const maxValue = Math.max(0, upper - page)
+    adjustment.set_value(Math.min(previousValue, maxValue))
+    return GLib.SOURCE_REMOVE
+  })
+}
+
+function resetSavedPasswordState(state: SavedRowState) {
+  state.passwordVisible = false
+  state.passwordValueCache = null
+  state.passwordFetched = false
+  state.qrPath = null
+}
+
+function clearRowMapEntries<T extends RowContainerEntry, S>(
+  list: Gtk.Box,
+  entries: Map<string, T>,
+  states: Map<string, S>,
+) {
+  for (const [key, entry] of entries) {
+    list.remove(entry.container)
+    entries.delete(key)
+    states.delete(key)
+  }
+}
+
+function removeMissingRowEntries<T extends RowContainerEntry, S>(
+  list: Gtk.Box,
+  seen: Set<string>,
+  entries: Map<string, T>,
+  states: Map<string, S>,
+) {
+  for (const [key, entry] of entries) {
+    if (seen.has(key)) continue
+    list.remove(entry.container)
+    entries.delete(key)
+    states.delete(key)
+  }
+}
+
+function reorderRowEntry(
+  list: Gtk.Box,
+  entry: RowContainerEntry,
+  previousChild: Gtk.Widget | null,
+) {
+  list.reorder_child_after(entry.container, previousChild)
+  return entry.container
+}
+
+function createConnectedDetailsController(
+  service: NetworkService,
+  cfg: NetworkWidgetConfig,
+) {
+  const reveal = new Gtk.Revealer({ reveal_child: false })
+  reveal.set_visible(false)
+  const detailsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 16 })
+  detailsBox.add_css_class("a-network-details")
+  detailsBox.set_hexpand(true)
+  detailsBox.set_halign(Gtk.Align.FILL)
+
+  const info = createInfoColumn()
+  info.box.set_hexpand(true)
+
+  const passwordState = createSavedRowState()
+  const passwordCol = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
+  passwordCol.add_css_class("a-network-details-col")
+  const passwordRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
+  const passwordLabel = new Gtk.Label({ label: "Password", xalign: 0 })
+  passwordLabel.add_css_class("a-network-details-label")
+  const toggleLabel = new Gtk.Label({ label: "Show", xalign: 0 })
+  toggleLabel.add_css_class("a-network-details-label")
+  const passwordToggle = new Gtk.Switch()
+  passwordToggle.add_css_class("a-network-switch")
+  passwordRow.append(passwordLabel)
+  passwordRow.append(toggleLabel)
+  passwordRow.append(passwordToggle)
+  const passwordValue = new Gtk.Label({ label: "Hidden", xalign: 0.5 })
+  passwordValue.add_css_class("a-network-details-value")
+  passwordValue.set_halign(Gtk.Align.CENTER)
+  passwordValue.set_hexpand(true)
+  passwordValue.set_width_chars(24)
+  passwordValue.set_ellipsize(Pango.EllipsizeMode.END)
+  passwordValue.set_max_width_chars(24)
+  const qr = new Gtk.Picture()
+  qr.set_visible(true)
+  qr.set_size_request(128, -1)
+  qr.set_can_shrink(true)
+  qr.set_content_fit(Gtk.ContentFit.SCALE_DOWN)
+  qr.set_halign(Gtk.Align.CENTER)
+  qr.set_opacity(0)
+  passwordCol.append(passwordRow)
+  passwordCol.append(passwordValue)
+  const qrSlot = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
+  qrSlot.set_halign(Gtk.Align.CENTER)
+  qrSlot.set_size_request(128, -1)
+  qrSlot.append(qr)
+  passwordCol.append(qrSlot)
+
+  detailsBox.append(info.box)
+  detailsBox.append(passwordCol)
+  reveal.set_child(detailsBox)
+
+  let activeConnectionName: string | undefined
+  let detailsExpanded = false
+  let detailsLoaded = false
+  let loading = false
+  let lastConnected: number | null = null
+  let currentKey: string | undefined
+
+  const updatePasswordDisplay = () => {
+    if (!(cfg.showPlainTextPassword ?? true)) {
+      passwordToggle.set_sensitive(false)
+      passwordValue.set_label("Disabled")
+      qr.set_opacity(0)
+      return
+    }
+    if (!passwordState.passwordVisible) {
+      passwordValue.set_label("Hidden")
+      qr.set_opacity(0)
+      return
+    }
+    if (passwordState.passwordFetched) {
+      passwordValue.set_label(passwordState.passwordValueCache || "Unavailable")
+      if (passwordState.qrPath && passwordState.passwordValueCache) {
+        qr.set_filename(passwordState.qrPath)
+        qr.set_opacity(1)
+      } else {
+        qr.set_opacity(0)
+      }
+    }
+  }
+
+  const loadDetails = async () => {
+    if (!activeConnectionName || loading) return
+    loading = true
+    try {
+      const details = await service.getConnectionDetails(activeConnectionName)
+      lastConnected = details.lastConnected ?? null
+      info.setInfo({
+        ssid: details.ssid ?? activeConnectionName,
+        security: details.security ?? "--",
+        lastConnected: details.lastConnected,
+        signal: undefined,
+      })
+      detailsLoaded = true
+    } catch (err) {
+      console.error("a-network details error", err)
+    } finally {
+      loading = false
+    }
+  }
+
+  passwordToggle.connect("notify::active", async () => {
+    if (!passwordToggle.get_active()) {
+      passwordState.passwordVisible = false
+      updatePasswordDisplay()
+      return
+    }
+    passwordState.passwordVisible = true
+    if (passwordState.passwordFetched) {
+      updatePasswordDisplay()
+      return
+    }
+    passwordValue.set_label("Loading...")
+    try {
+      const pass = activeConnectionName ? await service.getWifiPassword(activeConnectionName) : null
+      passwordState.passwordValueCache = pass
+      passwordState.passwordFetched = true
+      if (pass && passwordState.qrPath === null && (cfg.showQRPassword ?? false)) {
+        passwordState.qrPath = buildWifiQr(activeConnectionName ?? "wifi", pass)
+      }
+      updatePasswordDisplay()
+    } catch (err) {
+      console.error("a-network password error", err)
+      passwordState.passwordFetched = true
+      passwordValue.set_label("Unavailable")
+      qr.set_opacity(0)
+    }
+  })
+
+  return {
+    reveal,
+    handleToggle: () => {
+      detailsExpanded = !reveal.get_reveal_child()
+      reveal.set_reveal_child(detailsExpanded)
+      if (detailsExpanded && !detailsLoaded) {
+        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+          loadDetails().catch(err => console.error("a-network details error", err))
+          return GLib.SOURCE_REMOVE
+        })
+      }
+    },
+    reset: () => {
+      activeConnectionName = undefined
+      currentKey = undefined
+      detailsLoaded = false
+      lastConnected = null
+      detailsExpanded = false
+      resetSavedPasswordState(passwordState)
+      reveal.set_visible(false)
+      reveal.set_reveal_child(false)
+    },
+    setActiveConnection: (name: string | undefined) => {
+      activeConnectionName = name
+      if (currentKey !== name) {
+        currentKey = name
+        detailsLoaded = false
+        lastConnected = null
+        resetSavedPasswordState(passwordState)
+      }
+      updatePasswordDisplay()
+    },
+    setConnectedInfo: ({ ssid, security, signal, lastConnected: nextLastConnected }) => {
+      if (typeof nextLastConnected === "number") {
+        lastConnected = nextLastConnected
+      }
+      info.setInfo({
+        ssid,
+        security,
+        signal,
+        lastConnected: lastConnected ?? undefined,
+      })
+      updatePasswordDisplay()
+      reveal.set_visible(true)
+      reveal.set_reveal_child(detailsExpanded)
+    },
+  } satisfies ConnectedDetailsController
+}
+
 function buildSavedRow(
   saved: SavedConnection,
   onActivate: (name: string, active: boolean) => void,
@@ -715,50 +1001,7 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   connectedRow.append(connectedLabel)
   connectedRow.append(connectedMeta)
   connectedRow.append(connectedActions)
-  const connectedDetailsReveal = new Gtk.Revealer({ reveal_child: false })
-  connectedDetailsReveal.set_visible(false)
-  const connectedDetailsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 16 })
-  connectedDetailsBox.add_css_class("a-network-details")
-  connectedDetailsBox.set_hexpand(true)
-  connectedDetailsBox.set_halign(Gtk.Align.FILL)
-  const connectedInfo = createInfoColumn()
-  connectedInfo.box.set_hexpand(true)
-  const connectedPasswordCol = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
-  connectedPasswordCol.add_css_class("a-network-details-col")
-  const connectedPasswordRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
-  const connectedPasswordLabel = new Gtk.Label({ label: "Password", xalign: 0 })
-  connectedPasswordLabel.add_css_class("a-network-details-label")
-  const connectedToggleLabel = new Gtk.Label({ label: "Show", xalign: 0 })
-  connectedToggleLabel.add_css_class("a-network-details-label")
-  const connectedPasswordToggle = new Gtk.Switch()
-  connectedPasswordToggle.add_css_class("a-network-switch")
-  connectedPasswordRow.append(connectedPasswordLabel)
-  connectedPasswordRow.append(connectedToggleLabel)
-  connectedPasswordRow.append(connectedPasswordToggle)
-  const connectedPasswordValue = new Gtk.Label({ label: "Hidden", xalign: 0.5 })
-  connectedPasswordValue.add_css_class("a-network-details-value")
-  connectedPasswordValue.set_halign(Gtk.Align.CENTER)
-  connectedPasswordValue.set_hexpand(true)
-  connectedPasswordValue.set_width_chars(24)
-  connectedPasswordValue.set_ellipsize(Pango.EllipsizeMode.END)
-  connectedPasswordValue.set_max_width_chars(24)
-  const connectedQr = new Gtk.Picture()
-  connectedQr.set_visible(true)
-  connectedQr.set_size_request(128, -1)
-  connectedQr.set_can_shrink(true)
-  connectedQr.set_content_fit(Gtk.ContentFit.SCALE_DOWN)
-  connectedQr.set_halign(Gtk.Align.CENTER)
-  connectedQr.set_opacity(0)
-  connectedPasswordCol.append(connectedPasswordRow)
-  connectedPasswordCol.append(connectedPasswordValue)
-  const connectedQrSlot = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL })
-  connectedQrSlot.set_halign(Gtk.Align.CENTER)
-  connectedQrSlot.set_size_request(128, -1)
-  connectedQrSlot.append(connectedQr)
-  connectedPasswordCol.append(connectedQrSlot)
-  connectedDetailsBox.append(connectedInfo.box)
-  connectedDetailsBox.append(connectedPasswordCol)
-  connectedDetailsReveal.set_child(connectedDetailsBox)
+  const connectedDetails = createConnectedDetailsController(service, cfg)
 
   const wifiNearbyTitle = new Gtk.Label({ label: "Nearby", xalign: 0 })
   wifiNearbyTitle.add_css_class("a-network-subtitle")
@@ -804,7 +1047,7 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
 
   wifiBody.append(wifiConnectedTitle)
   wifiBody.append(connectedRow)
-  wifiBody.append(connectedDetailsReveal)
+  wifiBody.append(connectedDetails.reveal)
   wifiBody.append(wifiNearbyTitle)
   wifiBody.append(wifiNearbyScroll)
   wifiBody.append(wifiSavedTitle)
@@ -817,100 +1060,9 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   const savedRowEntries = new Map<string, SavedRowEntry>()
   const nearbyRowState = new Map<string, WifiRowState>()
   const nearbyRowEntries = new Map<string, WifiRowEntry>()
-  let connectedDetailsExpanded = false
-  const connectedPasswordState: SavedRowState = {
-    expanded: false,
-    passwordVisible: false,
-    passwordValueCache: null,
-    passwordFetched: false,
-    qrPath: null,
-  }
-  let connectedDetailsLoaded = false
-  let connectedLoading = false
-  let connectedLastConnected: number | null = null
-  let connectedKey: string | undefined
-
-  const updateConnectedPasswordDisplay = () => {
-    if (!(cfg.showPlainTextPassword ?? true)) {
-      connectedPasswordToggle.set_sensitive(false)
-      connectedPasswordValue.set_label("Disabled")
-      connectedQr.set_opacity(0)
-      return
-    }
-    if (!connectedPasswordState.passwordVisible) {
-      connectedPasswordValue.set_label("Hidden")
-      connectedQr.set_opacity(0)
-      return
-    }
-    if (connectedPasswordState.passwordFetched) {
-      connectedPasswordValue.set_label(connectedPasswordState.passwordValueCache || "Unavailable")
-      if (connectedPasswordState.qrPath && connectedPasswordState.passwordValueCache) {
-        connectedQr.set_filename(connectedPasswordState.qrPath)
-        connectedQr.set_opacity(1)
-      } else {
-        connectedQr.set_opacity(0)
-      }
-    }
-  }
-
-  const loadConnectedDetails = async () => {
-    if (!activeConnectionName) return
-    if (connectedLoading) return
-    connectedLoading = true
-    try {
-      const details = await service.getConnectionDetails(activeConnectionName)
-      connectedLastConnected = details.lastConnected ?? null
-      connectedInfo.setInfo({
-        ssid: details.ssid ?? activeConnectionName,
-        security: details.security ?? "--",
-        lastConnected: details.lastConnected,
-        signal: undefined,
-      })
-      connectedDetailsLoaded = true
-    } catch (err) {
-      console.error("a-network details error", err)
-    } finally {
-      connectedLoading = false
-    }
-  }
-
-  connectedPasswordToggle.connect("notify::active", async () => {
-    if (!connectedPasswordToggle.get_active()) {
-      connectedPasswordState.passwordVisible = false
-      updateConnectedPasswordDisplay()
-      return
-    }
-    connectedPasswordState.passwordVisible = true
-    if (connectedPasswordState.passwordFetched) {
-      updateConnectedPasswordDisplay()
-      return
-    }
-    connectedPasswordValue.set_label("Loading...")
-    try {
-      const pass = activeConnectionName ? await service.getWifiPassword(activeConnectionName) : null
-      connectedPasswordState.passwordValueCache = pass
-      connectedPasswordState.passwordFetched = true
-      if (pass && connectedPasswordState.qrPath === null && (cfg.showQRPassword ?? false)) {
-        connectedPasswordState.qrPath = buildWifiQr(activeConnectionName ?? "wifi", pass)
-      }
-      updateConnectedPasswordDisplay()
-    } catch (err) {
-      console.error("a-network password error", err)
-      connectedPasswordState.passwordFetched = true
-      connectedPasswordValue.set_label("Unavailable")
-      connectedQr.set_opacity(0)
-    }
-  })
 
   connectedDetailsBtn.connect("clicked", () => {
-    connectedDetailsExpanded = !connectedDetailsReveal.get_reveal_child()
-    connectedDetailsReveal.set_reveal_child(connectedDetailsExpanded)
-    if (connectedDetailsExpanded && !connectedDetailsLoaded) {
-      GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-        loadConnectedDetails().catch(err => console.error("a-network details error", err))
-        return GLib.SOURCE_REMOVE
-      })
-    }
+    connectedDetails.handleToggle()
   })
   connectedDisconnectBtn.connect("clicked", () => {
     if (!activeConnectionName) return
@@ -985,43 +1137,22 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
     const wifiNoInternet = connectivity !== undefined && connectivity !== "full"
     if (data.activeWifi) {
       activeConnectionName = data.activeWifiConnectionName ?? data.activeWifi.ssid
-      if (connectedKey !== activeConnectionName) {
-        connectedKey = activeConnectionName
-        connectedDetailsLoaded = false
-        connectedLastConnected = null
-        connectedPasswordState.passwordVisible = false
-        connectedPasswordState.passwordValueCache = null
-        connectedPasswordState.passwordFetched = false
-        connectedPasswordState.qrPath = null
-      }
+      connectedDetails.setActiveConnection(activeConnectionName)
       wifiConnectedTitle.set_visible(true)
       connectedRow.set_visible(true)
-      connectedDetailsReveal.set_visible(true)
       connectedIcon.set_from_icon_name(wifiNoInternet ? "network-error-symbolic" : signalIcon(data.activeWifi.signal))
       connectedLabel.set_label(data.activeWifi.ssid)
       connectedMeta.set_label(`${formatSignal(data.activeWifi.signal)} ${data.activeWifi.security ?? "--"}`)
-      connectedInfo.setInfo({
+      connectedDetails.setConnectedInfo({
         ssid: data.activeWifi.ssid,
         security: data.activeWifi.security ?? "--",
-        lastConnected: connectedLastConnected ?? undefined,
         signal: data.activeWifi.signal,
       })
-      updateConnectedPasswordDisplay()
-      connectedDetailsReveal.set_reveal_child(connectedDetailsExpanded)
     } else {
       activeConnectionName = undefined
-      connectedKey = undefined
-      connectedDetailsLoaded = false
-      connectedLastConnected = null
-      connectedPasswordState.passwordVisible = false
-      connectedPasswordState.passwordValueCache = null
-      connectedPasswordState.passwordFetched = false
-      connectedPasswordState.qrPath = null
+      connectedDetails.reset()
       wifiConnectedTitle.set_visible(false)
       connectedRow.set_visible(false)
-      connectedDetailsReveal.set_visible(false)
-      connectedDetailsReveal.set_reveal_child(false)
-      connectedDetailsExpanded = false
     }
     if (!wifiEnabled) {
       wifiCollapsedIcon.set_visible(false)
@@ -1041,32 +1172,14 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
     const nearbyAdjustment = wifiNearbyScroll.get_vadjustment()
     const nearbyScrollValue = nearbyAdjustment ? nearbyAdjustment.get_value() : 0
     if (!available.length) {
-      for (const [key, entry] of nearbyRowEntries) {
-        wifiNearbyList.remove(entry.container)
-        nearbyRowEntries.delete(key)
-        nearbyRowState.delete(key)
-      }
+      clearRowMapEntries(wifiNearbyList, nearbyRowEntries, nearbyRowState)
       clearBox(wifiNearbyList)
       wifiNearbyList.append(wifiNearbyPlaceholder)
     } else {
       if (wifiNearbyPlaceholder.get_parent()) {
         wifiNearbyList.remove(wifiNearbyPlaceholder)
       }
-      const known = new Map(
-        data.savedWifi.flatMap(entry => {
-          const pairs: Array<[string, string]> = []
-          const ssid = entry.ssid ?? entry.name
-          if (ssid) {
-            pairs.push([ssid, entry.name])
-            pairs.push([ssid.toLowerCase(), entry.name])
-          }
-          if (entry.name) {
-            pairs.push([entry.name, entry.name])
-            pairs.push([entry.name.toLowerCase(), entry.name])
-          }
-          return pairs
-        }),
-      )
+      const known = createKnownNetworkMap(data.savedWifi)
       const seen = new Set<string>()
       let prevChild: Gtk.Widget | null = null
       for (const iface of available) {
@@ -1076,16 +1189,7 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
         seen.add(rowKey)
         let entry = nearbyRowEntries.get(rowKey)
         if (!entry) {
-          const state = nearbyRowState.get(rowKey) ?? {
-            expanded: false,
-            joinExpanded: false,
-            passwordText: "",
-            passwordVisible: false,
-            passwordValueCache: null,
-            passwordFetched: false,
-            qrPath: null,
-            lastConnected: null,
-          }
+          const state = nearbyRowState.get(rowKey) ?? createWifiRowState()
           nearbyRowState.set(rowKey, state)
           entry = buildWifiRow(
             iface,
@@ -1104,25 +1208,11 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
         } else {
           entry.update(iface, isKnown, savedName)
         }
-        wifiNearbyList.reorder_child_after(entry.container, prevChild)
-        prevChild = entry.container
+        prevChild = reorderRowEntry(wifiNearbyList, entry, prevChild)
       }
-      for (const [key, entry] of nearbyRowEntries) {
-        if (seen.has(key)) continue
-        wifiNearbyList.remove(entry.container)
-        nearbyRowEntries.delete(key)
-        nearbyRowState.delete(key)
-      }
+      removeMissingRowEntries(wifiNearbyList, seen, nearbyRowEntries, nearbyRowState)
     }
-    if (nearbyAdjustment) {
-      GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-        const upper = nearbyAdjustment.get_upper()
-        const page = nearbyAdjustment.get_page_size()
-        const maxValue = Math.max(0, upper - page)
-        nearbyAdjustment.set_value(Math.min(nearbyScrollValue, maxValue))
-        return GLib.SOURCE_REMOVE
-      })
-    }
+    restoreScrollPosition(nearbyAdjustment, nearbyScrollValue)
 
     const savedAdjustment = wifiSavedScroll.get_vadjustment()
     const savedScrollValue = savedAdjustment ? savedAdjustment.get_value() : 0
@@ -1130,11 +1220,7 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
     const savedCount = data.savedWifi.length
     wifiSavedEmpty.set_label(`(${savedCount})`)
     if (!savedCount) {
-      for (const [name, entry] of savedRowEntries) {
-        wifiSavedList.remove(entry.container)
-        savedRowEntries.delete(name)
-        savedRowState.delete(name)
-      }
+      clearRowMapEntries(wifiSavedList, savedRowEntries, savedRowState)
       clearBox(wifiSavedList)
       wifiSavedList.append(wifiSavedPlaceholder)
     } else {
@@ -1148,13 +1234,7 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
         seen.add(savedKey)
         let entry = savedRowEntries.get(savedKey)
         if (!entry) {
-          const state = savedRowState.get(savedKey) ?? {
-            expanded: false,
-            passwordVisible: false,
-            passwordValueCache: null,
-            passwordFetched: false,
-            qrPath: null,
-          }
+          const state = savedRowState.get(savedKey) ?? createSavedRowState()
           savedRowState.set(savedKey, state)
           entry = buildSavedRow(
             saved,
@@ -1179,25 +1259,11 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
         }
         const isMuted = !nearbyNames.has((saved.ssid ?? saved.name).toLowerCase()) && !saved.active
         entry.setMuted(isMuted)
-        wifiSavedList.reorder_child_after(entry.container, prevChild)
-        prevChild = entry.container
+        prevChild = reorderRowEntry(wifiSavedList, entry, prevChild)
       }
-      for (const [name, entry] of savedRowEntries) {
-        if (seen.has(name)) continue
-        wifiSavedList.remove(entry.container)
-        savedRowEntries.delete(name)
-        savedRowState.delete(name)
-      }
+      removeMissingRowEntries(wifiSavedList, seen, savedRowEntries, savedRowState)
     }
-    if (savedAdjustment) {
-      GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-        const upper = savedAdjustment.get_upper()
-        const page = savedAdjustment.get_page_size()
-        const maxValue = Math.max(0, upper - page)
-        savedAdjustment.set_value(Math.min(savedScrollValue, maxValue))
-        return GLib.SOURCE_REMOVE
-      })
-    }
+    restoreScrollPosition(savedAdjustment, savedScrollValue)
   }, { immediate: true })
 
   return {

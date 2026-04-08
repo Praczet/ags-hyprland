@@ -8,13 +8,23 @@
  *   clipboardItems: Accessor<ClipEntry[]>
  */
 
-import { Gdk, Gtk } from "ags/gtk4";
-import ClipCard from "./ClipCard";
-import { deleteClip, restoreClipToClipboard, toggleClipStar } from "../vault";
-import { ClipEntry, ClipTypes } from "../types";
-import { Accessor, For } from "ags";
+import { Accessor, For } from "ags"
+import app from "ags/gtk4/app"
+import { Gdk, Gtk } from "ags/gtk4"
+import ClipCard from "./ClipCard"
+import type { ClipEntry } from "../types"
+import { deleteClip, restoreClipToClipboard, toggleClipStar } from "../vault"
 
-export default function ClipList(props: { clipboardItems: Accessor<ClipEntry[]>; }) {
+const CLIPBOARD_WINDOW_NAME = "clipboard"
+
+export default function ClipList(props: { clipboardItems: Accessor<ClipEntry[]> }) {
+  const closeClipboardWindow = () => {
+    const win = app.windows.find(window => window.name === CLIPBOARD_WINDOW_NAME)
+    if (win) {
+      win.visible = false
+    }
+  }
+
   return (
     <scrolledwindow
       maxContentHeight={200}
@@ -36,7 +46,7 @@ export default function ClipList(props: { clipboardItems: Accessor<ClipEntry[]>;
           const item = items[index] as ClipEntry | undefined;
           if (!item) return;
           (async () => {
-            await restoreClipToClipboard(item.id);
+            await restoreClipToClipboard(item.id, { onRestore: closeClipboardWindow })
           })();
         }}
         $={(self) => {

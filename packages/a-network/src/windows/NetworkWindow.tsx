@@ -8,6 +8,12 @@ import type { NetworkWidgetConfig } from "../types"
 import { getNetworkService } from "../services/networkService"
 import { getNetworkConfigPath, onNetworkConfigChange, resolveNetworkConfig } from "../config"
 
+export type NetworkWindowHandle = Astal.Window & {
+  openWindow(): void
+  closeWindow(): void
+  setWindowLess(enabled: boolean): void
+}
+
 export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
   const parseMargin = (value?: string) => {
     if (!value) return null
@@ -113,8 +119,8 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
   const windowClass = currentConfig.windowLess ? "a-network-window a-network-windowless-window" : "a-network-window"
   const win = (
     <window
-      name="a-network"
-      namespace="adart-a-network"
+      name="network"
+      namespace="adart-network"
       class={windowClass}
       visible={false}
       layer={Astal.Layer.OVERLAY}
@@ -136,7 +142,7 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
     >
       {buildInner(currentConfig)}
     </window>
-  ) as Astal.Window
+  ) as NetworkWindowHandle
 
   hideWindow = () => win.hide()
 
@@ -168,7 +174,7 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
     win.set_child(child)
     const wantWindowLess = Boolean(next.windowLess)
     if (wantWindowLess !== currentWindowLess) {
-      (win as any).setWindowLess?.(wantWindowLess)
+      win.setWindowLess(wantWindowLess)
     }
   }
 
@@ -204,25 +210,33 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
   })
   win.add_controller(key)
 
-    ; (win as any).setWindowLess = (enabled: boolean) => {
-      currentWindowLess = Boolean(enabled)
-      const nextWindow = currentWindowLess ? "a-network-window a-network-windowless-window" : "a-network-window"
-      const nextInner = currentWindowLess ? "a-network-window-inner a-network-windowless-inner" : "a-network-window-inner"
-      win.set_css_classes(nextWindow.split(" "))
-      const outer = win.get_first_child() as Gtk.Widget | null
-      const inner = outer?.get_first_child() as Gtk.Widget | null
-      if (inner) {
-        inner.set_css_classes(nextInner.split(" "))
-        const root = inner.get_first_child() as Gtk.Widget | null
-        if (root) {
-          if (currentWindowLess) {
-            root.add_css_class("a-network-windowless")
-          } else {
-            root.remove_css_class("a-network-windowless")
-          }
+  win.setWindowLess = (enabled: boolean) => {
+    currentWindowLess = Boolean(enabled)
+    const nextWindow = currentWindowLess ? "a-network-window a-network-windowless-window" : "a-network-window"
+    const nextInner = currentWindowLess ? "a-network-window-inner a-network-windowless-inner" : "a-network-window-inner"
+    win.set_css_classes(nextWindow.split(" "))
+    const outer = win.get_first_child() as Gtk.Widget | null
+    const inner = outer?.get_first_child() as Gtk.Widget | null
+    if (inner) {
+      inner.set_css_classes(nextInner.split(" "))
+      const root = inner.get_first_child() as Gtk.Widget | null
+      if (root) {
+        if (currentWindowLess) {
+          root.add_css_class("a-network-windowless")
+        } else {
+          root.remove_css_class("a-network-windowless")
         }
       }
     }
+  }
+
+  win.openWindow = () => {
+    win.show()
+  }
+
+  win.closeWindow = () => {
+    win.hide()
+  }
 
   return win
 }

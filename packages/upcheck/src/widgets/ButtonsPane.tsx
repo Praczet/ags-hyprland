@@ -1,9 +1,10 @@
-import { Gtk } from "ags/gtk4";
+import { Gtk } from "ags/gtk4"
 import app from "ags/gtk4/app"
-import { refreshUpdates } from "../store";
-import { openUpdaterTerminal } from "../services/pacman";
+import { openUpdaterTerminal } from "../services/pacman"
+import { refreshUpdates } from "../store"
+import { UPCHECK_WINDOW_NAME, type UpcheckWindowHandle } from "../windows/Upcheck"
 
-export default function ButtonsPane() {
+export function ButtonsPane() {
   return (
     <box
       class="buttons-pane"
@@ -21,7 +22,8 @@ export default function ButtonsPane() {
       <button class="btn-update" focusable={true}
         hexpand={true} halign={Gtk.Align.END}
         onClicked={() => {
-          app.get_window("upcheck")?.hide()
+          const window = app.get_window(UPCHECK_WINDOW_NAME) as UpcheckWindowHandle | null
+          window?.closeWindow()
           openUpdaterTerminal()
         }}
       >
@@ -30,4 +32,3 @@ export default function ButtonsPane() {
     </box>
   )
 }
-

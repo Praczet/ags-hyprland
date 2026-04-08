@@ -1,4 +1,4 @@
-import { execAsync } from "ags/process"
+import { logProcessError, runCommand } from "../../../../shared/utils/process"
 
 const CMD = ["brightnessctl", "-m"]
 
@@ -13,10 +13,10 @@ export function parseBrightness(output: string): number | null {
 
 export async function readBrightnessPercent(): Promise<number | null> {
   try {
-    const output = await execAsync(CMD)
+    const output = await runCommand(CMD)
     return parseBrightness(output)
   } catch (error) {
-    console.error("OSD readBrightnessPercent error", error)
+    logProcessError("OSD readBrightnessPercent error", error)
     return null
   }
 }

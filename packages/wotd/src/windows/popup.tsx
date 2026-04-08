@@ -5,10 +5,17 @@ import type { WotdConfig, WotdPopupShowOptions } from "../types"
 import { resolveWotdConfig } from "../config"
 import { getWotdStore } from "../store"
 import { createWotdCard } from "../widgets/card"
-import { createWotdCompact } from "../widgets/compact"
+import { createWotdCompact, createWotdDefinitionOnly } from "../widgets/compact"
+
+export const WOTD_POPUP_WINDOW_NAME = "wotd-popup"
+
+export type WotdPopupWindowHandle = Astal.Window & {
+  openWindow(options?: WotdPopupShowOptions): void
+  closeWindow(): void
+}
 
 export type WotdPopupController = {
-  window: Astal.Window
+  window: WotdPopupWindowHandle
   show(options?: WotdPopupShowOptions): void
   hide(): void
   destroy(): void
@@ -30,7 +37,7 @@ export function createWotdPopupWindow(
   })
   content.add_css_class("wotd-popup-content")
 
-  function render(cardType: "card" | "compact" | "definition" = "card") {
+  function render(cardType: WotdPopupShowOptions["cardType"] = config.cardType) {
     while (true) {
       const child = content.get_first_child()
       if (!child) break
@@ -60,15 +67,15 @@ export function createWotdPopupWindow(
       return
     }
 
-    // if (cardType === "definition") {
-    //   content.append(createWotdDefinitionOnly(data, {
-    //     showTitle: true,
-    //     showWord: true,
-    //     showTranslation: true,
-    //     showPartOfSpeech: true,
-    //   }))
-    //   return
-    // }
+    if (cardType === "definition-only") {
+      content.append(createWotdDefinitionOnly(data, {
+        showTitle: true,
+        showWord: true,
+        showTranslation: true,
+        showPartOfSpeech: true,
+      }))
+      return
+    }
 
     content.append(createWotdCard(data, {
       compact: true,
@@ -85,7 +92,7 @@ export function createWotdPopupWindow(
     }))
   }
 
-  render()
+  render(config.cardType)
 
   const frame = new Gtk.Box({
     orientation: Gtk.Orientation.VERTICAL,
@@ -101,7 +108,7 @@ export function createWotdPopupWindow(
 
   const window = (
     <window
-      name="wotd-popup"
+      name={WOTD_POPUP_WINDOW_NAME}
       namespace="adart-wotd"
       class="wotd-popup-window"
       visible={false}
@@ -113,7 +120,7 @@ export function createWotdPopupWindow(
     >
       {frame}
     </window>
-  ) as Astal.Window
+  ) as WotdPopupWindowHandle
 
   function clearTimers() {
     if (hideTimerId !== null) {
@@ -150,7 +157,7 @@ export function createWotdPopupWindow(
   function show(options?: WotdPopupShowOptions) {
     clearTimers()
 
-    const cardType = options?.cardType ?? "card"
+    const cardType = options?.cardType ?? config.cardType
 
     store.reload()
     render(cardType)
@@ -177,6 +184,9 @@ export function createWotdPopupWindow(
     window.visible = false
     window.destroy()
   }
+
+  window.openWindow = show
+  window.closeWindow = hide
 
   return {
     window,

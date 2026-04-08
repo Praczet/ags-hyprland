@@ -5,6 +5,9 @@ import type { WotdCardData, WotdConfig, WotdListener, WotdStore } from "./types"
 import { resolveWotdConfig, type ResolvedWotdConfig } from "./config"
 import { loadWotdCard } from "./service"
 
+function logWotdError(err: unknown, message: string) {
+  logError(err instanceof Error ? err : new Error(String(err)), message)
+}
 
 export function createWotdStore(userConfig?: WotdConfig): WotdStore {
   const config: ResolvedWotdConfig = resolveWotdConfig(userConfig)
@@ -20,7 +23,7 @@ export function createWotdStore(userConfig?: WotdConfig): WotdStore {
       try {
         listener(current)
       } catch (err) {
-        logError(err as Error, "[wotd] listener failed")
+        logWotdError(err, "[wotd] listener failed")
       }
     }
   }
@@ -89,7 +92,7 @@ export function createWotdStore(userConfig?: WotdConfig): WotdStore {
         }
       })
     } catch (err) {
-      logError(err as Error, `[wotd] failed to watch file: ${config.cardPath}`)
+      logWotdError(err, `[wotd] failed to watch file: ${config.cardPath}`)
     }
   }
 

@@ -11,5 +11,7 @@ export function initOSD() {
 }
 
 export { OSDWindow, css }
+export { OSD_WINDOW_NAME } from "./windows/OSDWindow"
+export type { OSDWindowHandle } from "./windows/OSDWindow"
 export { showGenericOSD } from "./store"
 export { triggerVolume, triggerMic, triggerBrightness, triggerCustom }

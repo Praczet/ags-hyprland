@@ -1,7 +1,7 @@
 import { Gtk } from "ags/gtk4"
 import { details, detailsView, err, selected } from "../store"
 
-export default function DetailsPane() {
+export function DetailsPane() {
   return (
     <box class="details" orientation={Gtk.Orientation.VERTICAL} spacing={8}
       hexpand={true} halign={Gtk.Align.FILL}

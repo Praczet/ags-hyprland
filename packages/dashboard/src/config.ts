@@ -131,6 +131,18 @@ function isObject(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x)
 }
 
+function getOptionalString(value: unknown) {
+  return typeof value === "string" ? value : undefined
+}
+
+function getOptionalBoolean(value: unknown) {
+  return typeof value === "boolean" ? value : undefined
+}
+
+function getOptionalInt(value: unknown) {
+  return Number.isFinite(Number(value)) ? Math.floor(Number(value)) : undefined
+}
+
 function expandHome(path: string) {
   if (path.startsWith("~/")) {
     return `${GLib.get_home_dir()}/${path.slice(2)}`
@@ -162,7 +174,7 @@ export function loadDashboardConfig(configPath?: string): DashboardConfig {
   const g = isObject(u.google) ? u.google : {}
   const t = isObject(u.ticktick) ? u.ticktick : {}
   const w = isObject(u.weather) ? u.weather : {}
-  const s = isObject((u as any).stickynotes) ? (u as any).stickynotes : {}
+  const s = isObject(u.stickynotes) ? u.stickynotes : {}
   const calendars = Array.isArray(g.calendars) ? g.calendars.filter(isObject) : []
   const wd = isObject(u.wotd) ? u.wotd : {}
 
@@ -240,38 +252,18 @@ export function loadDashboardConfig(configPath?: string): DashboardConfig {
       particleDebugMode: typeof w.particleDebugMode === "string" ? w.particleDebugMode : defaultConfig.weather!.particleDebugMode,
     },
     stickynotes: {
-      refreshMins: Number.isFinite(Number((s as any).refreshMins))
-        ? Math.floor(Number((s as any).refreshMins))
-        : undefined,
-      notesConfigPath: typeof (s as any).notesConfigPath === "string"
-        ? (s as any).notesConfigPath
-        : undefined,
-      openNote: typeof (s as any).openNote === "string"
-        ? (s as any).openNote
-        : undefined,
+      refreshMins: getOptionalInt(s.refreshMins),
+      notesConfigPath: getOptionalString(s.notesConfigPath),
+      openNote: getOptionalString(s.openNote),
     },
     wotd: {
-      cardPath: typeof (wd as any).cardPath === "string"
-        ? (wd as any).cardPath
-        : undefined,
-      popupDurationMs: Number.isFinite(Number((wd as any).popupDurationMs))
-        ? Math.floor(Number((wd as any).popupDurationMs))
-        : undefined,
-      popupWidth: Number.isFinite(Number((wd as any).popupWidth))
-        ? Math.floor(Number((wd as any).popupWidth))
-        : undefined,
-      popupMarginTop: Number.isFinite(Number((wd as any).popupMarginTop))
-        ? Math.floor(Number((wd as any).popupMarginTop))
-        : undefined,
-      maxMeanings: Number.isFinite(Number((wd as any).maxMeanings))
-        ? Math.floor(Number((wd as any).maxMeanings))
-        : undefined,
-      showTranslations: typeof (wd as any).showTranslations === "boolean"
-        ? (wd as any).showTranslations
-        : undefined,
-      showDate: typeof (wd as any).showDate === "boolean"
-        ? (wd as any).showDate
-        : undefined,
+      cardPath: getOptionalString(wd.cardPath),
+      popupDurationMs: getOptionalInt(wd.popupDurationMs),
+      popupWidth: getOptionalInt(wd.popupWidth),
+      popupMarginTop: getOptionalInt(wd.popupMarginTop),
+      maxMeanings: getOptionalInt(wd.maxMeanings),
+      showTranslations: getOptionalBoolean(wd.showTranslations),
+      showDate: getOptionalBoolean(wd.showDate),
     },
   }
 }

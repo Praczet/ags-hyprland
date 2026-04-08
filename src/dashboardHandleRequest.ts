@@ -2,6 +2,8 @@ import { createRoot } from "ags"
 import app from "ags/gtk4/app"
 import GLib from "gi://GLib"
 import { DashboardWindow } from "../packages/dashboard/src"
+import { hideAppWindow, toggleAppWindow } from "./windowControl"
+import { getAppWindow, type DashboardAppWindow, type RequestResponse, WINDOW_NAME } from "./windowTypes"
 
 function normalizeConfigPath(path?: string) {
   const raw = typeof path === "string" ? path.trim() : ""
@@ -19,24 +21,24 @@ function hashPath(value: string) {
   return (hash >>> 0).toString(16)
 }
 
-const dashboardWindows = new Map<string, any>()
+const dashboardWindows = new Map<string, DashboardAppWindow>()
 
 function getDashboardWindow(configPath?: string) {
   const normalized = normalizeConfigPath(configPath)
-  const name = normalized ? `dashboard-${hashPath(normalized)}` : "dashboard"
-  let w = dashboardWindows.get(name) as any
-  if (!w) w = app.get_window(name) as any
+  const name = normalized ? `${WINDOW_NAME.dashboard}-${hashPath(normalized)}` : WINDOW_NAME.dashboard
+  let w = dashboardWindows.get(name)
+  if (!w) w = getAppWindow<DashboardAppWindow>(name)
   if (!w) {
     const built = createRoot((dispose) => {
-      const widget = DashboardWindow(0, normalized, name) as any
+      const widget = DashboardWindow(0, normalized, name) as DashboardAppWindow
       return { widget, dispose }
     })
-    w = built.widget as any
-    ; (w as any)._rootDispose = built.dispose
+    w = built.widget
+    w._rootDispose = built.dispose
     try {
-      w.connect("destroy", () => {
+      w.connect?.("destroy", () => {
         dashboardWindows.delete(name)
-        ; (w as any)._rootDispose?.()
+        w?._rootDispose?.()
       })
     } catch {
       // best-effort cleanup
@@ -50,23 +52,26 @@ function getDashboardWindow(configPath?: string) {
 function toggleDashboard(configPath?: string) {
   const w = getDashboardWindow(configPath)
   if (!w) return
-  if (w.visible) {
-    w.hideDashboard?.() ?? w.hide()
-    return
-  }
   dashboardWindows.forEach((win) => {
     if (win && win !== w && win.visible) {
-      win.hideDashboard?.() ?? win.hide()
+      hideAppWindow<DashboardAppWindow>(win.name)
     }
   })
-  w.showDashboard?.()
+  toggleAppWindow<DashboardAppWindow>(w.name)
 }
 
 function refreshAllDashboards(method: "refreshGoogle" | "refreshTickTick") {
-  dashboardWindows.forEach((w) => { try { w[method]?.() } catch { } })
+  dashboardWindows.forEach((w) => {
+    try {
+      const callback = w[method]
+      if (typeof callback === "function") callback.call(w)
+    } catch {
+      // best-effort refresh
+    }
+  })
 }
 
-export async function dashboardHandleRequest(argv: string[]) {
+export async function dashboardHandleRequest(argv: string[]): Promise<RequestResponse> {
   const [cmd, configPath] = argv
   if (!cmd) return undefined
   switch (cmd.toLowerCase()) {

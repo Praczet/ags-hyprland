@@ -19,22 +19,32 @@ import { AegisWindow, css as aegisCss } from "../packages/aegis/src"
 import { aegisHandleRequest } from "./aegisHandleRequest"
 import { networkHandleRequest } from "./networkHandleRequest"
 import { NetworkWindow, css as networkCss } from "../packages/a-network/src"
+import type { RequestResponse } from "./windowTypes"
 // import { css as wotdCss, WotdPopupWindow } from "../packages/wotd/src"
 // import { wotdHandleRequest } from "./wotdHandleRequest"
 
+type RequestHandler = (argv: string[]) => Promise<RequestResponse> | RequestResponse
+
+const requestHandlers: RequestHandler[] = [
+  aegisHandleRequest,
+  networkHandleRequest,
+  dashboardHandleRequest,
+  exposeHandleRequest,
+  // wotdHandleRequest,
+  osdHandleRequest,
+]
+
+type DebugActions = typeof globalThis & {
+  toggleClipboard?: () => void
+  togglePowerMenu?: () => void
+}
 
 async function handleRequest(argv: string[]) {
-  const aegis = await aegisHandleRequest(argv)
-  if (aegis !== undefined) return aegis
-  const network = await networkHandleRequest(argv)
-  if (network !== undefined) return network
-  const dash = await dashboardHandleRequest(argv)
-  if (dash !== undefined) return dash
-  const result = await exposeHandleRequest(argv)
-  if (result !== undefined) return result
-  // const wotd = await wotdHandleRequest(argv)
-  // if (wotd !== undefined) return wotd
-  return osdHandleRequest(argv)
+  for (const handler of requestHandlers) {
+    const result = await handler(argv)
+    if (result !== undefined) return result
+  }
+  return "unknown command"
 }
 
 
@@ -76,9 +86,11 @@ app.start({
     })
     app.add_window(networkWin)
 
-      ; (globalThis as any).toggleClipboard = () =>
-        clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())
-      ; (globalThis as any).togglePowerMenu = () => powerWin.visible ? powerWin.hide() : powerWin.present()
+    const debugActions = globalThis as DebugActions
+    debugActions.toggleClipboard = () =>
+      clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())
+    debugActions.togglePowerMenu = () =>
+      powerWin.visible ? powerWin.hide() : powerWin.present()
 
     // const wotdWin = WotdPopupWindow(0)
     // app.add_window(wotdWin)

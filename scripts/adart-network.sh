@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# Toggle the Dashboard overlay in the "adart" AGS instance.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,8 +8,9 @@ INSTANCE="${AGS_INSTANCE:-adart}"
 APP_PATH="${AGS_APP:-$REPO_DIR/src/app.ts}"
 
 "$ENSURE_SCRIPT" "$INSTANCE" "$APP_PATH"
+
 if [[ $# -gt 0 ]]; then
-  ags request -i "$INSTANCE" toggleDashboard "$1"
+  ags request -i "$INSTANCE" networktoggle "$1"
 else
-  ags request -i "$INSTANCE" toggleDashboard
+  ags request -i "$INSTANCE" networktoggle
 fi
