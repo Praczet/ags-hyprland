@@ -21,12 +21,11 @@ export default function ClipSearcher(props: { clipboardItems: Accessor<ClipEntry
         $={(self) => {
           const key = new Gtk.EventControllerKey();
           key.connect("key-pressed", (_, keyval, _keycode, state) => {
-            // Ctrl+Shift+S → toggle starred filter
+            // Alt+S toggles the starred filter
             if (
               keyval === Gdk.KEY_s &&
               (state & Gdk.ModifierType.ALT_MASK)
             ) {
-              console.log("Toggling starred filter via Ctrl+Shift+S");
               setShowOnlyStarred(!showOnlyStarred());
               return true;
             }

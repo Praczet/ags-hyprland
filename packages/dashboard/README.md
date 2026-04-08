@@ -1,10 +1,10 @@
 <https://github.com/user-attachments/assets/90462704-715d-4615-8af8-67b285b82722>
 
-# Dashboard package
+# Dashboard
 
 ## Intro
 
-Overlay dashboard with configurable widgets (calendar, tasks, weather, clocks, TickTick). Configuration lives in `~/.config/ags/dashboard.json`.
+Overlay dashboard with configurable widgets. Configuration lives in `~/.config/ags/dashboard.json`.
 
 ### Request usage
 
@@ -21,6 +21,12 @@ ags request -i adart toggleDashboard custom.json
 ags request -i adart toggleDashboard /full/path/custom.json
 ```
 
+Primary wrapper:
+
+```bash
+scripts/adart-dashboard.sh
+```
+
 ## Themes
 
 <img width="1586" height="1033" alt="2025-12-30-153049_hyprshot" src="https://github.com/user-attachments/assets/c68e392d-9ef2-458b-a191-35f9ce295080" />
@@ -35,6 +41,8 @@ Top-level keys:
 
 - `google`: Calendar + Tasks integration.
 - `ticktick`: TickTick tasks integration.
+- `weather`: weather refresh + particle defaults.
+- `stickynotes`: sticky note source and editor command.
 - `widgets`: widget list with grid placement and per-widget config.
 
 Widget chrome toggles (apply to any widget):
@@ -246,6 +254,34 @@ Groups tasks by Overdue / Today / Tomorrow / Future. Requires Tasks scope.
   ]
 }
 ```
+
+### WOTD
+
+```json
+{
+  "widgets": [
+    {
+      "id": "wotd-compact",
+      "type": "word-of-the-day",
+      "col": 4,
+      "row": 2,
+      "config": {
+        "variant": "compact",
+        "maxWidth": 220,
+        "minHeight": 180,
+        "maxMeanings": 3,
+        "maxTranslations": 2
+      }
+    }
+  ]
+}
+```
+
+Supported WOTD variants:
+
+- `card`
+- `compact`
+- `definition-only`
 
 ### Aegis widgets
 

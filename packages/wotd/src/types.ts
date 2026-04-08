@@ -32,10 +32,13 @@ export type WotdCardData = {
 export type WotdConfig = {
   cardPath?: string
   cardType?: "card" | "compact" | "definition-only"
+  maxWidth?: number
+  minHeight?: number
   popupDurationMs?: number
   popupWidth?: number
   popupMarginTop?: number
   maxMeanings?: number
+  maxTranslations?: number
   showTranslations?: boolean
   showDate?: boolean
 }
@@ -62,6 +65,8 @@ export type WotdCardOptions = {
   showTranslations?: boolean
   maxMeanings?: number
   maxTranslations?: number
+  maxWidth?: number
+  minHeight?: number
   compact?: boolean
   titleOverride?: string
 }
@@ -79,6 +84,8 @@ export type WotdCompactOptions = {
   showDate?: boolean
   maxMeanings?: number
   maxTranslations?: number
+  maxWidth?: number
+  minHeight?: number
   titleOverride?: string
 }
 
@@ -90,6 +97,8 @@ export type WotdDefinitionOnlyOptions = {
   showTranslation?: boolean
   showLang?: boolean
   showDate?: boolean
+  maxWidth?: number
+  minHeight?: number
   titleOverride?: string
 }
 

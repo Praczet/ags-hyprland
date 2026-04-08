@@ -1,6 +1,6 @@
 # Packages
 
-> **Note on Theming:** All packages utilize a shared `matugen.css` file for styling. The screenshots below were taken using different themes to demonstrate how the widget colors dynamically adapt to your system's color scheme.
+> Shared theming comes from `shared/styles/matugen.css`.
 
 ## clipboard
 
@@ -21,7 +21,6 @@ GUI-first system information suite with a standalone window and dashboard widget
 ## network
 
 NetworkManager UI with Wi-Fi-first accordion layout, Bluetooth support, and a Utilities section for quick toggles/tools.
-
 
 ## expose
 
@@ -49,3 +48,19 @@ Power menu with confirmation dialogs for destructive actions.
 Pacman update checker overlay with list + details panes.
 
 <img width="1663" height="1440" alt="2025-12-30-164945_hyprshot" src="https://github.com/user-attachments/assets/1aa6d9b8-69e4-4f3f-9292-7c5fcd286750" />
+
+## wotd
+
+Word-of-the-day popup and dashboard widget package.
+
+## Package READMEs
+
+- [Aegis](aegis/README.md)
+- [Clipboard](clipboard/README.md)
+- [Dashboard](dashboard/README.md)
+- [Expose](expose/README.md)
+- [Network](network/README.md)
+- [OSD](osd/README.md)
+- [Power Menu](powermenu/README.md)
+- [Upcheck](upcheck/README.md)
+- [WOTD](wotd/README.md)

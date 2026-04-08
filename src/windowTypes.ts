@@ -2,7 +2,7 @@ import app from "ags/gtk4/app"
 import type { AegisWindowHandle } from "../packages/aegis/src"
 import type { DashboardWindowHandle } from "../packages/dashboard/src"
 import type { ExposeWindowHandle } from "../packages/expose/src"
-import type { NetworkWindowHandle } from "../packages/a-network/src"
+import type { NetworkWindowHandle } from "../packages/network/src"
 import type { OSDWindowHandle } from "../packages/osd/src"
 import type { UpcheckWindowHandle } from "../packages/upcheck/src"
 

@@ -6,10 +6,10 @@ import { buildSection, clearBox, createInfoIcon } from "./sectionUtils"
 
 export function createVpnSection(cfg: NetworkWidgetConfig, service: NetworkService) {
   const vpnBody = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
-  vpnBody.add_css_class("a-network-section-body")
+  vpnBody.add_css_class("network-section-body")
   const vpnList = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
   const vpnScroll = new Gtk.ScrolledWindow()
-  vpnScroll.add_css_class("a-network-list-scroll")
+  vpnScroll.add_css_class("network-list-scroll")
   vpnScroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
   vpnScroll.set_propagate_natural_height(true)
   vpnScroll.set_hexpand(true)
@@ -31,7 +31,7 @@ export function createVpnSection(cfg: NetworkWidgetConfig, service: NetworkServi
     } else {
       for (const vpn of data.vpn) {
         const row = new Gtk.Label({ label: vpn.name, xalign: 0 })
-        row.add_css_class("a-network-row")
+        row.add_css_class("network-row")
         vpnList.append(row)
       }
     }

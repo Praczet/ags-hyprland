@@ -22,7 +22,6 @@ export function copyToClipboard(text: string) {
     const bytes = new TextEncoder().encode(text)
     stream.write_all(bytes, null)
     stream.close(null)
-    console.log("aegis copy", text)
     GLib.spawn_command_line_async(`notify-send 'Aegis' 'Copied to clipboard'`)
     return
   } catch (err) {

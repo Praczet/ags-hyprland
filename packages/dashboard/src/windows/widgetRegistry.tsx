@@ -33,6 +33,22 @@ function isObject(x: unknown): x is Record<string, unknown> {
   return typeof x === "object" && x !== null && !Array.isArray(x)
 }
 
+function wrapWithMaxWidth(widget: Gtk.Widget, maxWidth?: number) {
+  if (!Number.isFinite(Number(maxWidth)) || Number(maxWidth) <= 0) {
+    return widget
+  }
+
+  const container = new Gtk.Box({
+    orientation: Gtk.Orientation.VERTICAL,
+    halign: Gtk.Align.CENTER,
+    hexpand: false,
+  })
+
+  container.set_size_request(Math.floor(Number(maxWidth)), -1)
+  container.append(widget)
+  return container
+}
+
 export function createCustomWidget(
   customName: string | undefined,
   config: DashboardWidgetConfig["config"] | undefined,
@@ -57,13 +73,18 @@ function toWotdConfig(cfg: DashboardWidgetConfig) {
   const raw = isObject(cfg.config) ? cfg.config : {}
 
   const variant =
-    raw.variant === "card" || raw.variant === "compact" || raw.variant === "definition"
+    raw.variant === "card" ||
+    raw.variant === "compact" ||
+    raw.variant === "definition" ||
+    raw.variant === "definition-only"
       ? raw.variant
-      : "definition"
+      : "definition-only"
 
   return {
     variant,
     title: typeof raw.title === "string" ? raw.title : undefined,
+    maxWidth: Number.isFinite(Number(raw.maxWidth)) ? Math.floor(Number(raw.maxWidth)) : undefined,
+    minHeight: Number.isFinite(Number(raw.minHeight)) ? Math.floor(Number(raw.minHeight)) : undefined,
     showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
     showWord: typeof raw.showWord === "boolean" ? raw.showWord : undefined,
     showPronunciation: typeof raw.showPronunciation === "boolean" ? raw.showPronunciation : undefined,
@@ -344,6 +365,7 @@ export function createDashboardWidgetRegistry(
       const wotdCfg = toWotdConfig(widgetCfg)
       const store = getWotdStore({
         cardPath: wotdCfg.cardPath,
+        maxWidth: wotdCfg.maxWidth ?? cfg.wotd?.maxWidth,
       })
       const data = store.get() ?? store.reload()
 
@@ -355,8 +377,8 @@ export function createDashboardWidgetRegistry(
         })
       }
 
-      if (wotdCfg.variant === "definition") {
-        return createWotdDefinitionOnly(data, {
+      if (wotdCfg.variant === "definition" || wotdCfg.variant === "definition-only") {
+        return wrapWithMaxWidth(createWotdDefinitionOnly(data, {
           titleOverride: wotdCfg.title,
           showTitle: wotdCfg.showTitle,
           showWord: wotdCfg.showWord,
@@ -365,11 +387,13 @@ export function createDashboardWidgetRegistry(
           showTranslation: wotdCfg.showTranslation,
           showLang: wotdCfg.showLang,
           showDate: wotdCfg.showDate,
-        })
+          maxWidth: wotdCfg.maxWidth ?? cfg.wotd?.maxWidth,
+          minHeight: wotdCfg.minHeight ?? cfg.wotd?.minHeight,
+        }), wotdCfg.maxWidth ?? cfg.wotd?.maxWidth)
       }
 
       if (wotdCfg.variant === "compact") {
-        return createWotdCompact(data, {
+        return wrapWithMaxWidth(createWotdCompact(data, {
           titleOverride: wotdCfg.title,
           showTitle: wotdCfg.showTitle,
           showWord: wotdCfg.showWord,
@@ -381,23 +405,31 @@ export function createDashboardWidgetRegistry(
           showDate: wotdCfg.showDate,
           maxMeanings: wotdCfg.maxMeanings,
           maxTranslations: wotdCfg.maxTranslations,
-        })
+          maxWidth: wotdCfg.maxWidth ?? cfg.wotd?.maxWidth,
+          minHeight: wotdCfg.minHeight ?? cfg.wotd?.minHeight,
+        }), wotdCfg.maxWidth ?? cfg.wotd?.maxWidth)
       }
 
-      return createWotdCard(data, {
+      return wrapWithMaxWidth(createWotdCard(data, {
         titleOverride: wotdCfg.title,
         showTitle: wotdCfg.showTitle,
-        showDate: wotdCfg.showDate,
-        showLang: wotdCfg.showLang,
+        showDate: typeof wotdCfg.showDate === "boolean"
+          ? wotdCfg.showDate
+          : cfg.wotd?.showDate,
+        showLang: typeof wotdCfg.showLang === "boolean" ? wotdCfg.showLang : true,
         showPronunciation: wotdCfg.showPronunciation,
         showPartOfSpeech: wotdCfg.showPartOfSpeech,
         showDefinition: wotdCfg.showDefinition,
         showMeanings: true,
-        showTranslations: wotdCfg.showTranslations,
-        maxMeanings: wotdCfg.maxMeanings,
-        maxTranslations: wotdCfg.maxTranslations,
+        showTranslations: typeof wotdCfg.showTranslations === "boolean"
+          ? wotdCfg.showTranslations
+          : cfg.wotd?.showTranslations,
+        maxMeanings: wotdCfg.maxMeanings ?? cfg.wotd?.maxMeanings,
+        maxTranslations: wotdCfg.maxTranslations ?? cfg.wotd?.maxTranslations,
+        maxWidth: wotdCfg.maxWidth ?? cfg.wotd?.maxWidth,
+        minHeight: wotdCfg.minHeight ?? cfg.wotd?.minHeight,
         compact: false,
-      })
+      }), wotdCfg.maxWidth ?? cfg.wotd?.maxWidth)
     },
   }
 

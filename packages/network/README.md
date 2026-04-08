@@ -2,7 +2,7 @@
 
 A compact NetworkManager UI for AGS with a Wi-Fi first accordion layout.
 
-Package directory remains `packages/a-network/` for now; the app-facing window/command name is `network`.
+Package directory is `packages/network/`; the app-facing window/command name is `network`.
 
 ## Features
 
@@ -19,11 +19,14 @@ Package directory remains `packages/a-network/` for now; the app-facing window/c
 - `refreshMs`: refresh interval (ms, default 15000)
 - `educationModeOn`: `boolean`
 - `educationModeDetail`: `tooltip | footer | panel`
+- `showQRPassword`: `boolean`
 - `showPlainTextPassword`: `boolean` (allow password reveal in details)
 - `buttons`: array of external app buttons `{ order, label, icon, command }`
 - `allowBackgroundRefresh`: `boolean`
 - `refreshOnShow`: `boolean`
 - `windowLess`: `boolean` (edge-to-edge section headers, minimal window chrome)
+- `layout.anchor`: pipe-separated anchors such as `TOP|RIGHT`
+- `layout.margin`: CSS-like margin string such as `24px 24px 24px 0`
 
 Example:
 
@@ -41,6 +44,11 @@ Example:
   ]
 }
 ```
+
+Config file:
+
+- canonical: `~/.config/ags/networkmanager.json`
+- legacy fallback still read: `~/.config/ags/a-networkmanager.json`
 
 ## Notes
 
@@ -67,4 +75,10 @@ Legacy compatibility wrapper:
 
 ```bash
 scripts/adart-a-network.sh
+```
+
+Legacy request alias still accepted:
+
+```bash
+ags request -i adart a-network
 ```

@@ -85,7 +85,7 @@ Memory pie:
 - `opacity`: 0-1 (default 0.7)
 
 CPU graph:
-- `refreshTime`: ms (default 1000)
+- `refreshMs`: ms (default 1000)
 - `opacity`: 0-1 (default 0.7, applies to core bars)
 
 ## Notes

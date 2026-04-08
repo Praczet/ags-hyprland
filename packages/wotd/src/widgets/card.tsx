@@ -13,6 +13,8 @@ const DEFAULT_OPTIONS: Required<WotdCardOptions> = {
   showTranslations: true,
   maxMeanings: 3,
   maxTranslations: 3,
+  maxWidth: 220,
+  minHeight: 180,
   compact: false,
   titleOverride: "",
 }
@@ -31,9 +33,28 @@ function resolveOptions(options?: WotdCardOptions): Required<WotdCardOptions> {
     showTranslations: typeof o.showTranslations === "boolean" ? o.showTranslations : DEFAULT_OPTIONS.showTranslations,
     maxMeanings: Number.isFinite(Number(o.maxMeanings)) ? Math.max(0, Math.floor(Number(o.maxMeanings))) : DEFAULT_OPTIONS.maxMeanings,
     maxTranslations: Number.isFinite(Number(o.maxTranslations)) ? Math.max(0, Math.floor(Number(o.maxTranslations))) : DEFAULT_OPTIONS.maxTranslations,
+    maxWidth: Number.isFinite(Number(o.maxWidth)) ? Math.max(100, Math.floor(Number(o.maxWidth))) : DEFAULT_OPTIONS.maxWidth,
+    minHeight: Number.isFinite(Number(o.minHeight)) ? Math.max(0, Math.floor(Number(o.minHeight))) : DEFAULT_OPTIONS.minHeight,
     compact: typeof o.compact === "boolean" ? o.compact : DEFAULT_OPTIONS.compact,
     titleOverride: typeof o.titleOverride === "string" ? o.titleOverride : DEFAULT_OPTIONS.titleOverride,
   }
+}
+
+function wrapWithSizeConstraint(widget: Gtk.Widget, maxWidth: number, minHeight: number) {
+  const scroller = new Gtk.ScrolledWindow({
+    hscrollbar_policy: Gtk.PolicyType.NEVER,
+    vscrollbar_policy: Gtk.PolicyType.AUTOMATIC,
+    max_content_width: maxWidth,
+    min_content_width: maxWidth,
+    min_content_height: minHeight,
+    halign: Gtk.Align.FILL,
+    valign: Gtk.Align.FILL,
+    hexpand: true,
+    vexpand: true,
+  })
+
+  scroller.set_child(widget)
+  return scroller
 }
 
 function makeLabel(text: string, classes: string[] = [], wrap = false, xalign = 0, hexpand = false): Gtk.Label {
@@ -119,28 +140,20 @@ export function createWotdCard(data: WotdCardData, options?: WotdCardOptions): G
     root.append(makeLabel(data.pronunciation, ["wotd-pronunciation"], false, 0.5, true))
   }
 
-  if (o.showPartOfSpeech || o.showDefinition) {
 
-    const infoBox = new Gtk.Box({
-      orientation: Gtk.Orientation.HORIZONTAL,
-      spacing: 4,
-    })
-    infoBox.add_css_class("wotd-info-box")
-    root.append(infoBox)
-
-    // Part of speech
-    if (o.showPartOfSpeech) {
-      const pos = formatPartOfSpeech(data.part_of_speech)
-      if (pos) {
-        infoBox.append(makeLabel(`[${pos}]`, ["wotd-part-of-speech"]))
-      }
-    }
-
-    // Definition
-    if (o.showDefinition && data.definition) {
-      infoBox.append(makeLabel(data.definition, ["wotd-definition"], true))
+  // Part of speech
+  if (o.showPartOfSpeech && data.part_of_speech) {
+    const pos = formatPartOfSpeech(data.part_of_speech)
+    if (pos) {
+      root.append(makeLabel(`[${pos}]`, ["wotd-part-of-speech"]))
     }
   }
+
+  // Definition
+  if (o.showDefinition && data.definition) {
+    root.append(makeLabel(data.definition, ["wotd-definition"], true))
+  }
+
 
   // Meanings
   if (o.showMeanings && o.maxMeanings > 0 && data.meanings.length > 0) {
@@ -187,5 +200,5 @@ export function createWotdCard(data: WotdCardData, options?: WotdCardOptions): G
     root.append(transBox)
   }
 
-  return root
+  return wrapWithSizeConstraint(root, o.maxWidth, o.minHeight)
 }

@@ -1,8 +1,7 @@
 {
+  "type": "module",
   "dependencies": {
-    "ags": "*",
-    "gnim": "*",
-    "astal": "*"
+    "gnim": "^1.9.0"
   },
   "prettier": {
     "semi": false,

@@ -5,12 +5,12 @@ export function runCommand(cmd: string) {
     const [ok, stdout, stderr, status] = GLib.spawn_command_line_sync(cmd)
     if (!ok || status !== 0 || !stdout) {
       const err = stderr ? new TextDecoder().decode(stderr) : ""
-      if (err.trim()) console.error("a-network command error", cmd, err.trim())
+      if (err.trim()) console.error("network command error", cmd, err.trim())
       return null
     }
     return new TextDecoder().decode(stdout)
   } catch (err) {
-    console.error("a-network command failed", cmd, err)
+    console.error("network command failed", cmd, err)
     return null
   }
 }

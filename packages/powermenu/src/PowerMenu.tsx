@@ -224,7 +224,6 @@ export function PowerMenuWindows(monitor = 0) {
         click.set_propagation_phase(Gtk.PropagationPhase.CAPTURE);
         click.connect("pressed", (gesture, _nPress, x, y) => {
           const child = w.get_child();
-          console.log(child);
           if (child) {
             // Check if the click (x, y) is inside the MainView's allocation
             const alloc = child.get_allocation();
@@ -301,4 +300,3 @@ export function PowerMenuWindows(monitor = 0) {
 
   return { main, confirm }
 }
-

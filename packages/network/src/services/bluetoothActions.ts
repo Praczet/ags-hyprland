@@ -26,17 +26,17 @@ export function createBluetoothActions({
     try {
       GLib.spawn_command_line_async(cmd)
     } catch (err) {
-      console.error("a-network bluetooth scan error", err)
+      console.error("network bluetooth scan error", err)
       setBluetoothScanning(false)
       return
     }
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => {
-      refresh().catch(err => console.error("a-network refresh error", err))
+      refresh().catch(err => console.error("network refresh error", err))
       return GLib.SOURCE_REMOVE
     })
     GLib.timeout_add(GLib.PRIORITY_DEFAULT, 5200, () => {
       runCommand("bluetoothctl scan off")
-      refresh().catch(err => console.error("a-network refresh error", err))
+      refresh().catch(err => console.error("network refresh error", err))
       setBluetoothScanning(false)
       return GLib.SOURCE_REMOVE
     })

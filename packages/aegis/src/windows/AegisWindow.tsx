@@ -1,4 +1,4 @@
-import { createState } from "ags"
+import { createEffect, createState } from "ags"
 import { Astal, Gtk } from "ags/gtk4"
 import Gdk from "gi://Gdk"
 import { AegisWidget } from "../widgets/AegisWidget"
@@ -79,12 +79,16 @@ export function AegisWindow(monitor = 0, cfg: AegisWindowConfig = {}) {
           <label class="aegis-window-title" label="Aegis" xalign={0} />
         </box>
         <stack
-          visible_child_name={currentView.as(view => view)}
           transition_type={Gtk.StackTransitionType.CROSSFADE}
           $={(self: Gtk.Stack) => {
             for (const [view, factory] of Object.entries(viewFactories) as Array<[AegisViewId, () => Gtk.Widget]>) {
               self.add_named(factory(), view)
             }
+
+            self.set_visible_child_name("aegis")
+            createEffect(() => {
+              self.set_visible_child_name(currentView())
+            }, { immediate: true })
           }}
         />
       </box>

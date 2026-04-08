@@ -62,7 +62,9 @@ export function createWotdPopupWindow(
         showDate: config.showDate,
         showLang: true,
         maxMeanings: config.maxMeanings,
-        maxTranslations: 1,
+        maxTranslations: config.maxTranslations,
+        maxWidth: config.maxWidth,
+        minHeight: config.minHeight,
       }))
       return
     }
@@ -73,6 +75,8 @@ export function createWotdPopupWindow(
         showWord: true,
         showTranslation: true,
         showPartOfSpeech: true,
+        maxWidth: config.maxWidth,
+        minHeight: config.minHeight,
       }))
       return
     }
@@ -88,23 +92,27 @@ export function createWotdPopupWindow(
       showMeanings: true,
       showTranslations: config.showTranslations,
       maxMeanings: config.maxMeanings,
-      maxTranslations: 1,
+      maxTranslations: config.maxTranslations,
+      maxWidth: config.maxWidth,
+      minHeight: config.minHeight,
     }))
   }
 
   render(config.cardType)
 
+  const frameWidth = config.maxWidth
+
   const frame = new Gtk.Box({
     orientation: Gtk.Orientation.VERTICAL,
-    widthRequest: config.popupWidth,
+    widthRequest: frameWidth,
     halign: Gtk.Align.CENTER,
     valign: Gtk.Align.START,
     marginTop: config.popupMarginTop,
-    width_request: config.popupWidth,
+    width_request: frameWidth,
   })
   frame.add_css_class("wotd-popup")
   frame.append(content)
-  frame.set_size_request(config.popupWidth, -1)
+  frame.set_size_request(frameWidth, -1)
 
   const window = (
     <window

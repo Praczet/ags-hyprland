@@ -18,11 +18,11 @@ function sortButtons(buttons: ExternalAppButton[]) {
 
 function buildToggleRow(labelText: string, initial: boolean, onToggle: (next: boolean) => void) {
   const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
-  row.add_css_class("a-network-row")
+  row.add_css_class("network-row")
   const label = new Gtk.Label({ label: labelText, xalign: 0 })
   label.set_hexpand(true)
   const toggle = new Gtk.Switch()
-  toggle.add_css_class("a-network-switch")
+  toggle.add_css_class("network-switch")
   toggle.set_halign(Gtk.Align.END)
   toggle.set_valign(Gtk.Align.CENTER)
   toggle.set_active(initial)
@@ -34,7 +34,7 @@ function buildToggleRow(labelText: string, initial: boolean, onToggle: (next: bo
 
 function buildAppButton(button: ExternalAppButton) {
   const btn = new Gtk.Button()
-  btn.add_css_class("a-network-row")
+  btn.add_css_class("network-row")
   btn.set_hexpand(true)
   btn.set_halign(Gtk.Align.FILL)
 
@@ -52,7 +52,7 @@ function buildAppButton(button: ExternalAppButton) {
     try {
       GLib.spawn_command_line_async(button.command)
     } catch (err) {
-      console.error("a-network utilities command error", err)
+      console.error("network utilities command error", err)
     }
   })
 
@@ -61,7 +61,7 @@ function buildAppButton(button: ExternalAppButton) {
 
 export function createUtilitiesSection(cfg: NetworkWidgetConfig, _service: NetworkService) {
   const body = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
-  body.add_css_class("a-network-section-body")
+  body.add_css_class("network-section-body")
 
   const eduToggle = buildToggleRow("Education mode", Boolean(cfg.educationModeOn), (next) => {
     updateNetworkConfig({ educationModeOn: next })

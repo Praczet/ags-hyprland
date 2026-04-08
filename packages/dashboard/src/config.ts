@@ -7,10 +7,13 @@ export type CalendarSource = {
 }
 export type WotdDashboardConfig = {
   cardPath?: string
+  maxWidth?: number
+  minHeight?: number
   popupDurationMs?: number
   popupWidth?: number
   popupMarginTop?: number
   maxMeanings?: number
+  maxTranslations?: number
   showTranslations?: boolean
   showDate?: boolean
 }
@@ -188,7 +191,7 @@ export function loadDashboardConfig(configPath?: string): DashboardConfig {
       ? widgets.map(w => ({
         id: typeof w.id === "string" ? w.id : "widget",
         type: (typeof w.type === "string"
-          && ["clock", "analog-clock", "weather", "calendar", "next-event", "tasks", "ticktick", "sticky-notes", "sticky-note", "aegis", "aegis-summary", "aegis-disk", "aegis-memory", "aegis-network", "aegis-battery", "aegis-disk-pie", "aegis-memory-pie", "aegis-cpu-graph", "custom"].includes(w.type))
+          && ["clock", "analog-clock", "weather", "calendar", "next-event", "tasks", "ticktick", "sticky-notes", "sticky-note", "aegis", "aegis-summary", "aegis-disk", "aegis-memory", "aegis-network", "aegis-battery", "aegis-disk-pie", "aegis-memory-pie", "aegis-cpu-graph", "custom", "word-of-the-day"].includes(w.type))
           ? (w.type as DashboardWidgetType)
           : "clock",
         col: Number.isFinite(Number(w.col)) ? Math.max(1, Math.floor(Number(w.col))) : 1,
@@ -258,10 +261,13 @@ export function loadDashboardConfig(configPath?: string): DashboardConfig {
     },
     wotd: {
       cardPath: getOptionalString(wd.cardPath),
+      maxWidth: getOptionalInt(wd.maxWidth),
+      minHeight: getOptionalInt(wd.minHeight),
       popupDurationMs: getOptionalInt(wd.popupDurationMs),
       popupWidth: getOptionalInt(wd.popupWidth),
       popupMarginTop: getOptionalInt(wd.popupMarginTop),
       maxMeanings: getOptionalInt(wd.maxMeanings),
+      maxTranslations: getOptionalInt(wd.maxTranslations),
       showTranslations: getOptionalBoolean(wd.showTranslations),
       showDate: getOptionalBoolean(wd.showDate),
     },

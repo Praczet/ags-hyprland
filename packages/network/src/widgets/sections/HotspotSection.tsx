@@ -6,7 +6,7 @@ import { buildSection, createInfoIcon } from "./sectionUtils"
 
 export function createHotspotSection(cfg: NetworkWidgetConfig, service: NetworkService) {
   const hotspotBody = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
-  hotspotBody.add_css_class("a-network-section-body")
+  hotspotBody.add_css_class("network-section-body")
   const hotspotStatus = new Gtk.Label({ label: "Hotspot disabled", xalign: 0 })
   hotspotBody.append(hotspotStatus)
   const hotspotInfoIcon = cfg.educationModeOn && cfg.educationModeDetail === "tooltip" ? createInfoIcon() : undefined

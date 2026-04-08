@@ -10,7 +10,7 @@ export type SectionController = {
 
 export function createInfoIcon() {
   const label = new Gtk.Label({ label: "?" })
-  label.add_css_class("a-network-info-icon")
+  label.add_css_class("network-info-icon")
   return label
 }
 
@@ -25,23 +25,23 @@ export function buildSection(
   collapsedInfo?: Gtk.Widget,
 ): SectionController {
   const wrapper = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 0 })
-  wrapper.add_css_class("a-network-section")
+  wrapper.add_css_class("network-section")
   wrapper.set_hexpand(true)
 
   const header = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 })
-  header.add_css_class("a-network-section-header")
-  header.add_css_class("a-network-section-pill")
+  header.add_css_class("network-section-header")
+  header.add_css_class("network-section-pill")
   header.height_request = 56
   if (pillClass) header.add_css_class(pillClass)
 
   header.set_hexpand(true)
 
   const label = new Gtk.Label({ label: title, xalign: 0 })
-  label.add_css_class("a-network-section-title")
+  label.add_css_class("network-section-title")
   label.set_hexpand(true)
 
   const chevron = new Gtk.Label({ label: expanded ? "▾" : "▸", xalign: 1 })
-  chevron.add_css_class("a-network-chevron")
+  chevron.add_css_class("network-chevron")
 
   header.append(label)
   if (collapsedInfo) header.append(collapsedInfo)
@@ -54,15 +54,15 @@ export function buildSection(
   reveal.set_child(body)
 
   let isExpanded = expanded
-  const knownPillClasses = ["a-network-pill-first", "a-network-pill-middle", "a-network-pill-last"]
+  const knownPillClasses = ["network-pill-first", "network-pill-middle", "network-pill-last"]
   const setPillClass = (next?: string | string[]) => {
     for (const cls of knownPillClasses) header.remove_css_class(cls)
     const list = Array.isArray(next) ? next : next ? [next] : []
     for (const cls of list) header.add_css_class(cls)
-    if (list.includes("a-network-pill-last")) {
-      wrapper.add_css_class("a-network-section-last")
+    if (list.includes("network-pill-last")) {
+      wrapper.add_css_class("network-section-last")
     } else {
-      wrapper.remove_css_class("a-network-section-last")
+      wrapper.remove_css_class("network-section-last")
     }
   }
 
@@ -71,11 +71,11 @@ export function buildSection(
     reveal.set_reveal_child(next)
     chevron.set_label(next ? "▾" : "▸")
     if (next) {
-      header.remove_css_class("a-network-section-collapsed")
-      header.add_css_class("a-network-section-expanded")
+      header.remove_css_class("network-section-collapsed")
+      header.add_css_class("network-section-expanded")
     } else {
-      header.remove_css_class("a-network-section-expanded")
-      header.add_css_class("a-network-section-collapsed")
+      header.remove_css_class("network-section-expanded")
+      header.add_css_class("network-section-collapsed")
     }
     if (collapsedInfo) collapsedInfo.set_visible(!next)
   }
@@ -117,14 +117,14 @@ export function updateHistoryList(box: Gtk.Box, history: NetworkAction[]) {
   }
   for (const entry of history) {
     const row = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 2 })
-    row.add_css_class("a-network-history-row")
+    row.add_css_class("network-history-row")
     const label = new Gtk.Label({ label: entry.action, xalign: 0 })
-    label.add_css_class("a-network-history-label")
+    label.add_css_class("network-history-label")
     const meta = new Gtk.Label({
       label: entry.command ? entry.command : new Date(entry.ts).toLocaleTimeString(),
       xalign: 0,
     })
-    meta.add_css_class("a-network-history-meta")
+    meta.add_css_class("network-history-meta")
     row.append(label)
     row.append(meta)
     box.append(row)

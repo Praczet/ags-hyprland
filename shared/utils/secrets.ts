@@ -5,12 +5,12 @@ const SCHEMA = Secret.Schema['new']("org.adart.Tokens", Secret.SchemaFlags.NONE,
 })
 
 export async function storeSecret(service: string, value: string): Promise<void> {
-  await Secret.password_store(SCHEMA, { service }, null, `AGS ${service} token`, value, null)
+  Secret.password_store_sync(SCHEMA, { service }, null, `AGS ${service} token`, value, null)
 }
 
 export async function lookupSecret(service: string): Promise<string | null> {
   try {
-    const result = await Secret.password_lookup(SCHEMA, { service }, null)
+    const result = Secret.password_lookup_sync(SCHEMA, { service }, null)
     return result || null
   } catch {
     return null
@@ -18,5 +18,5 @@ export async function lookupSecret(service: string): Promise<string | null> {
 }
 
 export async function clearSecret(service: string): Promise<void> {
-  await Secret.password_clear(SCHEMA, { service }, null)
+  Secret.password_clear_sync(SCHEMA, { service }, null)
 }

@@ -4,8 +4,8 @@ import Pango from "gi://Pango"
 let GtkSource: any
 try {
   GtkSource = (await import("gi://GtkSource?version=5")).default
-} catch (e) {
-  console.log("GtkSourceView not found, falling back to plain labels for code.")
+} catch {
+  GtkSource = null
 }
 
 // Reuse your existing inline renderer for paragraphs

@@ -1,4 +1,4 @@
-# AGS Power Menu — deliberate friction
+# Power Menu
 
 <img width="1513" height="1438" alt="2025-12-30-153237_hyprshot" src="https://github.com/user-attachments/assets/dae53e70-951f-474c-92bf-5a49bbcfb891" />
 
@@ -14,7 +14,7 @@ Slow enough to prevent accidents.
 
 ---
 
-## What it does
+## Features
 
 - Power menu window
 - Confirmation dialogs for destructive actions
@@ -45,16 +45,9 @@ app.add_window(main)
 app.add_window(confirm)
 ```
 
-Hyprland binding:
-
-```ini
-bind = SUPER, POWER, exec, "$HOME/Development/Hyprland/ags"/scripts/adart-powermenu.sh
-```
-
----
-
 ## Notes
 
 - Local-only package.
 - Uses the same `adart` instance naming as the rest of the setup.
 - Designed to be boring. That’s a feature.
+- This repo does not currently ship a dedicated `scripts/adart-powermenu.sh` wrapper.

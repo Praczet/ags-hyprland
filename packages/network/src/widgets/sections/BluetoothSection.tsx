@@ -27,8 +27,8 @@ function buildDeviceRow(
   },
 ) {
   const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
-  row.add_css_class("a-network-row")
-  if (opts.muted) row.add_css_class("a-network-muted")
+  row.add_css_class("network-row")
+  if (opts.muted) row.add_css_class("network-muted")
   const icon = new Gtk.Image({ pixel_size: 16 })
   icon.set_from_icon_name("bluetooth-symbolic")
   const label = new Gtk.Label({ label: device.name ?? device.id, xalign: 0 })
@@ -37,20 +37,20 @@ function buildDeviceRow(
   const right = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 })
   right.set_halign(Gtk.Align.END)
   const meta = new Gtk.Label({ label: formatDeviceMeta(device), xalign: 1 })
-  meta.add_css_class("a-network-row-meta")
+  meta.add_css_class("network-row-meta")
 
   right.append(meta)
 
   if (opts.onPair) {
     const pairBtn = new Gtk.Button({ label: "Pair" })
-    pairBtn.add_css_class("a-network-action")
+    pairBtn.add_css_class("network-action")
     pairBtn.connect("clicked", opts.onPair)
     right.append(pairBtn)
   }
 
   if (opts.onConnect || opts.onDisconnect) {
     const actionBtn = new Gtk.Button({ label: device.connected ? "Disconnect" : "Connect" })
-    actionBtn.add_css_class("a-network-action")
+    actionBtn.add_css_class("network-action")
     actionBtn.connect("clicked", () => {
       if (device.connected) {
         opts.onDisconnect?.()
@@ -63,7 +63,7 @@ function buildDeviceRow(
 
   if (opts.onForget) {
     const forgetBtn = new Gtk.Button({ label: "Forget" })
-    forgetBtn.add_css_class("a-network-action")
+    forgetBtn.add_css_class("network-action")
     forgetBtn.connect("clicked", opts.onForget)
     right.append(forgetBtn)
   }
@@ -76,10 +76,10 @@ function buildDeviceRow(
 
 export function createBluetoothSection(cfg: NetworkWidgetConfig, service: NetworkService) {
   const body = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
-  body.add_css_class("a-network-section-body")
+  body.add_css_class("network-section-body")
 
   const statusRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
-  statusRow.add_css_class("a-network-row")
+  statusRow.add_css_class("network-row")
   const statusIcon = new Gtk.Image({ pixel_size: 16 })
   const statusLabel = new Gtk.Label({ label: "Bluetooth unavailable", xalign: 0 })
   statusLabel.set_hexpand(true)
@@ -88,13 +88,13 @@ export function createBluetoothSection(cfg: NetworkWidgetConfig, service: Networ
   body.append(statusRow)
 
   const pairedTitle = new Gtk.Label({ label: "Paired devices", xalign: 0 })
-  pairedTitle.add_css_class("a-network-subtitle")
+  pairedTitle.add_css_class("network-subtitle")
   const pairedList = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
   body.append(pairedTitle)
   body.append(pairedList)
 
   const availableTitle = new Gtk.Label({ label: "Available devices", xalign: 0 })
-  availableTitle.add_css_class("a-network-subtitle")
+  availableTitle.add_css_class("network-subtitle")
   const availableList = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
   const availableScroll = new Gtk.ScrolledWindow()
   availableScroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
@@ -106,27 +106,27 @@ export function createBluetoothSection(cfg: NetworkWidgetConfig, service: Networ
   body.append(availableScroll)
 
   const collapsedInfo = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
-  collapsedInfo.add_css_class("a-network-section-collapsed-info")
+  collapsedInfo.add_css_class("network-section-collapsed-info")
   const collapsedIcon = new Gtk.Image({ pixel_size: 16 })
-  collapsedIcon.add_css_class("a-network-section-collapsed-icon")
+  collapsedIcon.add_css_class("network-section-collapsed-icon")
   const collapsedLabel = new Gtk.Label({ label: "Bluetooth unavailable", xalign: 0 })
-  collapsedLabel.add_css_class("a-network-section-collapsed-text")
+  collapsedLabel.add_css_class("network-section-collapsed-text")
   collapsedInfo.append(collapsedIcon)
   collapsedInfo.append(collapsedLabel)
 
   const powerSwitch = new Gtk.Switch()
-  powerSwitch.add_css_class("a-network-switch")
+  powerSwitch.add_css_class("network-switch")
   powerSwitch.set_hexpand(false)
   powerSwitch.set_halign(Gtk.Align.END)
   powerSwitch.set_valign(Gtk.Align.CENTER)
   powerSwitch.set_vexpand(false)
   powerSwitch.connect("notify::active", () => {
-    service.setBluetoothEnabled(powerSwitch.get_active()).catch(err => console.error("a-network bluetooth toggle error", err))
+    service.setBluetoothEnabled(powerSwitch.get_active()).catch(err => console.error("network bluetooth toggle error", err))
   })
 
   const scanBtn = new Gtk.Button()
-  scanBtn.add_css_class("a-network-action")
-  scanBtn.add_css_class("a-network-icon-button")
+  scanBtn.add_css_class("network-action")
+  scanBtn.add_css_class("network-icon-button")
   const scanIcon = new Gtk.Image({ pixel_size: 16 })
   scanIcon.set_from_icon_name("view-refresh-symbolic")
   const scanSpinner = new Gtk.Spinner()
@@ -150,7 +150,7 @@ export function createBluetoothSection(cfg: NetworkWidgetConfig, service: Networ
   const section = buildSection("Bluetooth", headerRight, body, false, infoIcon, true, undefined, collapsedInfo)
 
   scanBtn.connect("clicked", () => {
-    service.scanBluetooth().catch(err => console.error("a-network bluetooth scan error", err))
+    service.scanBluetooth().catch(err => console.error("network bluetooth scan error", err))
   })
 
   createEffect(() => {
@@ -196,14 +196,14 @@ export function createBluetoothSection(cfg: NetworkWidgetConfig, service: Networ
     clearBox(pairedList)
     if (!bluetooth.paired.length) {
       const empty = new Gtk.Label({ label: "No paired devices", xalign: 0 })
-      empty.add_css_class("a-network-muted")
+      empty.add_css_class("network-muted")
       pairedList.append(empty)
     } else {
       for (const device of bluetooth.paired) {
         pairedList.append(buildDeviceRow(device, {
-          onConnect: () => service.connectBluetooth(device.id).catch(err => console.error("a-network bluetooth connect error", err)),
-          onDisconnect: () => service.disconnectBluetooth(device.id).catch(err => console.error("a-network bluetooth disconnect error", err)),
-          onForget: () => service.removeBluetooth(device.id).catch(err => console.error("a-network bluetooth remove error", err)),
+          onConnect: () => service.connectBluetooth(device.id).catch(err => console.error("network bluetooth connect error", err)),
+          onDisconnect: () => service.disconnectBluetooth(device.id).catch(err => console.error("network bluetooth disconnect error", err)),
+          onForget: () => service.removeBluetooth(device.id).catch(err => console.error("network bluetooth remove error", err)),
           muted: !device.connected,
         }))
       }
@@ -212,12 +212,12 @@ export function createBluetoothSection(cfg: NetworkWidgetConfig, service: Networ
     clearBox(availableList)
     if (!bluetooth.devices.length) {
       const empty = new Gtk.Label({ label: "No available devices", xalign: 0 })
-      empty.add_css_class("a-network-muted")
+      empty.add_css_class("network-muted")
       availableList.append(empty)
     } else {
       for (const device of bluetooth.devices) {
         availableList.append(buildDeviceRow(device, {
-          onPair: () => service.pairBluetooth(device.id).catch(err => console.error("a-network bluetooth pair error", err)),
+          onPair: () => service.pairBluetooth(device.id).catch(err => console.error("network bluetooth pair error", err)),
         }))
       }
     }

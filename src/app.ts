@@ -18,10 +18,10 @@ import { dashboardHandleRequest } from "./dashboardHandleRequest"
 import { AegisWindow, css as aegisCss } from "../packages/aegis/src"
 import { aegisHandleRequest } from "./aegisHandleRequest"
 import { networkHandleRequest } from "./networkHandleRequest"
-import { NetworkWindow, css as networkCss } from "../packages/a-network/src"
+import { NetworkWindow, css as networkCss } from "../packages/network/src"
 import type { RequestResponse } from "./windowTypes"
-// import { css as wotdCss, WotdPopupWindow } from "../packages/wotd/src"
-// import { wotdHandleRequest } from "./wotdHandleRequest"
+import { css as wotdCss, WotdPopupWindow } from "../packages/wotd/src"
+import { wotdHandleRequest } from "./wotdHandleRequest"
 
 type RequestHandler = (argv: string[]) => Promise<RequestResponse> | RequestResponse
 
@@ -30,7 +30,7 @@ const requestHandlers: RequestHandler[] = [
   networkHandleRequest,
   dashboardHandleRequest,
   exposeHandleRequest,
-  // wotdHandleRequest,
+  wotdHandleRequest,
   osdHandleRequest,
 ]
 
@@ -50,7 +50,7 @@ async function handleRequest(argv: string[]) {
 
 app.start({
   instanceName: "adart",
-  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss + dashboardCss + aegisCss + networkCss,
+  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss + dashboardCss + aegisCss + networkCss + wotdCss,
   requestHandler(argv, respond) {
     handleRequest(argv)
       .then(respond)
@@ -92,7 +92,7 @@ app.start({
     debugActions.togglePowerMenu = () =>
       powerWin.visible ? powerWin.hide() : powerWin.present()
 
-    // const wotdWin = WotdPopupWindow(0)
-    // app.add_window(wotdWin)
+    const wotdWin = WotdPopupWindow(0)
+    app.add_window(wotdWin)
   },
 })

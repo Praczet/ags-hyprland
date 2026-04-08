@@ -100,6 +100,8 @@ You’ll need:
 - Packages index: [README](packages/README.md)
 - Aegis: [README](packages/aegis/README.md)
 - Clipboard: [README](packages/clipboard/README.md)
+- WOTD: [README](packages/wotd/README.md)
+- Network: [README](packages/network/README.md)
 - Expose: [README](packages/expose/README.md)
 - OSD: [README](packages/osd/README.md)
 - Power menu: [README](packages/powermenu/README.md)
@@ -141,6 +143,14 @@ Network toggle script:
 scripts/adart-network.sh
 ```
 
+Generic smoke-test helper:
+
+```bash
+scripts/test.sh network
+scripts/test.sh dashboard
+scripts/test.sh wotd
+```
+
 ## Dashboard Configuration
 
 Dashboard config lives at `~/.config/ags/dashboard.json`. The widget list is flexible; add or remove widgets and control layout with `col`, `row`, and spans.
@@ -171,7 +181,7 @@ The dashboard can pull calendar data and tasks using Google OAuth.
 node scripts/google-auth-device.js
 ```
 
-This creates `~/.config/ags/google-tokens.json`, which the dashboard uses for refresh tokens (Calendar + Tasks scopes).
+This creates `~/.config/ags/google-tokens.json`. The dashboard then stores refreshed tokens in the system keyring when libsecret is available.
 
 ## TickTick Auth
 
@@ -196,6 +206,8 @@ If you fork this, you’ll probably want to rename it.
 ## Development
 
 Directories like `node_modules/`, `@girs/`, `widget/`, and `playground/` are ignored and safe for local experiments.
+
+This repo is currently aligned with AGS `3.1.x` style imports and CLI usage. Examples use `ags request -i adart ...`.
 
 Formatting is done with Prettier. Add this to `package.json` if needed:
 

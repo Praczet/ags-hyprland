@@ -6,7 +6,7 @@ import GLib from "gi://GLib"
 import { NetworkWidget } from "../widgets/NetworkWidget"
 import type { NetworkWidgetConfig } from "../types"
 import { getNetworkService } from "../services/networkService"
-import { getNetworkConfigPath, onNetworkConfigChange, resolveNetworkConfig } from "../config"
+import { getReadableNetworkConfigPath, onNetworkConfigChange, resolveNetworkConfig } from "../config"
 
 export type NetworkWindowHandle = Astal.Window & {
   openWindow(): void
@@ -76,7 +76,7 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
       currentDispose()
       currentDispose = null
     }
-    const innerClass = next.windowLess ? "a-network-window-inner a-network-windowless-inner" : "a-network-window-inner"
+    const innerClass = next.windowLess ? "network-window-inner network-windowless-inner" : "network-window-inner"
     const marginSpec = next.layout?.margin
     const margin = parseMargin(marginSpec)
     const marginCss = margin ? undefined : (marginSpec ? `margin: ${marginSpec};` : undefined)
@@ -116,7 +116,7 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
 
   let currentConfig = resolveNetworkConfig(cfg)
   let currentWindowLess = Boolean(currentConfig.windowLess)
-  const windowClass = currentConfig.windowLess ? "a-network-window a-network-windowless-window" : "a-network-window"
+  const windowClass = currentConfig.windowLess ? "network-window network-windowless-window" : "network-window"
   const win = (
     <window
       name="network"
@@ -135,7 +135,7 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
       monitor={monitor}
       onShow={() => {
         GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
-          getNetworkService().refresh().catch(err => console.error("a-network refresh error", err))
+          getNetworkService().refresh().catch(err => console.error("network refresh error", err))
           return GLib.SOURCE_REMOVE
         })
       }}
@@ -178,7 +178,7 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
     }
   }
 
-  const configPath = getNetworkConfigPath()
+  const configPath = getReadableNetworkConfigPath()
   let configMonitor: Gio.FileMonitor | null = null
   let reloadTimer: number | null = null
   try {
@@ -193,7 +193,7 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
       })
     })
   } catch (err) {
-    console.error("a-network config monitor error", err)
+    console.error("network config monitor error", err)
   }
 
   onNetworkConfigChange(() => {
@@ -212,8 +212,8 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
 
   win.setWindowLess = (enabled: boolean) => {
     currentWindowLess = Boolean(enabled)
-    const nextWindow = currentWindowLess ? "a-network-window a-network-windowless-window" : "a-network-window"
-    const nextInner = currentWindowLess ? "a-network-window-inner a-network-windowless-inner" : "a-network-window-inner"
+    const nextWindow = currentWindowLess ? "network-window network-windowless-window" : "network-window"
+    const nextInner = currentWindowLess ? "network-window-inner network-windowless-inner" : "network-window-inner"
     win.set_css_classes(nextWindow.split(" "))
     const outer = win.get_first_child() as Gtk.Widget | null
     const inner = outer?.get_first_child() as Gtk.Widget | null
@@ -222,9 +222,9 @@ export function NetworkWindow(monitor = 0, cfg: NetworkWidgetConfig = {}) {
       const root = inner.get_first_child() as Gtk.Widget | null
       if (root) {
         if (currentWindowLess) {
-          root.add_css_class("a-network-windowless")
+          root.add_css_class("network-windowless")
         } else {
-          root.remove_css_class("a-network-windowless")
+          root.remove_css_class("network-windowless")
         }
       }
     }

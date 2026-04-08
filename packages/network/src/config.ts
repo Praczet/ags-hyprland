@@ -2,9 +2,22 @@ import GLib from "gi://GLib"
 import type { NetworkSectionConfig, NetworkSectionName, NetworkWidgetConfig } from "./types"
 
 const SECTION_NAMES: NetworkSectionName[] = ["wifi", "wired", "vpn", "hotspot", "bluetooth", "utilities"]
+const CONFIG_DIR = `${GLib.get_user_config_dir()}/ags`
+const NETWORK_CONFIG_PATH = `${CONFIG_DIR}/networkmanager.json`
+const LEGACY_NETWORK_CONFIG_PATH = `${CONFIG_DIR}/a-networkmanager.json`
 
 export function getNetworkConfigPath() {
-  return `${GLib.get_user_config_dir()}/ags/a-networkmanager.json`
+  return NETWORK_CONFIG_PATH
+}
+
+export function getReadableNetworkConfigPath() {
+  if (GLib.file_test(NETWORK_CONFIG_PATH, GLib.FileTest.EXISTS)) {
+    return NETWORK_CONFIG_PATH
+  }
+  if (GLib.file_test(LEGACY_NETWORK_CONFIG_PATH, GLib.FileTest.EXISTS)) {
+    return LEGACY_NETWORK_CONFIG_PATH
+  }
+  return NETWORK_CONFIG_PATH
 }
 
 function isObject(x: unknown): x is Record<string, unknown> {
@@ -59,7 +72,7 @@ function parseButtons(v: unknown) {
 }
 
 export function loadNetworkConfig(): NetworkWidgetConfig {
-  const path = getNetworkConfigPath()
+  const path = getReadableNetworkConfigPath()
   let user: unknown = null
   try {
     const txt = GLib.file_get_contents(path)?.[1]
@@ -126,7 +139,7 @@ export function updateNetworkConfig(updates: Record<string, unknown>) {
     GLib.file_set_contents(path, JSON.stringify(next, null, 2))
     notifyNetworkConfigChange()
   } catch (err) {
-    console.error("a-network config write error", err)
+    console.error("network config write error", err)
   }
 }
 

@@ -55,7 +55,7 @@ export function getNetworkService(): NetworkService {
       setData(buildNetworkState())
       setError(null)
     } catch (err) {
-      console.error("a-network refresh error", err)
+      console.error("network refresh error", err)
       setError("Network info unavailable")
     }
   }
@@ -68,10 +68,10 @@ export function getNetworkService(): NetworkService {
 
     if (shouldRun && refreshTimer === null) {
       if (!skipInitialRefresh) {
-        refresh().catch(err => console.error("a-network refresh error", err))
+        refresh().catch(err => console.error("network refresh error", err))
       }
       refreshTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, refreshMs, () => {
-        refresh().catch(err => console.error("a-network refresh error", err))
+        refresh().catch(err => console.error("network refresh error", err))
         return GLib.SOURCE_CONTINUE
       })
     } else if (!shouldRun && refreshTimer !== null) {
@@ -80,7 +80,7 @@ export function getNetworkService(): NetworkService {
     } else if (shouldRun && refreshTimer !== null) {
       GLib.source_remove(refreshTimer)
       refreshTimer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, refreshMs, () => {
-        refresh().catch(err => console.error("a-network refresh error", err))
+        refresh().catch(err => console.error("network refresh error", err))
         return GLib.SOURCE_CONTINUE
       })
     }
@@ -98,7 +98,7 @@ export function getNetworkService(): NetworkService {
     let skipInitialRefresh = active && next.refreshOnShow === false
     if (active && next.refreshOnShow && !prev?.active) {
       GLib.timeout_add(GLib.PRIORITY_DEFAULT, 80, () => {
-        refresh().catch(err => console.error("a-network refresh error", err))
+        refresh().catch(err => console.error("network refresh error", err))
         return GLib.SOURCE_REMOVE
       })
       skipInitialRefresh = true

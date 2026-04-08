@@ -3,10 +3,13 @@ import GLib from "gi://GLib"
 
 const DEFAULTS = Object.freeze({
   cardPath: "~/.cache/mdj/card.json",
+  maxWidth: 520,
+  minHeight: 380,
   popupDurationMs: 5000,
-  popupWidth: 220,
+  popupWidth: 520,
   popupMarginTop: 20,
   maxMeanings: 3,
+  maxTranslations: 1,
   showTranslations: true,
   showDate: true,
 })
@@ -51,11 +54,18 @@ export function resolveWotdConfig(user?: WotdConfig): Required<WotdConfig> {
 
   return {
     cardPath: resolveWotdCardPath(u.cardPath),
+    maxWidth: toInt(u.maxWidth, DEFAULTS.maxWidth, 100),
+    minHeight: toInt(u.minHeight, DEFAULTS.minHeight, 0),
     popupDurationMs: toInt(u.popupDurationMs, DEFAULTS.popupDurationMs),
-    popupWidth: toInt(u.popupWidth, DEFAULTS.popupWidth, 100),
+    popupWidth: toInt(
+      u.popupWidth,
+      Number.isFinite(Number(u.maxWidth)) ? Number(u.maxWidth) : DEFAULTS.popupWidth,
+      100,
+    ),
     cardType,
     popupMarginTop: toInt(u.popupMarginTop, DEFAULTS.popupMarginTop),
     maxMeanings: toInt(u.maxMeanings, DEFAULTS.maxMeanings),
+    maxTranslations: toInt(u.maxTranslations, DEFAULTS.maxTranslations),
     showTranslations:
       typeof u.showTranslations === "boolean"
         ? u.showTranslations

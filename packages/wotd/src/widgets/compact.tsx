@@ -12,6 +12,8 @@ const DEFAULT_COMPACT_OPTIONS: Required<WotdCompactOptions> = {
   showDate: false,
   maxMeanings: 1,
   maxTranslations: 1,
+  maxWidth: 220,
+  minHeight: 180,
   titleOverride: "",
 }
 
@@ -23,14 +25,17 @@ const DEFAULT_DEFINITION_ONLY_OPTIONS: Required<WotdDefinitionOnlyOptions> = {
   showTranslation: true,
   showLang: false,
   showDate: false,
+  maxWidth: 220,
+  minHeight: 180,
   titleOverride: "",
 }
 
-function makeLabel(text: string, classes: string[] = [], wrap = false): Gtk.Label {
+function makeLabel(text: string, classes: string[] = [], wrap = false, xalign = 0, hexpand = false): Gtk.Label {
   const label = new Gtk.Label({
     label: text,
-    xalign: 0,
+    xalign: xalign,
     wrap,
+    hexpand: hexpand,
   })
 
   classes.forEach(cls => label.add_css_class(cls))
@@ -56,6 +61,8 @@ function resolveCompactOptions(options?: WotdCompactOptions): Required<WotdCompa
     showDate: typeof o.showDate === "boolean" ? o.showDate : DEFAULT_COMPACT_OPTIONS.showDate,
     maxMeanings: toInt(o.maxMeanings, DEFAULT_COMPACT_OPTIONS.maxMeanings),
     maxTranslations: toInt(o.maxTranslations, DEFAULT_COMPACT_OPTIONS.maxTranslations),
+    maxWidth: toInt(o.maxWidth, DEFAULT_COMPACT_OPTIONS.maxWidth, 100),
+    minHeight: toInt(o.minHeight, DEFAULT_COMPACT_OPTIONS.minHeight, 0),
     titleOverride: typeof o.titleOverride === "string" ? o.titleOverride : DEFAULT_COMPACT_OPTIONS.titleOverride,
   }
 }
@@ -71,8 +78,27 @@ function resolveDefinitionOnlyOptions(options?: WotdDefinitionOnlyOptions): Requ
     showTranslation: typeof o.showTranslation === "boolean" ? o.showTranslation : DEFAULT_DEFINITION_ONLY_OPTIONS.showTranslation,
     showLang: typeof o.showLang === "boolean" ? o.showLang : DEFAULT_DEFINITION_ONLY_OPTIONS.showLang,
     showDate: typeof o.showDate === "boolean" ? o.showDate : DEFAULT_DEFINITION_ONLY_OPTIONS.showDate,
+    maxWidth: toInt(o.maxWidth, DEFAULT_DEFINITION_ONLY_OPTIONS.maxWidth, 100),
+    minHeight: toInt(o.minHeight, DEFAULT_DEFINITION_ONLY_OPTIONS.minHeight, 0),
     titleOverride: typeof o.titleOverride === "string" ? o.titleOverride : DEFAULT_DEFINITION_ONLY_OPTIONS.titleOverride,
   }
+}
+
+function wrapWithSizeConstraint(widget: Gtk.Widget, maxWidth: number, minHeight: number) {
+  const scroller = new Gtk.ScrolledWindow({
+    hscrollbar_policy: Gtk.PolicyType.NEVER,
+    vscrollbar_policy: Gtk.PolicyType.AUTOMATIC,
+    max_content_width: maxWidth,
+    min_content_width: maxWidth,
+    min_content_height: minHeight,
+    hexpand: true,
+    vexpand: true,
+    halign: Gtk.Align.FILL,
+    valign: Gtk.Align.FILL
+  })
+
+  scroller.set_child(widget)
+  return scroller
 }
 
 function formatLangLabel(data: WotdCardData): string | null {
@@ -130,11 +156,11 @@ export function createWotdCompact(
   appendMetaLine(root, data, o.showDate, o.showLang)
 
   if (o.showWord && data.word) {
-    root.append(makeLabel(data.word, ["wotd-compact-word"]))
+    root.append(makeLabel(data.word, ["wotd-compact-word"], false, 0.5, true))
   }
 
   if (o.showPronunciation && data.pronunciation) {
-    root.append(makeLabel(data.pronunciation, ["wotd-compact-pronunciation"]))
+    root.append(makeLabel(data.pronunciation, ["wotd-compact-pronunciation"], false, 0.5, true))
   }
 
   if (o.showPartOfSpeech) {
@@ -185,7 +211,7 @@ export function createWotdCompact(
     root.append(transBox)
   }
 
-  return root
+  return wrapWithSizeConstraint(root, o.maxWidth, o.minHeight)
 }
 
 export function createWotdDefinitionOnly(
@@ -238,5 +264,5 @@ export function createWotdDefinitionOnly(
     )
   }
 
-  return root
+  return wrapWithSizeConstraint(root, o.maxWidth, o.minHeight)
 }

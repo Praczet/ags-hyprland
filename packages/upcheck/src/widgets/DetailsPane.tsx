@@ -1,3 +1,4 @@
+import { createEffect } from "ags"
 import { Gtk } from "ags/gtk4"
 import { details, detailsView, err, selected } from "../store"
 
@@ -9,9 +10,7 @@ export function DetailsPane() {
       <stack
         hexpand={true}
         halign={Gtk.Align.FILL}
-        visible_child_name={detailsView.as(c => c)}
         transition_type={Gtk.StackTransitionType.CROSSFADE}
-        // Use the children object to map names to widgets
         $={(self: Gtk.Stack) => {
           self.add_named(
             <box
@@ -101,6 +100,11 @@ export function DetailsPane() {
             </box> as Gtk.Box,
             "details"
           )
+
+          self.set_visible_child_name("empty")
+          createEffect(() => {
+            self.set_visible_child_name(detailsView())
+          }, { immediate: true })
         }}
       />
     </box>

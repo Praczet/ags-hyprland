@@ -51,7 +51,7 @@ function buildWifiQr(ssid: string, password: string) {
   if (!GLib.find_program_in_path("qrencode")) return null
   const tmpDir = GLib.get_tmp_dir()
   const safe = ssid.replace(/[^a-zA-Z0-9_-]/g, "_")
-  const path = `${tmpDir}/a-network-${safe}-${Date.now()}.png`
+  const path = `${tmpDir}/network-${safe}-${Date.now()}.png`
   const payload = `WIFI:T:WPA;S:${ssid};P:${password};;`
   const cmd = `qrencode -s 8 -m 1 -o "${path}" "${payload.replace(/"/g, "\\\"")}"`
   const out = GLib.spawn_command_line_sync(cmd)
@@ -61,14 +61,14 @@ function buildWifiQr(ssid: string, password: string) {
 
 function createInfoColumn() {
   const infoCol = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
-  infoCol.add_css_class("a-network-details-col")
+  infoCol.add_css_class("network-details-col")
 
   const makeRow = (labelText: string) => {
     const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
     const label = new Gtk.Label({ label: labelText })
-    label.add_css_class("a-network-details-label")
+    label.add_css_class("network-details-label")
     const value = new Gtk.Label({ label: "--" })
-    value.add_css_class("a-network-details-value")
+    value.add_css_class("network-details-value")
     row.append(label)
     row.append(value)
     return { row, value }
@@ -238,7 +238,7 @@ function createConnectedDetailsController(
   const reveal = new Gtk.Revealer({ reveal_child: false })
   reveal.set_visible(false)
   const detailsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 16 })
-  detailsBox.add_css_class("a-network-details")
+  detailsBox.add_css_class("network-details")
   detailsBox.set_hexpand(true)
   detailsBox.set_halign(Gtk.Align.FILL)
 
@@ -247,19 +247,19 @@ function createConnectedDetailsController(
 
   const passwordState = createSavedRowState()
   const passwordCol = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
-  passwordCol.add_css_class("a-network-details-col")
+  passwordCol.add_css_class("network-details-col")
   const passwordRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   const passwordLabel = new Gtk.Label({ label: "Password", xalign: 0 })
-  passwordLabel.add_css_class("a-network-details-label")
+  passwordLabel.add_css_class("network-details-label")
   const toggleLabel = new Gtk.Label({ label: "Show", xalign: 0 })
-  toggleLabel.add_css_class("a-network-details-label")
+  toggleLabel.add_css_class("network-details-label")
   const passwordToggle = new Gtk.Switch()
-  passwordToggle.add_css_class("a-network-switch")
+  passwordToggle.add_css_class("network-switch")
   passwordRow.append(passwordLabel)
   passwordRow.append(toggleLabel)
   passwordRow.append(passwordToggle)
   const passwordValue = new Gtk.Label({ label: "Hidden", xalign: 0.5 })
-  passwordValue.add_css_class("a-network-details-value")
+  passwordValue.add_css_class("network-details-value")
   passwordValue.set_halign(Gtk.Align.CENTER)
   passwordValue.set_hexpand(true)
   passwordValue.set_width_chars(24)
@@ -328,7 +328,7 @@ function createConnectedDetailsController(
       })
       detailsLoaded = true
     } catch (err) {
-      console.error("a-network details error", err)
+      console.error("network details error", err)
     } finally {
       loading = false
     }
@@ -355,7 +355,7 @@ function createConnectedDetailsController(
       }
       updatePasswordDisplay()
     } catch (err) {
-      console.error("a-network password error", err)
+      console.error("network password error", err)
       passwordState.passwordFetched = true
       passwordValue.set_label("Unavailable")
       qr.set_opacity(0)
@@ -369,7 +369,7 @@ function createConnectedDetailsController(
       reveal.set_reveal_child(detailsExpanded)
       if (detailsExpanded && !detailsLoaded) {
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-          loadDetails().catch(err => console.error("a-network details error", err))
+          loadDetails().catch(err => console.error("network details error", err))
           return GLib.SOURCE_REMOVE
         })
       }
@@ -423,20 +423,20 @@ function buildSavedRow(
 ): SavedRowEntry {
   const container = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
   const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
-  row.add_css_class("a-network-row")
+  row.add_css_class("network-row")
   const label = new Gtk.Label({ label: saved.name, xalign: 0 })
   label.set_hexpand(true)
-  if (saved.active) label.add_css_class("a-network-active")
+  if (saved.active) label.add_css_class("network-active")
   const meta = new Gtk.Label({ label: saved.device ?? "--", xalign: 1 })
-  meta.add_css_class("a-network-row-meta")
+  meta.add_css_class("network-row-meta")
   const actions = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   actions.set_halign(Gtk.Align.END)
   const connectBtn = new Gtk.Button({ label: saved.active ? "Disconnect" : "Connect" })
-  connectBtn.add_css_class("a-network-action")
+  connectBtn.add_css_class("network-action")
   const detailsBtn = new Gtk.Button({ label: "Details" })
-  detailsBtn.add_css_class("a-network-action")
+  detailsBtn.add_css_class("network-action")
   const forgetBtn = new Gtk.Button({ label: "Forget" })
-  forgetBtn.add_css_class("a-network-action")
+  forgetBtn.add_css_class("network-action")
   actions.append(connectBtn)
   actions.append(detailsBtn)
   actions.append(forgetBtn)
@@ -446,25 +446,25 @@ function buildSavedRow(
 
   const detailsReveal = new Gtk.Revealer({ reveal_child: false })
   const detailsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 16 })
-  detailsBox.add_css_class("a-network-details")
+  detailsBox.add_css_class("network-details")
   detailsBox.set_hexpand(true)
   detailsBox.set_halign(Gtk.Align.FILL)
   const infoCol = createInfoColumn()
   infoCol.box.set_hexpand(true)
   const passwordCol = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
-  passwordCol.add_css_class("a-network-details-col")
+  passwordCol.add_css_class("network-details-col")
   const passwordRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   const passwordLabel = new Gtk.Label({ label: "Password", xalign: 0 })
-  passwordLabel.add_css_class("a-network-details-label")
+  passwordLabel.add_css_class("network-details-label")
   const toggleLabel = new Gtk.Label({ label: "Show", xalign: 0 })
-  toggleLabel.add_css_class("a-network-details-label")
+  toggleLabel.add_css_class("network-details-label")
   const passwordToggle = new Gtk.Switch()
-  passwordToggle.add_css_class("a-network-switch")
+  passwordToggle.add_css_class("network-switch")
   passwordRow.append(passwordLabel)
   passwordRow.append(toggleLabel)
   passwordRow.append(passwordToggle)
   const passwordValue = new Gtk.Label({ label: "Hidden", xalign: 0.5 })
-  passwordValue.add_css_class("a-network-details-value")
+  passwordValue.add_css_class("network-details-value")
   passwordValue.set_halign(Gtk.Align.CENTER)
   passwordValue.set_hexpand(true)
   passwordValue.set_width_chars(24)
@@ -495,9 +495,9 @@ function buildSavedRow(
   const applyMuted = () => {
     const expanded = detailsReveal.get_reveal_child()
     if (isMuted && !expanded) {
-      container.add_css_class("a-network-muted")
+      container.add_css_class("network-muted")
     } else {
-      container.remove_css_class("a-network-muted")
+      container.remove_css_class("network-muted")
     }
   }
 
@@ -537,7 +537,7 @@ function buildSavedRow(
       })
       detailsLoaded = true
     } catch (err) {
-      console.error("a-network details error", err)
+      console.error("network details error", err)
     } finally {
       loading = false
     }
@@ -564,7 +564,7 @@ function buildSavedRow(
       }
       updatePasswordDisplay()
     } catch (err) {
-      console.error("a-network password error", err)
+      console.error("network password error", err)
       state.passwordFetched = true
       passwordValue.set_label("Unavailable")
       qr.set_opacity(0)
@@ -577,7 +577,7 @@ function buildSavedRow(
     applyMuted()
     if (state.expanded && !detailsLoaded) {
       GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-        loadDetails().catch(err => console.error("a-network details error", err))
+        loadDetails().catch(err => console.error("network details error", err))
         return GLib.SOURCE_REMOVE
       })
     }
@@ -595,9 +595,9 @@ function buildSavedRow(
     label.set_label(next.name)
     meta.set_label(next.device ?? "--")
     if (active) {
-      label.add_css_class("a-network-active")
+      label.add_css_class("network-active")
     } else {
-      label.remove_css_class("a-network-active")
+      label.remove_css_class("network-active")
     }
   }
 
@@ -629,18 +629,18 @@ function buildWifiRow(
 ): WifiRowEntry {
   const container = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
   const row = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
-  row.add_css_class("a-network-row")
+  row.add_css_class("network-row")
   const icon = new Gtk.Image({ pixel_size: 16 })
   const label = new Gtk.Label({ label: iface.ssid, xalign: 0 })
   label.set_hexpand(true)
   const meta = new Gtk.Label({ label: `${formatSignal(iface.signal)} ${iface.security ?? "--"}`, xalign: 1 })
-  meta.add_css_class("a-network-row-meta")
+  meta.add_css_class("network-row-meta")
   const actions = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   actions.set_halign(Gtk.Align.END)
   const connectBtn = new Gtk.Button({ label: "Connect" })
-  connectBtn.add_css_class("a-network-action")
+  connectBtn.add_css_class("network-action")
   const detailsBtn = new Gtk.Button({ label: "Details" })
-  detailsBtn.add_css_class("a-network-action")
+  detailsBtn.add_css_class("network-action")
   actions.append(detailsBtn)
   actions.append(connectBtn)
   row.append(icon)
@@ -650,25 +650,25 @@ function buildWifiRow(
 
   const detailsReveal = new Gtk.Revealer({ reveal_child: false })
   const detailsBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 16 })
-  detailsBox.add_css_class("a-network-details")
+  detailsBox.add_css_class("network-details")
   detailsBox.set_hexpand(true)
   detailsBox.set_halign(Gtk.Align.FILL)
   const infoCol = createInfoColumn()
   infoCol.box.set_hexpand(true)
   const rightCol = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
-  rightCol.add_css_class("a-network-details-col")
+  rightCol.add_css_class("network-details-col")
   const savedRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   const savedLabel = new Gtk.Label({ label: "Saved", xalign: 0 })
-  savedLabel.add_css_class("a-network-details-label")
+  savedLabel.add_css_class("network-details-label")
   const savedToggleLabel = new Gtk.Label({ label: "Show", xalign: 0 })
-  savedToggleLabel.add_css_class("a-network-details-label")
+  savedToggleLabel.add_css_class("network-details-label")
   const savedToggle = new Gtk.Switch()
-  savedToggle.add_css_class("a-network-switch")
+  savedToggle.add_css_class("network-switch")
   savedRow.append(savedLabel)
   savedRow.append(savedToggleLabel)
   savedRow.append(savedToggle)
   const savedValue = new Gtk.Label({ label: "Hidden", xalign: 0.5 })
-  savedValue.add_css_class("a-network-details-value")
+  savedValue.add_css_class("network-details-value")
   savedValue.set_halign(Gtk.Align.CENTER)
   savedValue.set_hexpand(true)
   savedValue.set_width_chars(24)
@@ -704,9 +704,9 @@ function buildWifiRow(
   const applyMuted = () => {
     const expanded = detailsReveal.get_reveal_child()
     if (isMuted && !expanded) {
-      container.add_css_class("a-network-muted")
+      container.add_css_class("network-muted")
     } else {
-      container.remove_css_class("a-network-muted")
+      container.remove_css_class("network-muted")
     }
   }
 
@@ -756,7 +756,7 @@ function buildWifiRow(
       }
       detailsLoaded = true
     } catch (err) {
-      console.error("a-network details error", err)
+      console.error("network details error", err)
     } finally {
       loading = false
     }
@@ -764,9 +764,9 @@ function buildWifiRow(
 
   const applyFlags = () => {
     if (currentIsKnown) {
-      label.add_css_class("a-network-active")
+      label.add_css_class("network-active")
     } else {
-      label.remove_css_class("a-network-active")
+      label.remove_css_class("network-active")
     }
     const labelText = state.joinExpanded || currentIsKnown ? "Connect" : "Join"
     connectBtn.set_label(labelText)
@@ -793,7 +793,7 @@ function buildWifiRow(
       }
       updatePasswordDisplay()
     } catch (err) {
-      console.error("a-network password error", err)
+      console.error("network password error", err)
       state.passwordFetched = true
       savedValue.set_label("Unavailable")
       qr.set_opacity(0)
@@ -806,7 +806,7 @@ function buildWifiRow(
     applyMuted()
     if (state.expanded && !detailsLoaded) {
       GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-        loadDetails().catch(err => console.error("a-network details error", err))
+        loadDetails().catch(err => console.error("network details error", err))
         return GLib.SOURCE_REMOVE
       })
     }
@@ -828,10 +828,10 @@ function buildWifiRow(
     state.passwordText = passwordEntry.get_text()
   })
   const showToggle = new Gtk.Switch()
-  showToggle.add_css_class("a-network-switch")
+  showToggle.add_css_class("network-switch")
   showToggle.set_valign(Gtk.Align.CENTER)
   const showLabel = new Gtk.Label({ label: "Show", xalign: 0 })
-  showLabel.add_css_class("a-network-details-label")
+  showLabel.add_css_class("network-details-label")
   showToggle.connect("notify::active", () => {
     const show = showToggle.get_active()
     passwordEntry.set_visibility(show)
@@ -844,7 +844,7 @@ function buildWifiRow(
   passwordRow.append(showToggle)
   const passwordContainer = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 4 })
   passwordContainer.append(passwordRow)
-  passwordContainer.add_css_class("a-network-row-details")
+  passwordContainer.add_css_class("network-row-details")
   const passwordReveal = new Gtk.Revealer({ reveal_child: false })
   passwordReveal.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
   passwordReveal.set_child(passwordContainer)
@@ -865,13 +865,13 @@ function buildWifiRow(
     const secure = isSecure(currentSecurity)
     if (currentIsKnown && !state.joinExpanded) {
       connectSaved(currentSavedName ?? currentSsid).catch(err => {
-        console.error("a-network connect error", err)
+        console.error("network connect error", err)
         revealJoinPrompt()
       })
       return
     }
     if (!secure) {
-      connectWifi(currentSsid).catch(err => console.error("a-network connect error", err))
+      connectWifi(currentSsid).catch(err => console.error("network connect error", err))
       return
     }
     if (!state.joinExpanded) {
@@ -882,7 +882,7 @@ function buildWifiRow(
       passwordEntry.grab_focus()
       return
     }
-    connectWifi(currentSsid, state.passwordText).catch(err => console.error("a-network connect error", err))
+    connectWifi(currentSsid, state.passwordText).catch(err => console.error("network connect error", err))
   })
 
   const update = (nextIface: WifiNetwork, nextKnown: boolean, nextSavedName?: string) => {
@@ -928,17 +928,17 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   let wifiWasEnabled: boolean | null = null
 
   const wifiSwitch = new Gtk.Switch()
-  wifiSwitch.add_css_class("a-network-switch")
+  wifiSwitch.add_css_class("network-switch")
   wifiSwitch.set_hexpand(false)
   wifiSwitch.set_halign(Gtk.Align.END)
   wifiSwitch.set_valign(Gtk.Align.CENTER)
   wifiSwitch.set_vexpand(false)
   wifiSwitch.connect("notify::active", () => {
-    service.setWifiEnabled(wifiSwitch.get_active()).catch(err => console.error("a-network wifi toggle error", err))
+    service.setWifiEnabled(wifiSwitch.get_active()).catch(err => console.error("network wifi toggle error", err))
   })
   const scanBtn = new Gtk.Button()
-  scanBtn.add_css_class("a-network-action")
-  scanBtn.add_css_class("a-network-icon-button")
+  scanBtn.add_css_class("network-action")
+  scanBtn.add_css_class("network-icon-button")
   const scanIcon = new Gtk.Image({ pixel_size: 16 })
   scanIcon.set_from_icon_name("view-refresh-symbolic")
   const scanSpinner = new Gtk.Spinner()
@@ -953,11 +953,11 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   scanBtn.set_valign(Gtk.Align.CENTER)
   scanBtn.set_vexpand(false)
   scanBtn.connect("clicked", () => {
-    service.scanWifi().catch(err => console.error("a-network scan error", err))
+    service.scanWifi().catch(err => console.error("network scan error", err))
   })
 
   const wifiOff = new Gtk.Label({ label: "Wi-Fi is off", xalign: 0 })
-  wifiOff.add_css_class("a-network-muted")
+  wifiOff.add_css_class("network-muted")
   wifiOff.set_visible(false)
   const wifiHeaderRight = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 8 })
   wifiHeaderRight.set_halign(Gtk.Align.END)
@@ -965,36 +965,36 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   wifiHeaderRight.append(scanBtn)
   wifiHeaderRight.append(wifiSwitch)
   const wifiCollapsedInfo = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
-  wifiCollapsedInfo.add_css_class("a-network-section-collapsed-info")
+  wifiCollapsedInfo.add_css_class("network-section-collapsed-info")
   const wifiCollapsedIcon = new Gtk.Image({ pixel_size: 16 })
-  wifiCollapsedIcon.add_css_class("a-network-section-collapsed-icon")
+  wifiCollapsedIcon.add_css_class("network-section-collapsed-icon")
   const wifiCollapsedLabel = new Gtk.Label({ label: "No connection", xalign: 0 })
-  wifiCollapsedLabel.add_css_class("a-network-section-collapsed-text")
+  wifiCollapsedLabel.add_css_class("network-section-collapsed-text")
   wifiCollapsedInfo.append(wifiCollapsedIcon)
   wifiCollapsedInfo.append(wifiCollapsedLabel)
 
   const wifiBody = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 10 })
-  wifiBody.add_css_class("a-network-section-body")
+  wifiBody.add_css_class("network-section-body")
   const wifiReveal = new Gtk.Revealer({ reveal_child: true })
   wifiReveal.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
   wifiReveal.set_child(wifiBody)
   const wifiConnectedTitle = new Gtk.Label({ label: "Connected", xalign: 0 })
-  wifiConnectedTitle.add_css_class("a-network-subtitle")
+  wifiConnectedTitle.add_css_class("network-subtitle")
   wifiConnectedTitle.set_visible(false)
   const connectedRow = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 10 })
-  connectedRow.add_css_class("a-network-row")
+  connectedRow.add_css_class("network-row")
   connectedRow.set_visible(false)
   const connectedIcon = new Gtk.Image({ pixel_size: 16 })
   const connectedLabel = new Gtk.Label({ label: "--", xalign: 0 })
   connectedLabel.set_hexpand(true)
   const connectedMeta = new Gtk.Label({ label: "--", xalign: 1 })
-  connectedMeta.add_css_class("a-network-row-meta")
+  connectedMeta.add_css_class("network-row-meta")
   const connectedActions = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
   connectedActions.set_halign(Gtk.Align.END)
   const connectedDetailsBtn = new Gtk.Button({ label: "Details" })
-  connectedDetailsBtn.add_css_class("a-network-action")
+  connectedDetailsBtn.add_css_class("network-action")
   const connectedDisconnectBtn = new Gtk.Button({ label: "Disconnect" })
-  connectedDisconnectBtn.add_css_class("a-network-action")
+  connectedDisconnectBtn.add_css_class("network-action")
   connectedActions.append(connectedDetailsBtn)
   connectedActions.append(connectedDisconnectBtn)
   connectedRow.append(connectedIcon)
@@ -1004,11 +1004,11 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   const connectedDetails = createConnectedDetailsController(service, cfg)
 
   const wifiNearbyTitle = new Gtk.Label({ label: "Nearby", xalign: 0 })
-  wifiNearbyTitle.add_css_class("a-network-subtitle")
+  wifiNearbyTitle.add_css_class("network-subtitle")
   const wifiNearbyList = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
   const wifiNearbyPlaceholder = new Gtk.Label({ label: "No networks found", xalign: 0 })
   const wifiNearbyScroll = new Gtk.ScrolledWindow()
-  wifiNearbyScroll.add_css_class("a-network-list-scroll")
+  wifiNearbyScroll.add_css_class("network-list-scroll")
   wifiNearbyScroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
   wifiNearbyScroll.set_propagate_natural_height(true)
   wifiNearbyScroll.set_hexpand(true)
@@ -1016,20 +1016,20 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   wifiNearbyScroll.set_child(wifiNearbyList)
 
   const wifiSavedTitle = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 })
-  wifiSavedTitle.add_css_class("a-network-subtitle")
-  wifiSavedTitle.add_css_class("a-network-toggle")
+  wifiSavedTitle.add_css_class("network-subtitle")
+  wifiSavedTitle.add_css_class("network-toggle")
   const wifiSavedChevron = new Gtk.Label({ label: "▸", xalign: 0 })
-  wifiSavedChevron.add_css_class("a-network-chevron")
+  wifiSavedChevron.add_css_class("network-chevron")
   const wifiSavedLabel = new Gtk.Label({ label: "Saved", xalign: 0 })
   const wifiSavedEmpty = new Gtk.Label({ label: "", xalign: 0 })
-  wifiSavedEmpty.add_css_class("a-network-muted")
+  wifiSavedEmpty.add_css_class("network-muted")
   wifiSavedTitle.append(wifiSavedChevron)
   wifiSavedTitle.append(wifiSavedLabel)
   wifiSavedTitle.append(wifiSavedEmpty)
   const wifiSavedList = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
   const wifiSavedPlaceholder = new Gtk.Label({ label: "No saved networks", xalign: 0 })
   const wifiSavedScroll = new Gtk.ScrolledWindow()
-  wifiSavedScroll.add_css_class("a-network-saved-scroll")
+  wifiSavedScroll.add_css_class("network-saved-scroll")
   wifiSavedScroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
   wifiSavedScroll.set_propagate_natural_height(true)
   wifiSavedScroll.set_hexpand(true)
@@ -1066,7 +1066,7 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   })
   connectedDisconnectBtn.connect("clicked", () => {
     if (!activeConnectionName) return
-    service.disconnectConnection(activeConnectionName).catch(err => console.error("a-network disconnect error", err))
+    service.disconnectConnection(activeConnectionName).catch(err => console.error("network disconnect error", err))
   })
 
   let spinTimer: number | null = null
@@ -1240,12 +1240,12 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
             saved,
             (name, active) => {
               if (active) {
-                service.disconnectConnection(name).catch(err => console.error("a-network disconnect error", err))
+                service.disconnectConnection(name).catch(err => console.error("network disconnect error", err))
               } else {
-                service.connectSaved(name).catch(err => console.error("a-network connect error", err))
+                service.connectSaved(name).catch(err => console.error("network connect error", err))
               }
             },
-            (name) => service.forgetConnection(name).catch(err => console.error("a-network forget error", err)),
+            (name) => service.forgetConnection(name).catch(err => console.error("network forget error", err)),
             (name) => service.getConnectionDetails(name),
             (name) => service.getWifiPassword(name),
             cfg.showPlainTextPassword ?? true,
