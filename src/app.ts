@@ -19,6 +19,8 @@ import { AegisWindow, css as aegisCss } from "../packages/aegis/src"
 import { aegisHandleRequest } from "./aegisHandleRequest"
 import { networkHandleRequest } from "./networkHandleRequest"
 import { NetworkWindow, css as networkCss } from "../packages/a-network/src"
+// import { css as wotdCss, WotdPopupWindow } from "../packages/wotd/src"
+// import { wotdHandleRequest } from "./wotdHandleRequest"
 
 
 async function handleRequest(argv: string[]) {
@@ -30,6 +32,8 @@ async function handleRequest(argv: string[]) {
   if (dash !== undefined) return dash
   const result = await exposeHandleRequest(argv)
   if (result !== undefined) return result
+  // const wotd = await wotdHandleRequest(argv)
+  // if (wotd !== undefined) return wotd
   return osdHandleRequest(argv)
 }
 
@@ -76,6 +80,7 @@ app.start({
         clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())
       ; (globalThis as any).togglePowerMenu = () => powerWin.visible ? powerWin.hide() : powerWin.present()
 
-    // app.get_monitors().map(Bar)
+    // const wotdWin = WotdPopupWindow(0)
+    // app.add_window(wotdWin)
   },
 })

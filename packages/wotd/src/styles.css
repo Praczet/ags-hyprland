@@ -1,0 +1,106 @@
+.wotd-card {}
+.wotd-card-compact {}
+
+.wotd-header {}
+.wotd-title {}
+.wotd-date {
+  opacity: 0.6;
+  font-size: 0.9rem;
+}
+.wotd-lang {
+
+}
+
+.wotd-word {
+font-size: 2.4rem;
+  color: @primary;
+}
+.wotd-pronunciation {
+  opacity: 0.7;
+}
+.wotd-part-of-speech {
+  opacity: 0.4;
+  font-style: italic;
+}
+.wotd-definition {}
+
+.wotd-meanings {}
+.wotd-meaning-row {
+  padding-left: 2rem;
+  opacity: 0.5;
+}
+.wotd-meaning-index {}
+.wotd-meaning-text {}
+
+.wotd-translations {
+  border-top: 1px solid alpha(@primary, 0.2);
+    margin-top: 12px;
+    padding-top: 12px;
+}
+.wotd-translations-title {
+  opacity: 0.6;
+}
+.wotd-translation {}
+
+
+.wotd-compact {}
+.wotd-compact-title {}
+.wotd-compact-meta {}
+.wotd-compact-word {}
+.wotd-compact-pronunciation {}
+.wotd-compact-part-of-speech {
+  opacity: 0.4;
+  font-style: italic;
+}
+.wotd-compact-definition {}
+.wotd-compact-meanings {}
+.wotd-compact-meaning-row {}
+.wotd-compact-meaning-index {}
+.wotd-compact-meaning-text {}
+.wotd-compact-translations {}
+.wotd-compact-translation {}
+
+.wotd-definition-only {}
+.wotd-definition-only-title {}
+.wotd-definition-only-word-row {}
+.wotd-definition-only-word {}
+.wotd-definition-only-part-of-speech {}
+.wotd-definition-only-pronunciation {}
+.wotd-definition-only-definition {}
+.wotd-definition-only-translation {}
+
+.wotd-popup-window {
+  background: transparent;
+}
+
+.wotd-popup {
+  opacity: 0;
+  transform: translateY(-300px);
+  background:alpha(@background, 0.92);
+  color: @on_background;
+  border-radius: 20px;
+  padding: 18px 22px;
+  transition:
+    opacity 260ms ease-out,
+    transform 420ms cubic-bezier(0.2, 1.1, 0.25, 1);
+}
+
+.wotd-popup-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wotd-popup-exit {
+  opacity: 0;
+  transform: translateY(-300px);
+  transition:
+    opacity 240ms ease-in,
+    transform 420ms cubic-bezier(0.6, -0.2, 0.2, 1);
+}
+
+.wotd-popup-content {
+}
+
+.wotd-popup-empty {
+  padding: 18px 22px;
+}

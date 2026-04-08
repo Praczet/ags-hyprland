@@ -15,6 +15,12 @@ import { initTickTickState } from "../services/ticktickState"
 import { initWeatherState, type WeatherConfig } from "../services/weatherState"
 import { AegisWidget, AegisSummaryWidget, AegisDiskWidget, AegisMemoryWidget, AegisNetworkWidget, AegisBatteryWidget, AegisDiskPieWidget, AegisMemoryPieWidget, AegisCpuGraphWidget, getSysinfoService, type AegisMode, type SectionId } from "../../../aegis/src"
 import { WidgetFrame } from "../widgets/WidgetFrame"
+import {
+  getWotdStore,
+  createWotdCard,
+  createWotdCompact,
+  createWotdDefinitionOnly,
+} from "../../../wotd/src"
 
 type WidgetFactory = (cfg: DashboardWidgetConfig) => Gtk.Widget
 
@@ -29,6 +35,32 @@ function toClockConfig(cfg: DashboardWidgetConfig): ClockConfig {
     timeFormat: typeof raw.timeFormat === "string" ? raw.timeFormat : undefined,
     dateFormat: typeof raw.dateFormat === "string" ? raw.dateFormat : undefined,
     showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
+  }
+}
+
+function toWotdConfig(cfg: DashboardWidgetConfig) {
+  const raw = isObject(cfg.config) ? cfg.config : {}
+
+  const variant =
+    raw.variant === "card" || raw.variant === "compact" || raw.variant === "definition"
+      ? raw.variant
+      : "definition"
+
+  return {
+    variant,
+    title: typeof raw.title === "string" ? raw.title : undefined,
+    showTitle: typeof raw.showTitle === "boolean" ? raw.showTitle : undefined,
+    showWord: typeof raw.showWord === "boolean" ? raw.showWord : undefined,
+    showPronunciation: typeof raw.showPronunciation === "boolean" ? raw.showPronunciation : undefined,
+    showPartOfSpeech: typeof raw.showPartOfSpeech === "boolean" ? raw.showPartOfSpeech : undefined,
+    showDefinition: typeof raw.showDefinition === "boolean" ? raw.showDefinition : undefined,
+    showTranslations: typeof raw.showTranslations === "boolean" ? raw.showTranslations : undefined,
+    showTranslation: typeof raw.showTranslation === "boolean" ? raw.showTranslation : undefined,
+    showLang: typeof raw.showLang === "boolean" ? raw.showLang : undefined,
+    showDate: typeof raw.showDate === "boolean" ? raw.showDate : undefined,
+    maxMeanings: Number.isFinite(Number(raw.maxMeanings)) ? Math.floor(Number(raw.maxMeanings)) : undefined,
+    maxTranslations: Number.isFinite(Number(raw.maxTranslations)) ? Math.floor(Number(raw.maxTranslations)) : undefined,
+    cardPath: typeof raw.cardPath === "string" ? raw.cardPath : undefined,
   }
 }
 
@@ -228,6 +260,7 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
       }
       return NextEventWidget(ne)
     },
+
     tasks: (cfg) => {
       const tcfg = toTasksConfig(cfg)
       if (tcfg.useGoogle !== false && google) {
@@ -305,6 +338,67 @@ export default function DashboardWindow(monitor: number = 0, configPath?: string
       mountCustomWidget(host, cfg.customName, cfg.config ?? undefined, host)
       return host
     },
+    "word-of-the-day": (widgetCfg) => {
+      const wcfg = toWotdConfig(widgetCfg)
+      const store = getWotdStore({
+        cardPath: wcfg.cardPath,
+      })
+
+      const data = store.get() ?? store.reload()
+
+      if (!data) {
+        return new Gtk.Label({
+          label: "No word of the day.",
+          xalign: 0,
+          wrap: true,
+        })
+      }
+
+      if (wcfg.variant === "definition") {
+        return createWotdDefinitionOnly(data, {
+          titleOverride: wcfg.title,
+          showTitle: wcfg.showTitle,
+          showWord: wcfg.showWord,
+          showPronunciation: wcfg.showPronunciation,
+          showPartOfSpeech: wcfg.showPartOfSpeech,
+          showTranslation: wcfg.showTranslation,
+          showLang: wcfg.showLang,
+          showDate: wcfg.showDate,
+        })
+      }
+
+      if (wcfg.variant === "compact") {
+        return createWotdCompact(data, {
+          titleOverride: wcfg.title,
+          showTitle: wcfg.showTitle,
+          showWord: wcfg.showWord,
+          showPronunciation: wcfg.showPronunciation,
+          showPartOfSpeech: wcfg.showPartOfSpeech,
+          showDefinition: wcfg.showDefinition,
+          showTranslations: wcfg.showTranslations,
+          showLang: wcfg.showLang,
+          showDate: wcfg.showDate,
+          maxMeanings: wcfg.maxMeanings,
+          maxTranslations: wcfg.maxTranslations,
+        })
+      }
+
+      return createWotdCard(data, {
+        titleOverride: wcfg.title,
+        showTitle: wcfg.showTitle,
+        showDate: wcfg.showDate,
+        showLang: wcfg.showLang,
+        showPronunciation: wcfg.showPronunciation,
+        showPartOfSpeech: wcfg.showPartOfSpeech,
+        showDefinition: wcfg.showDefinition,
+        showMeanings: true,
+        showTranslations: wcfg.showTranslations,
+        maxMeanings: wcfg.maxMeanings,
+        maxTranslations: wcfg.maxTranslations,
+        compact: false,
+      })
+    },
+
   }
   const grid = new Gtk.Grid({
     row_spacing: cfg.layout.gap,

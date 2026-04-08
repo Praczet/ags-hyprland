@@ -5,8 +5,18 @@ export type CalendarSource = {
   color?: string
   label?: string
 }
+export type WotdDashboardConfig = {
+  cardPath?: string
+  popupDurationMs?: number
+  popupWidth?: number
+  popupMarginTop?: number
+  maxMeanings?: number
+  showTranslations?: boolean
+  showDate?: boolean
+}
 
-export type DashboardWidgetType = "clock" | "analog-clock" | "weather" | "calendar" | "next-event" | "tasks" | "ticktick" | "sticky-notes" | "sticky-note" | "aegis" | "aegis-summary" | "aegis-disk" | "aegis-memory" | "aegis-network" | "aegis-battery" | "aegis-disk-pie" | "aegis-memory-pie" | "aegis-cpu-graph" | "custom"
+
+export type DashboardWidgetType = "clock" | "analog-clock" | "weather" | "calendar" | "next-event" | "tasks" | "ticktick" | "sticky-notes" | "sticky-note" | "aegis" | "aegis-summary" | "aegis-disk" | "aegis-memory" | "aegis-network" | "aegis-battery" | "aegis-disk-pie" | "aegis-memory-pie" | "aegis-cpu-graph" | "custom" | "word-of-the-day"
 
 export type DashboardWidgetConfig = {
   id: string
@@ -72,6 +82,7 @@ export type DashboardConfig = {
   ticktick?: TickTickConfig
   weather?: WeatherDashboardConfig
   stickynotes?: StickynotesConfig
+  wotd?: WotdDashboardConfig
 }
 
 export type StickynotesConfig = {
@@ -153,6 +164,7 @@ export function loadDashboardConfig(configPath?: string): DashboardConfig {
   const w = isObject(u.weather) ? u.weather : {}
   const s = isObject((u as any).stickynotes) ? (u as any).stickynotes : {}
   const calendars = Array.isArray(g.calendars) ? g.calendars.filter(isObject) : []
+  const wd = isObject(u.wotd) ? u.wotd : {}
 
   return {
     layout: {
@@ -236,6 +248,29 @@ export function loadDashboardConfig(configPath?: string): DashboardConfig {
         : undefined,
       openNote: typeof (s as any).openNote === "string"
         ? (s as any).openNote
+        : undefined,
+    },
+    wotd: {
+      cardPath: typeof (wd as any).cardPath === "string"
+        ? (wd as any).cardPath
+        : undefined,
+      popupDurationMs: Number.isFinite(Number((wd as any).popupDurationMs))
+        ? Math.floor(Number((wd as any).popupDurationMs))
+        : undefined,
+      popupWidth: Number.isFinite(Number((wd as any).popupWidth))
+        ? Math.floor(Number((wd as any).popupWidth))
+        : undefined,
+      popupMarginTop: Number.isFinite(Number((wd as any).popupMarginTop))
+        ? Math.floor(Number((wd as any).popupMarginTop))
+        : undefined,
+      maxMeanings: Number.isFinite(Number((wd as any).maxMeanings))
+        ? Math.floor(Number((wd as any).maxMeanings))
+        : undefined,
+      showTranslations: typeof (wd as any).showTranslations === "boolean"
+        ? (wd as any).showTranslations
+        : undefined,
+      showDate: typeof (wd as any).showDate === "boolean"
+        ? (wd as any).showDate
         : undefined,
     },
   }
