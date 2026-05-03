@@ -131,6 +131,7 @@
 .aegis-cpu-meta,
 .aegis-cpu-value {
   opacity: 0.75;
+  font-family: monospace;
 }
 
 .aegis-cpu-bar {

@@ -8,7 +8,7 @@ const SEARCH_DIRS = [
   `${GLib.get_home_dir()}/.local/share/icons`,
 ]
 
-const HYPRLAND_FALLBACK = "/home/adam/.cache/paru/clone/hyprsysteminfo/src/hyprsysteminfo-0.1.3/resource/hyprlandlogo.svg"
+const HYPRLAND_FALLBACK = "/home/adam/.local/share/icons/ADArtWork/scalable/apps/hyprland.svg"
 const ICON_EXTS = ["svg", "png"]
 
 let iconTheme: Gtk.IconTheme | null = null
@@ -103,9 +103,11 @@ function buildOsCandidates(os: SysinfoModel["os"]) {
     if (normalized.endsWith("-linux")) candidates.add(normalized.replace(/-linux$/, ""))
     if (normalized.startsWith("linux-")) candidates.add(normalized.replace(/^linux-/, ""))
   }
+  candidates.add("archlinux")
   candidates.add("distributor-logo")
   candidates.add("distributor-logo-symbolic")
-  candidates.add("linux")
+  candidates.add("archlinux-symbolic")
+  candidates.add("linux-system")
   return Array.from(candidates)
 }
 
