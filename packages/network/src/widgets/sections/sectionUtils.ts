@@ -8,6 +8,41 @@ export type SectionController = {
   setPillClass: (pillClass?: string | string[]) => void
 }
 
+export type ActionSwitch = {
+  widget: Gtk.Switch
+  setFromState: (active: boolean) => void
+}
+
+export function createActionSwitch(
+  onUserToggle: (active: boolean) => void | Promise<void>,
+): ActionSwitch {
+  const widget = new Gtk.Switch()
+  let syncing = false
+
+  widget.connect("notify::active", () => {
+    if (syncing) return
+
+    Promise.resolve(onUserToggle(widget.get_active())).catch((err) => {
+      console.error("network switch action error", err)
+    })
+  })
+
+  return {
+    widget,
+
+    setFromState(active: boolean): void {
+      if (widget.get_active() === active) return
+
+      syncing = true
+      try {
+        widget.set_active(active)
+      } finally {
+        syncing = false
+      }
+    },
+  }
+}
+
 export function createInfoIcon() {
   const label = new Gtk.Label({ label: "?" })
   label.add_css_class("network-info-icon")

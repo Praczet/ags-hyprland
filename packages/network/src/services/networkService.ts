@@ -10,6 +10,7 @@ export type NetworkService = {
   history: Accessor<NetworkAction[]>
   scanning: Accessor<boolean>
   wifiBusy: Accessor<boolean>
+  pendingWifiEnabled: Accessor<boolean | null>
   bluetoothScanning: Accessor<boolean>
   refresh: () => Promise<void>
   setActive: (id: string, active: boolean, opts?: { allowBackgroundRefresh?: boolean; refreshOnShow?: boolean; refreshMs?: number }) => void
@@ -43,6 +44,7 @@ export function getNetworkService(): NetworkService {
   const [history, setHistory] = createState<NetworkAction[]>([])
   const [scanning, setScanning] = createState(false)
   const [wifiBusy, setWifiBusy] = createState(false)
+  const [pendingWifiEnabled, setPendingWifiEnabled] = createState<boolean | null>(null)
   const [bluetoothScanning, setBluetoothScanning] = createState(false)
 
   const logAction = (action: string, command?: string) => {
@@ -52,7 +54,12 @@ export function getNetworkService(): NetworkService {
 
   const refresh = async () => {
     try {
-      setData(buildNetworkState())
+      const nextData = buildNetworkState()
+      setData(nextData)
+      const pendingWifi = pendingWifiEnabled()
+      if (pendingWifi !== null && Boolean(nextData.wifiEnabled) === pendingWifi) {
+        setPendingWifiEnabled(null)
+      }
       setError(null)
     } catch (err) {
       console.error("network refresh error", err)
@@ -112,6 +119,7 @@ export function getNetworkService(): NetworkService {
     refresh,
     setScanning,
     setWifiBusy,
+    setPendingWifiEnabled,
     setBluetoothScanning,
   })
 
@@ -121,6 +129,7 @@ export function getNetworkService(): NetworkService {
     history,
     scanning,
     wifiBusy,
+    pendingWifiEnabled,
     bluetoothScanning,
     refresh,
     setActive,

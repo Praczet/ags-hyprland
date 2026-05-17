@@ -10,6 +10,7 @@ type CreateNetworkActionsOptions = {
   refresh: () => Promise<void>
   setScanning: (value: boolean) => void
   setWifiBusy: (value: boolean) => void
+  setPendingWifiEnabled: (value: boolean | null) => void
   setBluetoothScanning: (value: boolean) => void
 }
 
@@ -19,11 +20,24 @@ export function createNetworkActions({
   refresh,
   setScanning,
   setWifiBusy,
+  setPendingWifiEnabled,
   setBluetoothScanning,
 }: CreateNetworkActionsOptions) {
+  let pendingWifiTimeout: number | null = null
+
   const setWifiEnabled = async (enabled: boolean) => {
     const cmd = enabled ? "nmcli radio wifi on" : "nmcli radio wifi off"
     logAction("Toggle Wi-Fi", cmd)
+    if (pendingWifiTimeout !== null) {
+      GLib.source_remove(pendingWifiTimeout)
+      pendingWifiTimeout = null
+    }
+    setPendingWifiEnabled(enabled)
+    pendingWifiTimeout = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 8000, () => {
+      pendingWifiTimeout = null
+      setPendingWifiEnabled(null)
+      return GLib.SOURCE_REMOVE
+    })
     setWifiBusy(true)
     try {
       runCommand(cmd)

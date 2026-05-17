@@ -4,7 +4,7 @@ import GLib from "gi://GLib"
 import Pango from "gi://Pango"
 import type { ConnectionDetails, NetworkWidgetConfig, SavedConnection, WifiNetwork } from "../../types"
 import type { NetworkService } from "../../services/networkService"
-import { buildSection, clearBox, createInfoIcon } from "./sectionUtils"
+import { buildSection, clearBox, createActionSwitch, createInfoIcon } from "./sectionUtils"
 
 function formatSignal(signal?: number) {
   if (!Number.isFinite(Number(signal))) return "--"
@@ -927,15 +927,15 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
   let activeConnectionName: string | undefined
   let wifiWasEnabled: boolean | null = null
 
-  const wifiSwitch = new Gtk.Switch()
+  const wifiActionSwitch = createActionSwitch((active) => {
+    return service.setWifiEnabled(active)
+  })
+  const wifiSwitch = wifiActionSwitch.widget
   wifiSwitch.add_css_class("network-switch")
   wifiSwitch.set_hexpand(false)
   wifiSwitch.set_halign(Gtk.Align.END)
   wifiSwitch.set_valign(Gtk.Align.CENTER)
   wifiSwitch.set_vexpand(false)
-  wifiSwitch.connect("notify::active", () => {
-    service.setWifiEnabled(wifiSwitch.get_active()).catch(err => console.error("network wifi toggle error", err))
-  })
   const scanBtn = new Gtk.Button()
   scanBtn.add_css_class("network-action")
   scanBtn.add_css_class("network-icon-button")
@@ -1120,14 +1120,26 @@ export function createWifiSection(cfg: NetworkWidgetConfig, service: NetworkServ
     }
 
     const wifiEnabled = Boolean(data.wifiEnabled)
-    wifiSwitch.set_sensitive(true)
-    scanBtn.set_sensitive(true)
-    wifiSwitch.set_active(wifiEnabled)
+    const wifiBusy = service.wifiBusy()
+    const pendingWifiEnabled = service.pendingWifiEnabled()
+    const switchEnabled = pendingWifiEnabled ?? wifiEnabled
+    wifiSwitch.set_sensitive(!wifiBusy)
+    scanBtn.set_sensitive(wifiEnabled && !wifiBusy)
+    if (!wifiBusy) {
+      wifiActionSwitch.setFromState(switchEnabled)
+    } else if (pendingWifiEnabled !== null) {
+      wifiActionSwitch.setFromState(pendingWifiEnabled)
+    }
     scanBtn.set_visible(wifiEnabled)
-    wifiOff.set_visible(!wifiEnabled)
-    if (!wifiEnabled) {
-      const busy = service.wifiBusy()
-      wifiOff.set_label(busy && wifiSwitch.get_active() ? "Turning Wi-Fi on..." : "Wi-Fi is off")
+    wifiOff.set_visible(!wifiEnabled || wifiBusy)
+    if (wifiBusy) {
+      if (pendingWifiEnabled !== null) {
+        wifiOff.set_label(pendingWifiEnabled ? "Turning Wi-Fi on..." : "Turning Wi-Fi off...")
+      } else {
+        wifiOff.set_label(wifiEnabled ? "Updating Wi-Fi..." : "Wi-Fi is off")
+      }
+    } else if (!wifiEnabled) {
+      wifiOff.set_label("Wi-Fi is off")
       wifiSection.setExpanded(false)
     } else if (wifiWasEnabled === false) {
       wifiSection.setExpanded(true)

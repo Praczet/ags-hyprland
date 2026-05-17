@@ -2,7 +2,7 @@ import { createEffect } from "ags"
 import { Gtk } from "ags/gtk4"
 import type { BluetoothDevice, NetworkWidgetConfig } from "../../types"
 import type { NetworkService } from "../../services/networkService"
-import { buildSection, clearBox, createInfoIcon } from "./sectionUtils"
+import { buildSection, clearBox, createActionSwitch, createInfoIcon } from "./sectionUtils"
 
 function formatDeviceMeta(device: BluetoothDevice) {
   const parts: string[] = []
@@ -114,15 +114,15 @@ export function createBluetoothSection(cfg: NetworkWidgetConfig, service: Networ
   collapsedInfo.append(collapsedIcon)
   collapsedInfo.append(collapsedLabel)
 
-  const powerSwitch = new Gtk.Switch()
+  const powerActionSwitch = createActionSwitch((active) => {
+    return service.setBluetoothEnabled(active)
+  })
+  const powerSwitch = powerActionSwitch.widget
   powerSwitch.add_css_class("network-switch")
   powerSwitch.set_hexpand(false)
   powerSwitch.set_halign(Gtk.Align.END)
   powerSwitch.set_valign(Gtk.Align.CENTER)
   powerSwitch.set_vexpand(false)
-  powerSwitch.connect("notify::active", () => {
-    service.setBluetoothEnabled(powerSwitch.get_active()).catch(err => console.error("network bluetooth toggle error", err))
-  })
 
   const scanBtn = new Gtk.Button()
   scanBtn.add_css_class("network-action")
@@ -182,7 +182,7 @@ export function createBluetoothSection(cfg: NetworkWidgetConfig, service: Networ
 
     const powered = Boolean(bluetooth.powered)
     powerSwitch.set_sensitive(true)
-    powerSwitch.set_active(powered)
+    powerActionSwitch.setFromState(powered)
     scanBtn.set_sensitive(powered)
     statusIcon.set_visible(true)
     statusIcon.set_from_icon_name(powered ? "bluetooth-symbolic" : "bluetooth-disabled-symbolic")

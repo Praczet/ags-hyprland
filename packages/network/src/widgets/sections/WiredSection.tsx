@@ -3,7 +3,7 @@ import { Gtk } from "ags/gtk4"
 import GLib from "gi://GLib"
 import type { NetworkWidgetConfig } from "../../types"
 import type { NetworkService } from "../../services/networkService"
-import { buildSection, createInfoIcon } from "./sectionUtils"
+import { buildSection, createActionSwitch, createInfoIcon } from "./sectionUtils"
 
 export function createWiredSection(cfg: NetworkWidgetConfig, service: NetworkService) {
   const wiredBody = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL, spacing: 6 })
@@ -64,15 +64,15 @@ export function createWiredSection(cfg: NetworkWidgetConfig, service: NetworkSer
   wiredCollapsedInfo.append(wiredCollapsedIcon)
   wiredCollapsedInfo.append(wiredCollapsedLabel)
 
-  const wiredSwitch = new Gtk.Switch()
+  const wiredActionSwitch = createActionSwitch((active) => {
+    return service.setWiredEnabled(active)
+  })
+  const wiredSwitch = wiredActionSwitch.widget
   wiredSwitch.add_css_class("network-switch")
   wiredSwitch.set_hexpand(false)
   wiredSwitch.set_halign(Gtk.Align.END)
   wiredSwitch.set_valign(Gtk.Align.CENTER)
   wiredSwitch.set_vexpand(false)
-  wiredSwitch.connect("notify::active", () => {
-    service.setWiredEnabled(wiredSwitch.get_active()).catch(err => console.error("network wired toggle error", err))
-  })
   const wiredRefreshBtn = new Gtk.Button()
   wiredRefreshBtn.add_css_class("network-action")
   wiredRefreshBtn.add_css_class("network-icon-button")
@@ -153,7 +153,7 @@ export function createWiredSection(cfg: NetworkWidgetConfig, service: NetworkSer
 
     const wired = data.wired
     const wiredConnected = wired?.state === "connected"
-    wiredSwitch.set_active(Boolean(wiredConnected))
+    wiredActionSwitch.setFromState(Boolean(wiredConnected))
     wiredSwitch.set_sensitive(Boolean(wired?.device))
     wiredRefreshBtn.set_sensitive(true)
     const showNoInternetByIp = cfg.wiredNoInternetByIp ?? false
