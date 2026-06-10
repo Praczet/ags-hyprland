@@ -172,12 +172,25 @@ export function maybeRecoverBloom() {
   if (raw.status !== "running") return
   // Only recover a run that was active very recently
   if (Date.now() - new Date(raw.updated_at).getTime() > 120_000) return
+  const wallpaper = readWallpaperFile()
   sessionStartedAt = new Date(raw.started_at).getTime()
   setBloomSession({
     ...emptySession(),
     profile: raw.profile,
+    wallpaper,
     overallStatus: "running",
   })
   setBloomVisible(true)
   startPolling(POLL_FAST_MS)
+}
+
+function readWallpaperFile(): string | undefined {
+  try {
+    const path = `${CACHE_DIR}/current-wallpaper`
+    const [ok, bytes] = GLib.file_get_contents(path)
+    if (!ok || !bytes) return undefined
+    return new TextDecoder().decode(bytes).trim() || undefined
+  } catch {
+    return undefined
+  }
 }
