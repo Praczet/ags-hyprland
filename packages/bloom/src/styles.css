@@ -1,0 +1,160 @@
+.bloom-window {
+  background: transparent;
+}
+
+.bloom-card {
+  min-width: 380px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: alpha(@background, 0.92);
+  color: @foreground;
+  border: 1px solid alpha(@outline, 0.5);
+  box-shadow: 0 8px 32px alpha(@shadow, 0.5);
+}
+
+.bloom-card-with-image {
+  padding: 0;
+}
+
+.bloom-card-with-image .bloom-content {
+  padding: 14px 18px;
+}
+
+.bloom-content {
+  overflow: hidden;
+}
+
+picture.bloom-wallpaper {
+  min-width: 140px;
+  max-width: 140px;
+  border-radius: 16px 0 0 16px;
+  /* GTK ignores max-width for natural size; width is fixed by widthRequest=96
+     set in the effect, and natural height is kept small by pre-scaling the pixbuf. */
+}
+
+.bloom-header {
+  margin-bottom: 2px;
+}
+
+.bloom-header-icon {
+  font-size: 0.85rem;
+  opacity: 0.55;
+}
+
+.bloom-header-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.bloom-header-sep {
+  opacity: 0.35;
+}
+
+.bloom-header-profile {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: @primary;
+}
+
+/* ── stage rows ─────────────────────────────────────────────────────────── */
+
+.bloom-row {
+  padding: 1px 0;
+}
+
+.bloom-row-pending {
+  opacity: 0.35;
+}
+
+.bloom-row-running .bloom-row-icon {
+  color: @primary;
+}
+
+.bloom-row-done .bloom-row-icon {
+  color: @primary;
+  opacity: 0.75;
+}
+
+.bloom-row-error .bloom-row-icon {
+  color: @error;
+}
+
+.bloom-row-icon {
+  font-family: monospace;
+  font-size: 1rem;
+}
+
+.bloom-row-stage {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.bloom-row-time,
+.bloom-row-count {
+  font-family: monospace;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.bloom-row-target {
+  font-size: 0.82rem;
+  opacity: 0.55;
+  font-style: italic;
+}
+
+/* ── worker bar ─────────────────────────────────────────────────────────── */
+
+.bloom-worker {
+  margin: 2px 0 4px 18px;
+}
+
+levelbar.bloom-worker-bar {
+  min-height: 4px;
+  border-radius: 999px;
+  background-color: transparent;
+}
+
+levelbar.bloom-worker-bar block {
+  border: none;
+  background-color: @primary;
+  min-height: 4px;
+  border-radius: 999px;
+}
+
+levelbar.bloom-worker-bar block.empty {
+  background-color: alpha(@primary, 0.2);
+}
+
+.bloom-worker-msg {
+  font-size: 0.78rem;
+  font-family: monospace;
+  opacity: 0.5;
+}
+
+/* ── completion row ─────────────────────────────────────────────────────── */
+
+.bloom-completion {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid alpha(@outline, 0.3);
+}
+
+.bloom-completion-done {
+  font-size: 0.82rem;
+  opacity: 0.6;
+}
+
+.bloom-completion-error-label {
+  font-size: 0.88rem;
+  color: @error;
+  font-weight: 600;
+}
+
+.bloom-completion-dismiss {
+  background: alpha(@error, 0.15);
+  border-radius: 8px;
+  padding: 2px 10px;
+  border: 1px solid alpha(@error, 0.35);
+  color: @error;
+}

@@ -22,14 +22,20 @@ import { NetworkWindow, css as networkCss } from "../packages/network/src"
 import type { RequestResponse } from "./windowTypes"
 import { css as wotdCss, WotdPopupWindow } from "../packages/wotd/src"
 import { wotdHandleRequest } from "./wotdHandleRequest"
+import { LyricsWindow, css as lyricsCss } from "../packages/lyrics/src"
+import { lyricsHandleRequest } from "./lyricsHandleRequest"
+import { BloomWindow, css as bloomCss } from "../packages/bloom/src"
+import { bloomHandleRequest } from "./bloomHandleRequest"
 
 type RequestHandler = (argv: string[]) => Promise<RequestResponse> | RequestResponse
 
 const requestHandlers: RequestHandler[] = [
+  bloomHandleRequest,
   aegisHandleRequest,
   networkHandleRequest,
   dashboardHandleRequest,
   exposeHandleRequest,
+  lyricsHandleRequest,
   wotdHandleRequest,
   osdHandleRequest,
 ]
@@ -50,7 +56,7 @@ async function handleRequest(argv: string[]) {
 
 app.start({
   instanceName: "adart",
-  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss + dashboardCss + aegisCss + networkCss + wotdCss,
+  css: style + matugenCss + clipCss + pmCss + exposeCss + osdCss + upcheckCss + dashboardCss + aegisCss + networkCss + wotdCss + lyricsCss + bloomCss,
   requestHandler(argv, respond) {
     handleRequest(argv)
       .then(respond)
@@ -86,6 +92,9 @@ app.start({
     })
     app.add_window(networkWin)
 
+    const lyricsWin = LyricsWindow(0)
+    app.add_window(lyricsWin)
+
     const debugActions = globalThis as DebugActions
     debugActions.toggleClipboard = () =>
       clipWin.visible ? clipWin.hide() : (refreshClipboard(), clipWin.show())
@@ -94,5 +103,8 @@ app.start({
 
     const wotdWin = WotdPopupWindow(0)
     app.add_window(wotdWin)
+
+    const bloomWin = BloomWindow(0)
+    app.add_window(bloomWin)
   },
 })
