@@ -1,4 +1,4 @@
-import { showBloom, doneBloom, hideBloom } from "../packages/bloom/src"
+import { showBloom, doneBloom, hideBloom, maybeRecoverBloom } from "../packages/bloom/src"
 import type { RequestResponse } from "./windowTypes"
 
 export function bloomHandleRequest(argv: string[]): RequestResponse {
@@ -17,6 +17,9 @@ export function bloomHandleRequest(argv: string[]): RequestResponse {
       return "ok"
     case "bloom-hide":
       hideBloom()
+      return "ok"
+    case "bloom-pickup":
+      maybeRecoverBloom()
       return "ok"
     default:
       return undefined

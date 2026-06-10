@@ -24,7 +24,7 @@ import { css as wotdCss, WotdPopupWindow } from "../packages/wotd/src"
 import { wotdHandleRequest } from "./wotdHandleRequest"
 import { LyricsWindow, css as lyricsCss } from "../packages/lyrics/src"
 import { lyricsHandleRequest } from "./lyricsHandleRequest"
-import { BloomWindow, css as bloomCss } from "../packages/bloom/src"
+import { BloomWindow, css as bloomCss, maybeRecoverBloom } from "../packages/bloom/src"
 import { bloomHandleRequest } from "./bloomHandleRequest"
 
 type RequestHandler = (argv: string[]) => Promise<RequestResponse> | RequestResponse
@@ -106,5 +106,6 @@ app.start({
 
     const bloomWin = BloomWindow(0)
     app.add_window(bloomWin)
+    maybeRecoverBloom()
   },
 })

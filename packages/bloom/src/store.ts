@@ -5,7 +5,8 @@ import type { BloomSession, RunState, StageName } from "./types"
 
 const STAGE_ORDER: StageName[] = ["sow", "grow", "plant"]
 
-const STATE_FILE = `${GLib.get_home_dir()}/.cache/unclaimed-bloom/state.json`
+const CACHE_DIR = `${GLib.get_home_dir()}/.cache/unclaimed-bloom`
+const STATE_FILE = `${CACHE_DIR}/state.json`
 
 const POLL_FAST_MS = 200
 const AUTO_DISMISS_MS = 4000
@@ -32,14 +33,22 @@ let sessionStartedAt = 0  // epoch ms; state.json older than this is from a prev
 
 // ── file reading ────────────────────────────────────────────────────────────
 
-function readStateFile(): RunState | null {
+function readJsonFile(path: string): RunState | null {
   try {
-    const [ok, bytes] = GLib.file_get_contents(STATE_FILE)
+    const [ok, bytes] = GLib.file_get_contents(path)
     if (!ok || !bytes) return null
     return JSON.parse(new TextDecoder().decode(bytes)) as RunState
   } catch {
     return null
   }
+}
+
+function readStateFile(): RunState | null {
+  return readJsonFile(STATE_FILE)
+}
+
+function readStageStateFile(stage: StageName): RunState | null {
+  return readJsonFile(`${CACHE_DIR}/state-${stage}.json`)
 }
 
 // ── polling ──────────────────────────────────────────────────────────────────
@@ -63,12 +72,13 @@ function poll() {
   const stages = { ...session.stages }
 
   // If we're at stage X, all earlier stages must have completed (they ran too
-  // fast to be caught by polling). Mark them done so the OSD reflects reality.
+  // fast to be caught by polling). Mark them done, reading their per-stage
+  // snapshot so elapsed time and target count are available.
   const currentIdx = STAGE_ORDER.indexOf(stage)
   for (let i = 0; i < currentIdx; i++) {
     const prev = STAGE_ORDER[i]
     if (stages[prev].status === "pending") {
-      stages[prev] = { status: "done", runState: null }
+      stages[prev] = { status: "done", runState: readStageStateFile(prev) }
     }
   }
 
@@ -151,4 +161,23 @@ export function hideBloom() {
   cancelDismiss()
   stopPolling()
   setBloomVisible(false)
+}
+
+// Called once on AGS startup. If AGS was restarted mid-run (e.g. the ags
+// plant hook does a full restart), we recover by re-showing the OSD so the
+// user doesn't just see it vanish.
+export function maybeRecoverBloom() {
+  const raw = readStateFile()
+  if (!raw) return
+  if (raw.status !== "running") return
+  // Only recover a run that was active very recently
+  if (Date.now() - new Date(raw.updated_at).getTime() > 120_000) return
+  sessionStartedAt = new Date(raw.started_at).getTime()
+  setBloomSession({
+    ...emptySession(),
+    profile: raw.profile,
+    overallStatus: "running",
+  })
+  setBloomVisible(true)
+  startPolling(POLL_FAST_MS)
 }
