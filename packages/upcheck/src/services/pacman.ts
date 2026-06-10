@@ -154,10 +154,9 @@ export async function selectItem(item: UpItem) {
     }
   }
 }
-
 export async function openUpdaterTerminal() {
   try {
-    await runCommand(["ghostty", "-e", "sudo", "pacman", "-Syu"])
+    await runCommand(["ghostty", "-e", "update-btw"])
   } catch (error) {
     logProcessError("upcheck failed to open updater terminal", error)
   }

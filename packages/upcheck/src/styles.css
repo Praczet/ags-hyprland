@@ -20,8 +20,10 @@
 
 button.upcheck-row {
   background-image: none;
-  background-color: @surface_container;
-  color: @on_surface;
+  background-color: @primary_container;
+  color: @primary;
+  border: none;
+  margin: 1px 0;
 }
 
 button.upcheck-row:hover {

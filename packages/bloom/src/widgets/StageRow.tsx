@@ -27,6 +27,9 @@ function countText(record: StageRecord): string {
   const targets = Object.values(record.runState.targets)
   const total = targets.length
   if (total === 0) return ""
+  if (record.status === "done" || record.status === "error") {
+    return `(${total} targets)`
+  }
   const done = targets.filter(t =>
     t.status === "done" || t.status === "skipped" || t.status === "error"
   ).length
@@ -52,7 +55,7 @@ export function StageRow({ stage }: { stage: StageName }) {
       <label class="bloom-row-icon" label={icon} widthChars={2} xalign={0} />
       <label class="bloom-row-stage" label={stage} widthChars={6} xalign={0} />
       <label class="bloom-row-time" label={elapsed} widthChars={6} xalign={1} />
-      <label class="bloom-row-count" label={count} widthChars={6} xalign={1} />
+      <label class="bloom-row-count" label={count} widthChars={12} xalign={0} />
       <label class="bloom-row-target" label={current} xalign={0} widthChars={16} maxWidthChars={16} ellipsize={3} />
     </box>
   )
