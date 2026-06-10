@@ -20,7 +20,7 @@ export function WorkerBar({ stage }: { stage: StageName }) {
   const msg     = createComputed(() => worker()?.msg ?? "")
 
   return (
-    <box class="bloom-worker" orientation={Gtk.Orientation.HORIZONTAL} spacing={8} visible={visible}>
+    <box class="bloom-worker" orientation={Gtk.Orientation.VERTICAL} spacing={4} visible={visible}>
       <Gtk.LevelBar
         class="bloom-worker-bar"
         mode={Gtk.LevelBarMode.CONTINUOUS}
@@ -32,9 +32,9 @@ export function WorkerBar({ stage }: { stage: StageName }) {
       <label
         class="bloom-worker-msg"
         label={msg}
-        maxWidthChars={28}
         ellipsize={Pango.EllipsizeMode.END}
         xalign={0}
+        hexpand={true}
       />
     </box>
   )
