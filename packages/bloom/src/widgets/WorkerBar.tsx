@@ -8,7 +8,7 @@ function findActiveWorker(stage: StageName): WorkerProgress | null {
   const record = bloomSession().stages[stage]
   if (!record.runState || record.status !== "running") return null
   for (const target of Object.values(record.runState.targets)) {
-    if (target.worker && target.worker.total > 0) return target.worker
+    if (target.worker) return target.worker
   }
   return null
 }
