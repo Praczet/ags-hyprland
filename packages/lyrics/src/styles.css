@@ -1,0 +1,65 @@
+.lyrics-window {
+  background: transparent;
+}
+
+.lyrics-window-frame {
+  background: transparent;
+}
+
+.lyrics-card {
+  padding: 12px 18px;
+  border-radius: 8px;
+  border: 1px solid alpha(@outline, 0.24);
+  background: alpha(@surface_container, 0.78);
+  color: @on_surface;
+  box-shadow: 0 12px 34px alpha(#000000, 0.28);
+}
+
+.lyrics-title {
+  font-size: 12px;
+  color: alpha(@on_surface, 0.68);
+}
+
+.lyrics-status {
+  font-size: 13px;
+  color: alpha(@on_surface, 0.7);
+}
+
+.lyrics-lines {
+  min-height: 88px;
+  transition:
+    opacity 260ms ease,
+    transform 260ms cubic-bezier(0.22, 0.8, 0.26, 1);
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.lyrics-lines-roll-forward {
+  transform: translateY(18px);
+  opacity: 0.62;
+}
+
+.lyrics-lines-roll-backward {
+  transform: translateY(-18px);
+  opacity: 0.62;
+}
+
+.lyrics-line {
+  font-size: 15px;
+  font-weight: 500;
+  color: alpha(@on_surface, 0.42);
+}
+
+.lyrics-line-prev {
+  color: alpha(@on_surface, 0.36);
+}
+
+.lyrics-line-active {
+  font-size: 20px;
+  font-weight: 700;
+  color: @primary;
+}
+
+.lyrics-line-next {
+  color: alpha(@on_surface, 0.52);
+}

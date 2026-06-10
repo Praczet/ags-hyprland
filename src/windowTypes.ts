@@ -5,11 +5,13 @@ import type { ExposeWindowHandle } from "../packages/expose/src"
 import type { NetworkWindowHandle } from "../packages/network/src"
 import type { OSDWindowHandle } from "../packages/osd/src"
 import type { UpcheckWindowHandle } from "../packages/upcheck/src"
+import type { LyricsWindowHandle } from "../packages/lyrics/src"
 
 export const WINDOW_NAME = {
   aegis: "aegis",
   dashboard: "dashboard",
   expose: "expose",
+  lyrics: "lyrics",
   network: "network",
   osd: "osd",
   upcheck: "upcheck",
@@ -35,6 +37,8 @@ export type DashboardAppWindow = BaseAppWindow & DashboardWindowHandle & {
 }
 
 export type ExposeAppWindow = BaseAppWindow & ExposeWindowHandle
+
+export type LyricsAppWindow = BaseAppWindow & LyricsWindowHandle
 
 export type NetworkAppWindow = BaseAppWindow & NetworkWindowHandle
 

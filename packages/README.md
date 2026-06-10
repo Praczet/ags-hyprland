@@ -22,6 +22,10 @@ GUI-first system information suite with a standalone window and dashboard widget
 
 NetworkManager UI with Wi-Fi-first accordion layout, Bluetooth support, and a Utilities section for quick toggles/tools.
 
+## lyrics
+
+Toggleable synced lyrics overlay using MPRIS/playerctl, cached `.lrc` files, and LRCLIB lookup.
+
 ## expose
 
 Exposé-style window overview with live thumbnails.
@@ -59,6 +63,7 @@ Word-of-the-day popup and dashboard widget package.
 - [Clipboard](clipboard/README.md)
 - [Dashboard](dashboard/README.md)
 - [Expose](expose/README.md)
+- [Lyrics](lyrics/README.md)
 - [Network](network/README.md)
 - [OSD](osd/README.md)
 - [Power Menu](powermenu/README.md)
