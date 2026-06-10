@@ -2,29 +2,31 @@
 
 # AGS + Hyprland — my personal shell experiments
 
-This repository contains my **AGS (Aylur’s Gtk Shell)** setup for **Hyprland**.
+This repository contains my **AGS (Aylur's Gtk Shell)** setup for **Hyprland**.
 
 For a long time I lived quite comfortably in the GNOME world.  
 Things were tidy, predictable, and nicely rounded. Clipboard history via **Pano**, sensible OSDs, and a general feeling that someone else had already thought about most UX decisions for me.
 
 Then I moved to **Hyprland**.
 
-With Hyprland (and AGS), you don’t really _get_ a desktop — you assemble one.  
-So this repo exists because I wanted to **rebuild the parts of GNOME I actually liked**, throw away the rest, and replace it with things that feel faster, quieter, and more “mine”.
+With Hyprland (and AGS), you don't really _get_ a desktop — you assemble one.  
+So this repo exists because I wanted to **rebuild the parts of GNOME I actually liked**, throw away the rest, and replace it with things that feel faster, quieter, and more "mine".
 
-What you’ll find here:
+What you'll find here:
 
 - a clipboard manager inspired by Pano (but less opinionated),
 - an Exposé-style window picker that feels better _to me_ than a flat rofi list,
 - small OSDs and a power menu (half practical, half an excuse to learn AGS properly),
 - a dashboard overlay with configurable widgets (calendar, tasks, weather, clocks, TickTick),
+- a synced lyrics overlay that reads `.lrc` files and pulls from LRCLIB when the cache is cold,
+- a bloom OSD that shows live progress while [Unclaimed Bloom](https://github.com/Praczet/unclaimed-bloom) recolors the desktop,
 - and a lot of little details that exist simply because they annoyed me elsewhere.
 
-Not that there’s anything wrong with **rofi** — quite the opposite.  
-It’s a great tool: fast, flexible, battle-tested, and incredibly useful.  
-I’m genuinely grateful that projects like rofi exist and are maintained.
+Not that there's anything wrong with **rofi** — quite the opposite.  
+It's a great tool: fast, flexible, battle-tested, and incredibly useful.  
+I'm genuinely grateful that projects like rofi exist and are maintained.
 
-It’s just… not mine.  
+It's just… not mine.  
 And if you know what that sentence means without further explanation — then yes, exactly that.
 
 ---
@@ -32,39 +34,26 @@ And if you know what that sentence means without further explanation — then ye
 ## A small note on taste
 
 UX preferences are not moral positions.  
-Liking one workflow over another doesn’t make it _better_, just _more comfortable_.
+Liking one workflow over another doesn't make it _better_, just _more comfortable_.
 
-Most of what’s in this repo exists because it fits how my brain works —  
+Most of what's in this repo exists because it fits how my brain works —  
 not because the alternatives are wrong, inferior, or misguided.
-
----
-
-## A short GNOME → Hyprland aside
-
-Moving from GNOME to Hyprland is less of a migration and more of a mindset shift.
-
-GNOME asks: _“what do you want to do?”_  
-Hyprland asks: _“how exactly do you want this to behave?”_
-
-AGS sits right in the middle: powerful, slightly dangerous, and very honest about the fact that _you_ are now responsible for your UX decisions.
-
-This repository is the result of me slowly answering those questions — sometimes twice.
 
 ---
 
 ## Prerequisites
 
-You’ll need:
-
 - Linux with Hyprland (Wayland)
-- AGS (Gtk4 + TSX build)
-- Node.js and npm (used for tooling; AGS itself is the runtime)
+- AGS (GTK4 + TSX build, 3.x)
+- `gnim` (installed via npm — only tooling dependency)
 - CLI tools used by scripts and widgets:
-  - wpctl
-  - brightnessctl
-  - playerctl
-  - grim
-  - jq (optional, but recommended)
+  - `wpctl`
+  - `brightnessctl`
+  - `playerctl`
+  - `grim`
+  - `jq` (optional, but recommended)
+  - `curl` (for lyrics LRCLIB lookup)
+- [Unclaimed Bloom](https://github.com/Praczet/unclaimed-bloom) — for the bloom OSD widget (optional; the rest works without it)
 
 ---
 
@@ -77,7 +66,7 @@ You’ll need:
    cd ags-hyprland
    ```
 
-2. Install Node dependencies:
+2. Install the single npm dependency:
 
    ```bash
    npm install
@@ -87,69 +76,127 @@ You’ll need:
 
 ## Structure
 
-- `src/` – main AGS configuration (widgets, services, styles)
-- `shared/` – shared utilities and styles
-- `ags-configs/` – AGS-specific configuration fragments
-- `packages/` – feature modules (clipboard, expose, OSDs, etc.)
-- `packages/dashboard/` – dashboard widgets and Google integration
-- `scripts/` – helper scripts used from Hyprland keybinds
-- `widget/`, `playground/` – local experiments (git-ignored)
+```text
+src/                    main entry point, request routing, window registration
+  app.ts                starts the AGS instance, wires all packages
+  windowTypes.ts        window name constants and type exports
+  *HandleRequest.ts     per-package AGS request handlers
 
-## Package READMEs
+packages/               feature modules
+  aegis/                system info suite (CPU, memory, disk, network, battery)
+  bloom/                Unclaimed Bloom run progress OSD
+  clipboard/            clipboard history popup
+  dashboard/            configurable overlay dashboard
+  expose/               Exposé-style window overview
+  lyrics/               synced lyrics overlay
+  network/              NetworkManager / Bluetooth UI
+  osd/                  volume, mic, brightness OSDs
+  powermenu/            power menu with confirmations
+  upcheck/              pacman update checker
+  wotd/                 word-of-the-day popup and widget
 
-- Packages index: [README](packages/README.md)
-- Aegis: [README](packages/aegis/README.md)
-- Clipboard: [README](packages/clipboard/README.md)
-- WOTD: [README](packages/wotd/README.md)
-- Network: [README](packages/network/README.md)
-- Expose: [README](packages/expose/README.md)
-- OSD: [README](packages/osd/README.md)
-- Power menu: [README](packages/powermenu/README.md)
-- Dashboard: [README](packages/dashboard/README.md)
-- Upcheck: [README](packages/upcheck/README.md)
+shared/
+  styles/matugen.css    generated color variables from Unclaimed Bloom (do not edit)
+  icons/                shared icon assets
+  utils/                shared TypeScript utilities
+
+scripts/                helper scripts for Hyprland keybinds
+```
 
 ---
 
-## Usage
+## Packages
 
-The main entry point is:
+Full descriptions and screenshots in [packages/README.md](packages/README.md).
 
-```
-src/app.ts
-```
+| Package | What it does |
+|---|---|
+| [aegis](packages/aegis/README.md) | System info suite — CPU graph, memory, disk, network, battery |
+| [bloom](packages/bloom/README.md) | Unclaimed Bloom run progress OSD |
+| [clipboard](packages/clipboard/README.md) | Clipboard history popup inspired by Pano |
+| [dashboard](packages/dashboard/README.md) | Configurable overlay dashboard with widgets |
+| [expose](packages/expose/README.md) | Exposé-style window overview with live thumbnails |
+| [lyrics](packages/lyrics/README.md) | Synced lyrics overlay via MPRIS / LRCLIB |
+| [network](packages/network/README.md) | NetworkManager + Bluetooth accordion UI |
+| [osd](packages/osd/README.md) | Minimal volume, mic, brightness OSDs |
+| [powermenu](packages/powermenu/README.md) | Power menu (logout runs `uwsm stop`) |
+| [upcheck](packages/upcheck/README.md) | Pacman update checker overlay |
+| [wotd](packages/wotd/README.md) | Word-of-the-day popup and dashboard widget |
 
-Example helper script:
+---
 
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
+## Scripts
 
-REPO_DIR="${REPO_DIR:-$HOME/Development/Hyprland/ags}"
-INSTANCE="adart"
-APP="$REPO_DIR/src/app.ts"
-
-"$REPO_DIR/scripts/ags-ensure.sh" "$INSTANCE" "$APP"
-```
-
-Dashboard toggle script:
-
-```bash
-scripts/adart-dashboard.sh
-```
-
-Network toggle script:
+Helper scripts live in `scripts/` and are called from Hyprland keybinds:
 
 ```bash
-scripts/adart-network.sh
+scripts/adart-clipboard.sh      # toggle clipboard popup
+scripts/adart-dashboard.sh      # toggle dashboard overlay
+scripts/adart-expose.sh         # toggle Exposé window overview
+scripts/adart-lyrics.sh         # toggle synced lyrics overlay
+scripts/adart-network.sh        # toggle network/bluetooth panel
+scripts/adart-osd.sh            # send OSD signal
+scripts/adart-upcheck.sh        # open update checker
 ```
 
-Generic smoke-test helper:
+The `ags-ensure.sh` helper starts the AGS instance if it is not running, then sends the request:
 
 ```bash
-scripts/test.sh network
-scripts/test.sh dashboard
-scripts/test.sh wotd
+scripts/ags-ensure.sh adart <app.ts path>
 ```
+
+---
+
+## Theming
+
+Colors come from [Unclaimed Bloom](https://github.com/Praczet/unclaimed-bloom).
+
+The generated file is:
+
+```text
+shared/styles/matugen.css
+```
+
+Do not edit it by hand. It is regenerated whenever Unclaimed Bloom plants the `ags` target.  
+All packages import it through the main `app.ts` CSS bundle.
+
+---
+
+## Bloom OSD
+
+The `bloom` package shows a live progress overlay while Unclaimed Bloom runs `sow`, `grow`, and `plant`.
+
+AGS request commands:
+
+```bash
+ags request -i adart bloom-show <profile> [--wallpaper <path>]
+ags request -i adart bloom-done
+ags request -i adart bloom-hide
+ags request -i adart bloom-pickup    # recover after AGS restart mid-run
+```
+
+The OSD polls `~/.cache/unclaimed-bloom/state.json` at 200 ms.  
+If AGS restarts while a run is in progress, `maybeRecoverBloom()` is called on startup and resumes tracking.
+
+Unclaimed Bloom triggers the OSD automatically when `--bloom-osd` is passed to `spore sow` or `spore plant`.  
+See [unclaimed-bloom](https://github.com/Praczet/unclaimed-bloom) for the full integration setup.
+
+---
+
+## Lyrics Overlay
+
+The `lyrics` package shows synced lyrics for the current MPRIS player.
+
+```bash
+ags request -i adart lyrics-toggle
+ags request -i adart lyrics-show
+ags request -i adart lyrics-hide
+```
+
+Cache lives in `~/.local/share/lyrics/*.lrc`. On cache miss, it calls LRCLIB.  
+Optional config: `~/.config/ags/lyrics.json`.
+
+---
 
 ## Dashboard Configuration
 
@@ -166,7 +213,9 @@ Minimal example:
 }
 ```
 
-For full options (weather, analog clock, custom widgets), see `packages/dashboard/README.md`.
+For full options (weather, analog clock, custom widgets), see [packages/dashboard/README.md](packages/dashboard/README.md).
+
+---
 
 ## Google Calendar & Tasks Auth
 
@@ -177,11 +226,13 @@ The dashboard can pull calendar data and tasks using Google OAuth.
 3. Save credentials to `~/.config/ags/google-credentials.json`.
 4. Run:
 
-```bash
-node scripts/google-auth-device.js
-```
+   ```bash
+   node scripts/google-auth-device.js
+   ```
 
-This creates `~/.config/ags/google-tokens.json`. The dashboard then stores refreshed tokens in the system keyring when libsecret is available.
+This creates `~/.config/ags/google-tokens.json`. The dashboard refreshes tokens in the system keyring when libsecret is available.
+
+---
 
 ## TickTick Auth
 
@@ -190,38 +241,29 @@ TickTick widgets use OAuth access tokens.
 1. Create a TickTick OAuth app.
 2. Use the helper script:
 
-```bash
-node scripts/ticktick-auth.js <clientId> <clientSecret>
-```
+   ```bash
+   node scripts/ticktick-auth.js <clientId> <clientSecret>
+   ```
 
-1. Paste the `access_token` into `~/.config/ags/dashboard.json` under `ticktick.accessToken`.
-
-The instance name `adart` is my personal namespace (AdamDruzdArt).  
-It is intentionally hard-coded in a few places — this repo is first and foremost _my_ setup.
-
-If you fork this, you’ll probably want to rename it.
+3. Paste the `access_token` into `~/.config/ags/dashboard.json` under `ticktick.accessToken`.
 
 ---
 
 ## Development
 
-Directories like `node_modules/`, `@girs/`, `widget/`, and `playground/` are ignored and safe for local experiments.
+This repo runs on AGS `3.x`. Request routing uses `ags request -i adart ...`.
 
-This repo is currently aligned with AGS `3.1.x` style imports and CLI usage. Examples use `ags request -i adart ...`.
+The instance name `adart` is my personal namespace (AdamDruzdArt).  
+It is hard-coded in several places — this repo is first and foremost _my_ setup.  
+If you fork this, you will probably want to rename it.
 
-Formatting is done with Prettier. Add this to `package.json` if needed:
-
-```json
-"scripts": {
-  "format": "prettier --write ."
-}
-```
-
-Then run:
+Formatting is done with Prettier:
 
 ```bash
 npm run format
 ```
+
+Directories like `node_modules/`, `@girs/`, `widget/`, and `playground/` are git-ignored and safe for local experiments.
 
 ---
 
@@ -236,4 +278,4 @@ Those guides saved me a lot of time — and probably a few unnecessary rewrites 
 
 MIT.
 
-Use it, break it, adapt it — just don’t be surprised if you end up rewriting half of it anyway.
+Use it, break it, adapt it — just don't be surprised if you end up rewriting half of it anyway.
