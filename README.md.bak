@@ -139,10 +139,10 @@ scripts/adart-osd.sh            # send OSD signal
 scripts/adart-upcheck.sh        # open update checker
 ```
 
-The `ags-ensure` helper starts the AGS instance if it is not running, then sends the request:
+The `ags-ensure.sh` helper starts the AGS instance if it is not running, then sends the request:
 
 ```bash
-scripts/ags-ensure adart <app.ts path>
+scripts/ags-ensure.sh adart <app.ts path>
 ```
 
 ---

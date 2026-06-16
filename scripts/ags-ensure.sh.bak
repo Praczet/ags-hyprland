@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Ensure an AGS instance is running AND listening for commands.
-# Usage: ags-ensure [instance-name] [app-path]
+# Usage: ags-ensure.sh [instance-name] [app-path]
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

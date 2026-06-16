@@ -38,14 +38,14 @@ The app starts one AGS instance and registers package windows up front. Most ext
 ```text
 Hyprland keybind / Waybar click / shell command
   -> scripts/adart-*.sh
-  -> scripts/ags-ensure
+  -> scripts/ags-ensure.sh
   -> ags run src/app.ts if needed
   -> ags request -i adart <command>
   -> src/*HandleRequest.ts
   -> package window/store/service
 ```
 
-`scripts/ags-ensure` is the important guard rail. It starts the `adart` instance if missing, then waits until AGS can answer requests. That prevents the usual race where a script sends a request to an instance that is technically starting but not actually listening yet. Very desktop, very rude, now mostly contained.
+`scripts/ags-ensure.sh` is the important guard rail. It starts the `adart` instance if missing, then waits until AGS can answer requests. That prevents the usual race where a script sends a request to an instance that is technically starting but not actually listening yet. Very desktop, very rude, now mostly contained.
 
 ## Package map
 
@@ -97,7 +97,7 @@ That distinction matters when debugging. If a script does nothing, first check w
 
 Primary scripts:
 
-- `scripts/ags-ensure` starts and verifies the `adart` instance.
+- `scripts/ags-ensure.sh` starts and verifies the `adart` instance.
 - `scripts/test.sh` smoke-tests package entry points.
 - `scripts/adart-dashboard.sh` toggles dashboard, optionally with a custom config path.
 - `scripts/adart-network.sh` toggles network UI.
@@ -153,7 +153,7 @@ npm install
 Start or ensure the AGS instance:
 
 ```bash
-scripts/ags-ensure adart src/app.ts
+scripts/ags-ensure.sh adart src/app.ts
 ```
 
 Smoke-test package toggles:
