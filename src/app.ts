@@ -26,6 +26,7 @@ import { LyricsWindow, css as lyricsCss } from "../packages/lyrics/src"
 import { lyricsHandleRequest } from "./lyricsHandleRequest"
 import { BloomWindow, css as bloomCss, maybeRecoverBloom } from "../packages/bloom/src"
 import { bloomHandleRequest } from "./bloomHandleRequest"
+import { powermenuHandleRequest } from "./powermenuHandleRequest"
 
 type RequestHandler = (argv: string[]) => Promise<RequestResponse> | RequestResponse
 
@@ -38,6 +39,7 @@ const requestHandlers: RequestHandler[] = [
   lyricsHandleRequest,
   wotdHandleRequest,
   osdHandleRequest,
+  powermenuHandleRequest
 ]
 
 type DebugActions = typeof globalThis & {
