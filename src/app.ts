@@ -27,6 +27,7 @@ import { lyricsHandleRequest } from "./lyricsHandleRequest"
 import { BloomWindow, css as bloomCss, maybeRecoverBloom } from "../packages/bloom/src"
 import { bloomHandleRequest } from "./bloomHandleRequest"
 import { powermenuHandleRequest } from "./powermenuHandleRequest"
+import { upcheckHandleRequest } from "./upcheckHandleRequest"
 
 type RequestHandler = (argv: string[]) => Promise<RequestResponse> | RequestResponse
 
@@ -38,8 +39,9 @@ const requestHandlers: RequestHandler[] = [
   exposeHandleRequest,
   lyricsHandleRequest,
   wotdHandleRequest,
+  powermenuHandleRequest,
+  upcheckHandleRequest,
   osdHandleRequest,
-  powermenuHandleRequest
 ]
 
 type DebugActions = typeof globalThis & {
