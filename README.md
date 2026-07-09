@@ -1,13 +1,43 @@
-<https://github.com/user-attachments/assets/90462704-715d-4615-8af8-67b285b82722>
+> [!NOTE]
+>
+> ## This repository is now archived
+>
+> This project has reached the end of its journey.
+>
+> I am no longer actively developing this AGS setup because I have moved to [Qreep](https://github.com/Praczet/qreep) — my new desktop shell built with Quickshell. Qreep now covers the functionality and ideas that originally lived here, while giving me a better foundation to continue experimenting, learning, and building things in my own way.
+>
+> This does not mean that this project was bad or unsuccessful. Quite the opposite.
+>
+> AGS Hyprland was a genuinely good project for me. It helped me rebuild the parts of the desktop I missed, understand how a shell fits together, experiment with UX ideas, and learn a lot about GTK, TypeScript, Hyprland, services, widgets, and the many small details hidden behind a comfortable desktop.
+>
+> I am grateful to AGS, its community, and everyone whose work, examples, and documentation helped me along the way.
+>
+> The repository will remain available as an archive and as a record of that part of the journey. It may still be useful as a reference, but no further development is planned here.
+>
+> The work continues in **[Qreep](https://github.com/Praczet/qreep)**.
+
+---
 
 # AGS + Hyprland — my personal shell experiments
 
-This repository contains my **AGS (Aylur’s Gtk Shell)** setup for **Hyprland**.
+This repository contains my former AGS (Aylur’s Gtk Shell) setup for Hyprland.
 
-For a long time I lived quite comfortably in the GNOME world.  
-Things were tidy, predictable, and nicely rounded. Clipboard history via **Pano**, sensible OSDs, and a general feeling that someone else had already thought about most UX decisions for me.
+For a long time I lived quite comfortably in the GNOME world.
+Things were tidy, predictable, and nicely rounded. Clipboard history via Pano, sensible OSDs, and a general feeling that someone else had already thought about most UX decisions for me.
 
-Then I moved to **Hyprland**.
+Then I moved to Hyprland.
+
+With Hyprland — and later AGS — you don’t really get a desktop. You assemble one.
+
+This repository exists because I wanted to rebuild the parts of GNOME I actually liked, throw away the rest, and replace them with things that felt faster, quieter, and more “mine”.
+
+It served that purpose well.
+
+<https://github.com/user-attachments/assets/90462704-715d-4615-8af8-67b285b82722>
+
+---
+
+Here is the old README.md
 
 With Hyprland (and AGS), you don’t really _get_ a desktop — you assemble one.  
 So this repo exists because I wanted to **rebuild the parts of GNOME I actually liked**, throw away the rest, and replace it with things that feel faster, quieter, and more “mine”.
